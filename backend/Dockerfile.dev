@@ -1,0 +1,20 @@
+FROM node:24-alpine
+
+# Installing libpng and clean-css dependencies for Strapi
+RUN apk update && apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev nasm bash vips-dev
+
+WORKDIR /opt/app
+
+# We will install packages in docker-compose or during build.
+# Copy package.json first if it exists
+COPY package*.json ./
+
+RUN npm config set fetch-retry-maxtimeout 600000 -g && npm install
+
+COPY . .
+
+ENV NODE_ENV=development
+
+EXPOSE 1337
+
+CMD ["npm", "run", "develop"]

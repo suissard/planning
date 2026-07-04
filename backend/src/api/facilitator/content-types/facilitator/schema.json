@@ -1,0 +1,49 @@
+{
+  "kind": "collectionType",
+  "collectionName": "facilitators",
+  "info": {
+    "singularName": "facilitator",
+    "pluralName": "facilitators",
+    "displayName": "Facilitator",
+    "description": "Instructors, hosts, or facilitators"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "firstName": {
+      "type": "string",
+      "required": true
+    },
+    "lastName": {
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "type": "email",
+      "required": true,
+      "unique": true
+    },
+    "skills": {
+      "type": "text"
+    },
+    "weeklyAvailabilities": {
+      "type": "json"
+    },
+    "specificUnavailabilities": {
+      "type": "json"
+    },
+    "authorizedActivities": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::activity-template.activity-template",
+      "mappedBy": "authorizedFacilitators"
+    },
+    "timeSlots": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::time-slot.time-slot",
+      "mappedBy": "facilitators"
+    }
+  }
+}

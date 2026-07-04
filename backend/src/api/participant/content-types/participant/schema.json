@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "participants",
+  "info": {
+    "singularName": "participant",
+    "pluralName": "participants",
+    "displayName": "Participant",
+    "description": "Beneficiaries, clients, or participants"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "firstName": {
+      "type": "string",
+      "required": true
+    },
+    "lastName": {
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "type": "email",
+      "required": true,
+      "unique": true
+    },
+    "weeklyAvailabilities": {
+      "type": "json"
+    },
+    "specificUnavailabilities": {
+      "type": "json"
+    },
+    "timeSlots": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::time-slot.time-slot",
+      "mappedBy": "participants"
+    }
+  }
+}

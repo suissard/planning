@@ -1,0 +1,45 @@
+{
+  "kind": "collectionType",
+  "collectionName": "activity_templates",
+  "info": {
+    "singularName": "activity-template",
+    "pluralName": "activity-templates",
+    "displayName": "ActivityTemplate",
+    "description": "Templates of activities or courses"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "standardDuration": {
+      "type": "integer",
+      "required": true,
+      "min": 1
+    },
+    "minParticipants": {
+      "type": "integer",
+      "required": true,
+      "min": 0
+    },
+    "maxParticipants": {
+      "type": "integer",
+      "required": true
+    },
+    "authorizedFacilitators": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::facilitator.facilitator",
+      "inversedBy": "authorizedActivities"
+    },
+    "timeSlots": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::time-slot.time-slot",
+      "mappedBy": "activityTemplate"
+    }
+  }
+}

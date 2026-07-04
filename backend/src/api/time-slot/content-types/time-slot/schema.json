@@ -1,0 +1,47 @@
+{
+  "kind": "collectionType",
+  "collectionName": "time_slots",
+  "info": {
+    "singularName": "time-slot",
+    "pluralName": "time-slots",
+    "displayName": "TimeSlot",
+    "description": "Scheduled activity occurrences"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "startDate": {
+      "type": "datetime",
+      "required": true
+    },
+    "endDate": {
+      "type": "datetime",
+      "required": true
+    },
+    "location": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::location.location",
+      "inversedBy": "timeSlots"
+    },
+    "activityTemplate": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::activity-template.activity-template",
+      "inversedBy": "timeSlots"
+    },
+    "participants": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::participant.participant",
+      "inversedBy": "timeSlots"
+    },
+    "facilitators": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::facilitator.facilitator",
+      "inversedBy": "timeSlots"
+    }
+  }
+}

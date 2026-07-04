@@ -1,0 +1,21 @@
+{
+  "name": "planning-backend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Strapi backend for planning application",
+  "scripts": {
+    "develop": "strapi develop",
+    "start": "strapi start",
+    "build": "strapi build"
+  },
+  "dependencies": {
+    "@strapi/strapi": "^5.0.0",
+    "@strapi/plugin-users-permissions": "^5.0.0",
+    "mysql2": "^3.6.5"
+  },
+  "engines": {
+    "node": ">=20.0.0 <=24.0.0",
+    "npm": ">=6.0.0"
+  },
+  "license": "MIT"
+}

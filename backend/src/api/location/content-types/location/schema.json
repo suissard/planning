@@ -1,0 +1,44 @@
+{
+  "kind": "collectionType",
+  "collectionName": "locations",
+  "info": {
+    "singularName": "location",
+    "pluralName": "locations",
+    "displayName": "Location",
+    "description": "Spatial resources (rooms, facilities, halls)"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "capacity": {
+      "type": "integer",
+      "required": true,
+      "min": 1
+    },
+    "globalOpeningStart": {
+      "type": "date",
+      "required": true
+    },
+    "globalOpeningEnd": {
+      "type": "date",
+      "required": true
+    },
+    "weeklyClosures": {
+      "type": "json"
+    },
+    "specificClosures": {
+      "type": "json"
+    },
+    "timeSlots": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::time-slot.time-slot",
+      "mappedBy": "location"
+    }
+  }
+}
