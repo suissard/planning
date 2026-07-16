@@ -1,0 +1,15 @@
+{
+  "name": "planning-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install": "npm install --prefix backend && npm install --prefix frontend",
+    "start": "concurrently \"npm run develop --prefix backend\" \"npm run dev --prefix frontend\"",
+    "stop": "lsof -ti:1337,5173,5174 2>/dev/null | xargs -r kill -9 && echo '⚡ Processus arrêtés' || echo '⚡ Aucun processus à arrêter'",
+    "stop:all": "npm run stop && docker compose down && echo '🐳 Docker arrêté'",
+    "seed": "node backend/seed.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

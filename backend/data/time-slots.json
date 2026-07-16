@@ -1,0 +1,82 @@
+[
+  {
+    "_activity": "Yoga Matinal",
+    "_location": "Studio Danse",
+    "_facilitators": ["sophie.durand@aether.dev"],
+    "_participants": ["emma.dupont@mail.dev", "lucas.robert@mail.dev", "lea.laurent@mail.dev"],
+    "startDate": "2026-09-07T08:00:00.000Z",
+    "endDate": "2026-09-07T09:00:00.000Z"
+  },
+  {
+    "_activity": "Pilates Avancé",
+    "_location": "Studio Danse",
+    "_facilitators": ["sophie.durand@aether.dev"],
+    "_participants": ["emma.dupont@mail.dev", "chloe.richard@mail.dev", "manon.garcia@mail.dev", "lea.laurent@mail.dev"],
+    "startDate": "2026-09-07T14:00:00.000Z",
+    "endDate": "2026-09-07T14:45:00.000Z"
+  },
+  {
+    "_activity": "Natation Libre",
+    "_location": "Piscine Olympique",
+    "_facilitators": ["marc.lefevre@aether.dev"],
+    "_participants": ["lucas.robert@mail.dev", "hugo.simon@mail.dev", "raphael.fournier@mail.dev", "louis.bonnet@mail.dev"],
+    "startDate": "2026-09-07T09:00:00.000Z",
+    "endDate": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "_activity": "Atelier Poterie",
+    "_location": "Atelier Créatif",
+    "_facilitators": ["antoine.bernard@aether.dev"],
+    "_participants": ["nathan.michel@mail.dev", "ines.roux@mail.dev", "lea.laurent@mail.dev"],
+    "startDate": "2026-09-08T08:00:00.000Z",
+    "endDate": "2026-09-08T10:00:00.000Z"
+  },
+  {
+    "_activity": "Danse Contemporaine",
+    "_location": "Studio Danse",
+    "_facilitators": ["claire.martin@aether.dev"],
+    "_participants": ["chloe.richard@mail.dev", "manon.garcia@mail.dev", "emma.dupont@mail.dev", "lea.laurent@mail.dev"],
+    "startDate": "2026-09-09T14:00:00.000Z",
+    "endDate": "2026-09-09T15:30:00.000Z"
+  },
+  {
+    "_activity": "CrossFit Intensif",
+    "_location": "Gymnase Municipal",
+    "_facilitators": ["julie.petit@aether.dev"],
+    "_participants": ["hugo.simon@mail.dev", "lucas.robert@mail.dev", "raphael.fournier@mail.dev", "louis.bonnet@mail.dev", "nathan.michel@mail.dev"],
+    "startDate": "2026-09-08T07:00:00.000Z",
+    "endDate": "2026-09-08T08:00:00.000Z"
+  },
+  {
+    "_activity": "Zumba Fitness",
+    "_location": "Gymnase Municipal",
+    "_facilitators": ["claire.martin@aether.dev"],
+    "_participants": ["emma.dupont@mail.dev", "chloe.richard@mail.dev", "nathan.michel@mail.dev", "raphael.fournier@mail.dev"],
+    "startDate": "2026-09-10T12:00:00.000Z",
+    "endDate": "2026-09-10T13:00:00.000Z"
+  },
+  {
+    "_activity": "Dessin & Peinture",
+    "_location": "Atelier Créatif",
+    "_facilitators": ["antoine.bernard@aether.dev"],
+    "_participants": ["nathan.michel@mail.dev", "louis.bonnet@mail.dev"],
+    "startDate": "2026-09-10T13:30:00.000Z",
+    "endDate": "2026-09-10T15:00:00.000Z"
+  },
+  {
+    "_activity": "Aquagym Seniors",
+    "_location": "Piscine Olympique",
+    "_facilitators": ["marc.lefevre@aether.dev"],
+    "_participants": ["emma.dupont@mail.dev", "lucas.robert@mail.dev", "raphael.fournier@mail.dev"],
+    "startDate": "2026-09-09T09:00:00.000Z",
+    "endDate": "2026-09-09T09:45:00.000Z"
+  },
+  {
+    "_activity": "Yoga Matinal",
+    "_location": "Studio Danse",
+    "_facilitators": ["julie.petit@aether.dev"],
+    "_participants": ["hugo.simon@mail.dev", "louis.bonnet@mail.dev", "nathan.michel@mail.dev"],
+    "startDate": "2026-09-10T08:00:00.000Z",
+    "endDate": "2026-09-10T09:00:00.000Z"
+  }
+]

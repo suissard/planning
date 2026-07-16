@@ -1,0 +1,107 @@
+[
+  {
+    "firstName": "Sophie",
+    "lastName": "Durand",
+    "email": "sophie.durand@aether.dev",
+    "skills": "Yoga, Pilates, Méditation, Stretching",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "2": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "3": [{ "start": "08:00", "end": "12:00" }],
+      "4": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "5": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }]
+    },
+    "specificUnavailabilities": [
+      {
+        "startDate": "2026-08-01T00:00:00.000Z",
+        "endDate": "2026-08-31T23:59:59.000Z"
+      }
+    ],
+    "_authorizedActivities": ["Yoga Matinal", "Pilates Avancé"]
+  },
+  {
+    "firstName": "Marc",
+    "lastName": "Lefèvre",
+    "email": "marc.lefevre@aether.dev",
+    "skills": "Natation, Aquagym, Sauvetage aquatique",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "09:00", "end": "17:00" }],
+      "2": [{ "start": "09:00", "end": "17:00" }],
+      "3": [{ "start": "09:00", "end": "17:00" }],
+      "4": [{ "start": "09:00", "end": "17:00" }],
+      "5": [{ "start": "09:00", "end": "17:00" }],
+      "6": [{ "start": "09:00", "end": "13:00" }]
+    },
+    "specificUnavailabilities": [],
+    "_authorizedActivities": ["Natation Libre", "Aquagym Seniors"]
+  },
+  {
+    "firstName": "Claire",
+    "lastName": "Martin",
+    "email": "claire.martin@aether.dev",
+    "skills": "Danse contemporaine, Jazz, Hip-hop, Zumba",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "10:00", "end": "12:00" }, { "start": "14:00", "end": "20:00" }],
+      "2": [{ "start": "14:00", "end": "20:00" }],
+      "3": [{ "start": "10:00", "end": "12:00" }, { "start": "14:00", "end": "20:00" }],
+      "4": [{ "start": "14:00", "end": "20:00" }],
+      "5": [{ "start": "10:00", "end": "12:00" }, { "start": "14:00", "end": "20:00" }]
+    },
+    "specificUnavailabilities": [
+      {
+        "startDate": "2026-09-14T00:00:00.000Z",
+        "endDate": "2026-09-21T23:59:59.000Z"
+      }
+    ],
+    "_authorizedActivities": ["Danse Contemporaine", "Zumba Fitness"]
+  },
+  {
+    "firstName": "Antoine",
+    "lastName": "Bernard",
+    "email": "antoine.bernard@aether.dev",
+    "skills": "Arts plastiques, Poterie, Dessin, Sculpture",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "09:00", "end": "12:00" }, { "start": "13:30", "end": "17:00" }],
+      "2": [{ "start": "09:00", "end": "12:00" }, { "start": "13:30", "end": "17:00" }],
+      "3": [{ "start": "09:00", "end": "12:00" }],
+      "4": [{ "start": "09:00", "end": "12:00" }, { "start": "13:30", "end": "17:00" }],
+      "5": [{ "start": "09:00", "end": "12:00" }, { "start": "13:30", "end": "17:00" }]
+    },
+    "specificUnavailabilities": [],
+    "_authorizedActivities": ["Atelier Poterie", "Dessin & Peinture"]
+  },
+  {
+    "firstName": "Julie",
+    "lastName": "Petit",
+    "email": "julie.petit@aether.dev",
+    "skills": "Fitness, CrossFit, Renforcement musculaire, Cardio",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "07:00", "end": "12:00" }, { "start": "16:00", "end": "20:00" }],
+      "2": [{ "start": "07:00", "end": "12:00" }, { "start": "16:00", "end": "20:00" }],
+      "3": [{ "start": "07:00", "end": "12:00" }, { "start": "16:00", "end": "20:00" }],
+      "4": [{ "start": "07:00", "end": "12:00" }, { "start": "16:00", "end": "20:00" }],
+      "5": [{ "start": "07:00", "end": "12:00" }],
+      "6": [{ "start": "08:00", "end": "12:00" }]
+    },
+    "specificUnavailabilities": [
+      {
+        "startDate": "2026-07-20T00:00:00.000Z",
+        "endDate": "2026-08-03T23:59:59.000Z"
+      }
+    ],
+    "_authorizedActivities": ["CrossFit Intensif", "Yoga Matinal", "Zumba Fitness"]
+  },
+  {
+    "firstName": "Thomas",
+    "lastName": "Moreau",
+    "email": "thomas.moreau@aether.dev",
+    "skills": "Premiers secours, Conférences, Gestion de projet",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "09:00", "end": "12:00" }, { "start": "14:00", "end": "17:00" }],
+      "3": [{ "start": "09:00", "end": "12:00" }, { "start": "14:00", "end": "17:00" }],
+      "5": [{ "start": "09:00", "end": "12:00" }, { "start": "14:00", "end": "17:00" }]
+    },
+    "specificUnavailabilities": [],
+    "_authorizedActivities": ["Séminaire Leadership", "Natation Libre"]
+  }
+]

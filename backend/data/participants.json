@@ -1,0 +1,145 @@
+[
+  {
+    "firstName": "Emma",
+    "lastName": "Dupont",
+    "email": "emma.dupont@mail.dev",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "2": [{ "start": "08:00", "end": "18:00" }],
+      "3": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "4": [{ "start": "08:00", "end": "18:00" }],
+      "5": [{ "start": "08:00", "end": "12:00" }]
+    },
+    "specificUnavailabilities": []
+  },
+  {
+    "firstName": "Lucas",
+    "lastName": "Robert",
+    "email": "lucas.robert@mail.dev",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "09:00", "end": "17:00" }],
+      "2": [{ "start": "09:00", "end": "17:00" }],
+      "3": [{ "start": "09:00", "end": "17:00" }],
+      "4": [{ "start": "09:00", "end": "17:00" }],
+      "5": [{ "start": "09:00", "end": "17:00" }],
+      "6": [{ "start": "09:00", "end": "13:00" }]
+    },
+    "specificUnavailabilities": [
+      {
+        "startDate": "2026-09-01T00:00:00.000Z",
+        "endDate": "2026-09-06T23:59:59.000Z"
+      }
+    ]
+  },
+  {
+    "firstName": "Chloé",
+    "lastName": "Richard",
+    "email": "chloe.richard@mail.dev",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "14:00", "end": "20:00" }],
+      "2": [{ "start": "14:00", "end": "20:00" }],
+      "3": [{ "start": "14:00", "end": "20:00" }],
+      "4": [{ "start": "14:00", "end": "20:00" }],
+      "5": [{ "start": "14:00", "end": "20:00" }]
+    },
+    "specificUnavailabilities": []
+  },
+  {
+    "firstName": "Hugo",
+    "lastName": "Simon",
+    "email": "hugo.simon@mail.dev",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "07:00", "end": "12:00" }],
+      "2": [{ "start": "07:00", "end": "12:00" }],
+      "3": [{ "start": "07:00", "end": "12:00" }],
+      "4": [{ "start": "07:00", "end": "12:00" }],
+      "5": [{ "start": "07:00", "end": "12:00" }],
+      "6": [{ "start": "08:00", "end": "12:00" }]
+    },
+    "specificUnavailabilities": []
+  },
+  {
+    "firstName": "Léa",
+    "lastName": "Laurent",
+    "email": "lea.laurent@mail.dev",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "2": [{ "start": "08:00", "end": "12:00" }],
+      "3": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "4": [{ "start": "08:00", "end": "12:00" }],
+      "5": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }]
+    },
+    "specificUnavailabilities": [
+      {
+        "startDate": "2026-10-26T00:00:00.000Z",
+        "endDate": "2026-11-01T23:59:59.000Z"
+      }
+    ]
+  },
+  {
+    "firstName": "Nathan",
+    "lastName": "Michel",
+    "email": "nathan.michel@mail.dev",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "09:00", "end": "12:00" }, { "start": "14:00", "end": "17:00" }],
+      "2": [{ "start": "09:00", "end": "12:00" }, { "start": "14:00", "end": "17:00" }],
+      "3": [{ "start": "09:00", "end": "12:00" }, { "start": "14:00", "end": "17:00" }],
+      "4": [{ "start": "09:00", "end": "12:00" }, { "start": "14:00", "end": "17:00" }],
+      "5": [{ "start": "09:00", "end": "12:00" }]
+    },
+    "specificUnavailabilities": []
+  },
+  {
+    "firstName": "Manon",
+    "lastName": "Garcia",
+    "email": "manon.garcia@mail.dev",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "10:00", "end": "12:00" }, { "start": "16:00", "end": "20:00" }],
+      "3": [{ "start": "10:00", "end": "12:00" }, { "start": "16:00", "end": "20:00" }],
+      "5": [{ "start": "10:00", "end": "12:00" }, { "start": "16:00", "end": "20:00" }]
+    },
+    "specificUnavailabilities": []
+  },
+  {
+    "firstName": "Raphaël",
+    "lastName": "Fournier",
+    "email": "raphael.fournier@mail.dev",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "08:00", "end": "18:00" }],
+      "2": [{ "start": "08:00", "end": "18:00" }],
+      "3": [{ "start": "08:00", "end": "18:00" }],
+      "4": [{ "start": "08:00", "end": "18:00" }],
+      "5": [{ "start": "08:00", "end": "18:00" }]
+    },
+    "specificUnavailabilities": [
+      {
+        "startDate": "2026-08-10T00:00:00.000Z",
+        "endDate": "2026-08-24T23:59:59.000Z"
+      }
+    ]
+  },
+  {
+    "firstName": "Inès",
+    "lastName": "Roux",
+    "email": "ines.roux@mail.dev",
+    "weeklyAvailabilities": {
+      "2": [{ "start": "09:00", "end": "12:00" }, { "start": "14:00", "end": "17:00" }],
+      "4": [{ "start": "09:00", "end": "12:00" }, { "start": "14:00", "end": "17:00" }],
+      "6": [{ "start": "09:00", "end": "13:00" }]
+    },
+    "specificUnavailabilities": []
+  },
+  {
+    "firstName": "Louis",
+    "lastName": "Bonnet",
+    "email": "louis.bonnet@mail.dev",
+    "weeklyAvailabilities": {
+      "1": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "2": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "3": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "4": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }],
+      "5": [{ "start": "08:00", "end": "12:00" }, { "start": "14:00", "end": "18:00" }]
+    },
+    "specificUnavailabilities": []
+  }
+]

@@ -1,0 +1,72 @@
+[
+  {
+    "name": "Yoga Matinal",
+    "standardDuration": 60,
+    "minParticipants": 2,
+    "maxParticipants": 15,
+    "_authorizedFacilitators": ["sophie.durand@aether.dev", "julie.petit@aether.dev"]
+  },
+  {
+    "name": "Pilates Avancé",
+    "standardDuration": 45,
+    "minParticipants": 3,
+    "maxParticipants": 12,
+    "_authorizedFacilitators": ["sophie.durand@aether.dev"]
+  },
+  {
+    "name": "Natation Libre",
+    "standardDuration": 60,
+    "minParticipants": 2,
+    "maxParticipants": 20,
+    "_authorizedFacilitators": ["marc.lefevre@aether.dev", "thomas.moreau@aether.dev"]
+  },
+  {
+    "name": "Aquagym Seniors",
+    "standardDuration": 45,
+    "minParticipants": 3,
+    "maxParticipants": 15,
+    "_authorizedFacilitators": ["marc.lefevre@aether.dev"]
+  },
+  {
+    "name": "Danse Contemporaine",
+    "standardDuration": 90,
+    "minParticipants": 4,
+    "maxParticipants": 15,
+    "_authorizedFacilitators": ["claire.martin@aether.dev"]
+  },
+  {
+    "name": "Zumba Fitness",
+    "standardDuration": 60,
+    "minParticipants": 3,
+    "maxParticipants": 25,
+    "_authorizedFacilitators": ["claire.martin@aether.dev", "julie.petit@aether.dev"]
+  },
+  {
+    "name": "Atelier Poterie",
+    "standardDuration": 120,
+    "minParticipants": 2,
+    "maxParticipants": 10,
+    "_authorizedFacilitators": ["antoine.bernard@aether.dev"]
+  },
+  {
+    "name": "Dessin & Peinture",
+    "standardDuration": 90,
+    "minParticipants": 2,
+    "maxParticipants": 12,
+    "_authorizedFacilitators": ["antoine.bernard@aether.dev"]
+  },
+  {
+    "name": "CrossFit Intensif",
+    "standardDuration": 60,
+    "minParticipants": 3,
+    "maxParticipants": 20,
+    "_authorizedFacilitators": ["julie.petit@aether.dev"]
+  },
+  {
+    "name": "Séminaire Leadership",
+    "standardDuration": 180,
+    "minParticipants": 5,
+    "maxParticipants": 40,
+    "_authorizedFacilitators": ["thomas.moreau@aether.dev"]
+  }
+]
