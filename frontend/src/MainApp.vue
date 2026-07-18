@@ -159,6 +159,12 @@
           </div>
 
           <!-- User Profiling in Header -->
+                    <!-- Mock Data Toggle -->
+          <div class="mock-toggle" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.05); padding: 0.35rem 0.75rem; border-radius: 2rem; border: 1px solid var(--border-color);">
+            <label for="mockToggle" style="font-size: 0.8rem; cursor: pointer; color: var(--text-secondary);">Fausses données</label>
+            <input type="checkbox" id="mockToggle" v-model="appSettingsStore.useMockData" @change="handleMockDataToggle" style="cursor: pointer;" />
+          </div>
+
           <div class="user-profile clickable" @click="navigateTo('profile')" title="Voir mon profil">
             <span class="user-avatar">👤</span>
             <span class="username">{{ user?.username }}</span>
@@ -1158,7 +1164,8 @@
 <script>
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from './stores/auth';
-import { useSchedulerStore } from './stores/scheduler';
+import { useAppSettingsStore } from './stores/appSettings';
+import { useActiveSchedulerStore } from './stores/activeScheduler';
 
 const DAYS_FR = {
   '0': 'Dimanche',
@@ -1174,7 +1181,12 @@ export default {
   name: 'App',
   setup() {
     const authStore = useAuthStore();
-    const schedulerStore = useSchedulerStore();
+    const appSettingsStore = useAppSettingsStore();
+
+    const handleMockDataToggle = () => {
+      schedulerStore.fetchData();
+    };
+    const schedulerStore = useActiveSchedulerStore();
 
     const { 
       user, 
@@ -1195,6 +1207,8 @@ export default {
     } = storeToRefs(schedulerStore);
 
     return {
+      appSettingsStore,
+      handleMockDataToggle,
       authStore,
       schedulerStore,
       user,
