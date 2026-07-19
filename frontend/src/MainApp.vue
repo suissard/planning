@@ -286,10 +286,17 @@
               />
               <button class="clear-search-btn" v-if="searchQuery" @click="searchQuery = ''">✕</button>
             </div>
+
             <div class="view-title">
               <h2>{{ currentTabTitle }}</h2>
-              <span class="count-badge">{{ filteredItems.length }} élément(s)</span>
+              <div style="display: flex; gap: 1rem; align-items: center;">
+                <span class="count-badge">{{ filteredItems.length }} élément(s)</span>
+                <button v-if="currentPage === 'participants'" class="action-btn new-slot-btn" @click="openParticipantModal(null)" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
+                  ➕ Nouveau Participant
+                </button>
+              </div>
             </div>
+
           </div>
 
           <!-- Loading State -->
@@ -671,10 +678,20 @@
                 :class="{ 'highlighted-item': part.documentId === highlightedId }"
                 :id="'part-' + part.documentId"
               >
+
                 <div class="card-header">
-                  <h3>👥 {{ part.firstName }} {{ part.lastName }}</h3>
-                  <span class="email-text">{{ part.email }}</span>
+                  <div style="display: flex; justify-content: space-between; width: 100%; align-items: flex-start;">
+                    <div>
+                      <h3>👥 {{ part.firstName }} {{ part.lastName }}</h3>
+                      <span class="email-text">{{ part.email }}</span>
+                    </div>
+                    <div class="card-actions no-print" style="display: flex; gap: 0.5rem;">
+                      <button class="icon-btn edit-btn" @click="openParticipantModal(part)" title="Modifier">✏️</button>
+                      <button class="icon-btn delete-btn" @click="deleteParticipant(part.documentId)" title="Supprimer">🗑️</button>
+                    </div>
+                  </div>
                 </div>
+
                 <div class="card-content">
                   <div class="info-group">
                     <span class="info-label">Disponibilités Hebdomadaires</span>
@@ -936,7 +953,68 @@
         </v-main>
       </div>
 
+
+      <!-- PARTICIPANT MODAL -->
+      <div class="modal-backdrop" v-if="showParticipantModal" @click.self="closeParticipantModal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>{{ participantModalMode === 'create' ? '➕ Ajouter un Participant' : '✏️ Modifier le Participant' }}</h3>
+            <button class="close-modal-btn" @click="closeParticipantModal">✕</button>
+          </div>
+
+          <div class="modal-body">
+            <!-- Form Validation Errors -->
+            <div class="validation-error-box" v-if="participantModalError">
+              <span class="error-box-icon">🚫</span>
+              <div class="error-box-content">
+                <h4>Erreur</h4>
+                <p>{{ participantModalError }}</p>
+              </div>
+              <button class="clear-error-btn" @click="participantModalError = ''">✕</button>
+            </div>
+
+            <form @submit.prevent="submitParticipantForm">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="partFirstName">Prénom (Requis)</label>
+                  <input type="text" id="partFirstName" v-model="participantForm.firstName" required class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label for="partLastName">Nom (Requis)</label>
+                  <input type="text" id="partLastName" v-model="participantForm.lastName" required class="form-input" />
+                </div>
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="partEmail">Email (Requis)</label>
+                <input type="email" id="partEmail" v-model="participantForm.email" required class="form-input" />
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="partWeeklyAvail">Disponibilités Hebdomadaires (JSON)</label>
+                <textarea id="partWeeklyAvail" v-model="participantForm.weeklyAvailabilitiesStr" class="form-input" rows="4" placeholder='Ex: [ {"dayOfWeek": 1, "startTime": "09:00", "endTime": "17:00"} ]'></textarea>
+                <small style="color: var(--text-secondary); font-size: 0.75rem;">Format attendu: [{ "dayOfWeek": 1, "startTime": "09:00", "endTime": "17:00" }] (0=Dimanche, 1=Lundi...)</small>
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="partSpecificUnavail">Indisponibilités Spécifiques (JSON)</label>
+                <textarea id="partSpecificUnavail" v-model="participantForm.specificUnavailabilitiesStr" class="form-input" rows="4" placeholder='Ex: [ {"startDate": "2023-12-25T00:00:00Z", "endDate": "2023-12-26T00:00:00Z"} ]'></textarea>
+                <small style="color: var(--text-secondary); font-size: 0.75rem;">Format attendu: [{ "startDate": "YYYY-MM-DDTHH:mm:ssZ", "endDate": "YYYY-MM-DDTHH:mm:ssZ" }]</small>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="cancel-btn" @click="closeParticipantModal">Annuler</button>
+                <button type="submit" class="submit-btn" :disabled="participantModalLoading">
+                  {{ participantModalLoading ? 'Enregistrement...' : 'Enregistrer' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- NEW TIME SLOT MODAL -->
+
       <div class="modal-backdrop" v-if="showModal" @click.self="closeCreateModal">
         <div class="modal-card">
           <div class="modal-header">
@@ -1163,9 +1241,12 @@
 
 <script>
 import { storeToRefs } from 'pinia';
+
 import { useAuthStore } from './stores/auth';
 import { useAppSettingsStore } from './stores/appSettings';
 import { useActiveSchedulerStore } from './stores/activeScheduler';
+import { useParticipantStore } from './stores/participantStore';
+
 
 const DAYS_FR = {
   '0': 'Dimanche',
@@ -1179,14 +1260,17 @@ const DAYS_FR = {
 
 export default {
   name: 'App',
+
   setup() {
     const authStore = useAuthStore();
     const appSettingsStore = useAppSettingsStore();
+    const participantStore = useParticipantStore();
 
     const handleMockDataToggle = () => {
       schedulerStore.fetchData();
     };
     const schedulerStore = useActiveSchedulerStore();
+
 
     const { 
       user, 
@@ -1206,12 +1290,15 @@ export default {
       isConnected 
     } = storeToRefs(schedulerStore);
 
+
     return {
       appSettingsStore,
       handleMockDataToggle,
       authStore,
       schedulerStore,
+      participantStore,
       user,
+
       isAuthenticated,
       authLoading,
       authError,
@@ -1283,6 +1370,7 @@ export default {
       selectedSchedulePersonType: 'facilitator',
       scheduleStartDate: '',
       scheduleEndDate: '',
+
       showEmailModal: false,
       emailForm: {
         to: '',
@@ -1290,9 +1378,24 @@ export default {
         body: ''
       },
       emailLoading: false,
-      emailSuccess: false
+      emailSuccess: false,
+
+      // Participant Modal State
+      showParticipantModal: false,
+      participantModalMode: 'create',
+      participantModalLoading: false,
+      participantModalError: '',
+      participantForm: {
+        documentId: null,
+        firstName: '',
+        lastName: '',
+        email: '',
+        weeklyAvailabilitiesStr: '[]',
+        specificUnavailabilitiesStr: '[]'
+      }
     };
   },
+
   computed: {
     searchPlaceholder() {
       switch (this.currentPage) {
@@ -1967,8 +2070,93 @@ export default {
       }
     },
 
+
+    // Participant CRUD
+    openParticipantModal(part = null) {
+      this.participantModalError = '';
+      this.participantModalLoading = false;
+      if (part) {
+        this.participantModalMode = 'edit';
+        this.participantForm = {
+          documentId: part.documentId,
+          firstName: part.firstName,
+          lastName: part.lastName,
+          email: part.email,
+          weeklyAvailabilitiesStr: part.weeklyAvailabilities ? JSON.stringify(part.weeklyAvailabilities, null, 2) : '[]',
+          specificUnavailabilitiesStr: part.specificUnavailabilities ? JSON.stringify(part.specificUnavailabilities, null, 2) : '[]'
+        };
+      } else {
+        this.participantModalMode = 'create';
+        this.participantForm = {
+          documentId: null,
+          firstName: '',
+          lastName: '',
+          email: '',
+          weeklyAvailabilitiesStr: '[]',
+          specificUnavailabilitiesStr: '[]'
+        };
+      }
+      this.showParticipantModal = true;
+    },
+    closeParticipantModal() {
+      this.showParticipantModal = false;
+    },
+    async submitParticipantForm() {
+      this.participantModalLoading = true;
+      this.participantModalError = '';
+
+      try {
+        let weeklyAvailabilities = [];
+        let specificUnavailabilities = [];
+
+        try {
+          weeklyAvailabilities = JSON.parse(this.participantForm.weeklyAvailabilitiesStr || '[]');
+        } catch (e) {
+          throw new Error('Format JSON invalide pour les disponibilités hebdomadaires.');
+        }
+
+        try {
+          specificUnavailabilities = JSON.parse(this.participantForm.specificUnavailabilitiesStr || '[]');
+        } catch (e) {
+          throw new Error('Format JSON invalide pour les indisponibilités spécifiques.');
+        }
+
+        const data = {
+          firstName: this.participantForm.firstName,
+          lastName: this.participantForm.lastName,
+          email: this.participantForm.email,
+          weeklyAvailabilities,
+          specificUnavailabilities
+        };
+
+        if (this.participantModalMode === 'create') {
+          await this.participantStore.createParticipant(data);
+          this.showToast('Participant créé avec succès !');
+        } else {
+          await this.participantStore.updateParticipant(this.participantForm.documentId, data);
+          this.showToast('Participant mis à jour avec succès !');
+        }
+        this.closeParticipantModal();
+      } catch (err) {
+        console.error(err);
+        this.participantModalError = err.message || 'Erreur lors de la sauvegarde du participant.';
+      } finally {
+        this.participantModalLoading = false;
+      }
+    },
+    async deleteParticipant(documentId) {
+      if (!confirm('Voulez-vous vraiment supprimer ce participant ?')) return;
+      try {
+        await this.participantStore.deleteParticipant(documentId);
+        this.showToast('Participant supprimé avec succès.');
+      } catch (err) {
+        alert("Erreur lors de la suppression : " + err.message);
+      }
+    },
+
     // Modal
     openCreateModal() {
+
       this.modalError = '';
       this.modalLoading = false;
       this.form = {
@@ -3137,10 +3325,31 @@ export default {
   padding-bottom: 0.75rem;
 }
 
+
 .card-header h3 {
   font-size: 1.15rem;
   font-weight: 600;
 }
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  opacity: 0.7;
+  transition: opacity 0.2s, transform 0.2s;
+  padding: 0.2rem;
+}
+
+.icon-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.icon-btn.delete-btn:hover {
+  filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.5));
+}
+
 
 .email-text {
   font-size: 0.8rem;
