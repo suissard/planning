@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia';
-import axios from 'axios';
-
-const STRAPI_URL = 'http://localhost:1337';
+import api from '../services/api';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -18,7 +16,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true;
       this.error = null;
       try {
-        const res = await axios.post(`${STRAPI_URL}/api/auth/local`, {
+        const res = await api.post(`/auth/local`, {
           identifier,
           password
         });
@@ -40,7 +38,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true;
       this.error = null;
       try {
-        const res = await axios.post(`${STRAPI_URL}/api/auth/local/register`, {
+        const res = await api.post(`/auth/local/register`, {
           username,
           email,
           password
@@ -64,12 +62,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true;
       this.error = null;
       try {
-        const res = await axios.put(`${STRAPI_URL}/api/users/${this.user.id}`, data, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const res = await api.put(`/users/${this.user.id}`, data);
         this.user = res.data;
         localStorage.setItem('user', JSON.stringify(this.user));
         return this.user;
