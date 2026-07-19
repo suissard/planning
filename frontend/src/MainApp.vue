@@ -483,64 +483,18 @@
               </div>
             </div>
 
-            <!-- TAB: LOCATIONS (LIEUX) -->
-            <div v-if="currentPage === 'locations'" class="locations-grid">
-              <div 
-                v-for="loc in filteredItems" 
-                :key="loc.documentId" 
-                class="data-card location-card"
-                :class="{ 'highlighted-item': loc.documentId === highlightedId }"
-                :id="'loc-' + loc.documentId"
-              >
-                <div class="card-header">
-                  <h3>📍 {{ loc.name }}</h3>
-                  <span class="badge">Capacité : {{ loc.capacity }} pers.</span>
-                </div>
-                <div class="card-content">
-                  <div class="info-group">
-                    <span class="info-label">Ouverture Globale</span>
-                    <span class="info-value">Du {{ formatDate(loc.globalOpeningStart) }} au {{ formatDate(loc.globalOpeningEnd) }}</span>
-                  </div>
-                  <div class="info-group">
-                    <span class="info-label">Fermeture Hebdomadaire</span>
-                    <span class="info-value">{{ formatWeeklyClosures(loc.weeklyClosures) }}</span>
-                  </div>
-                  <div class="info-group" v-if="loc.specificClosures && loc.specificClosures.length > 0">
-                    <span class="info-label">Fermetures Spécifiques</span>
-                    <ul class="closures-list">
-                      <li v-for="(closure, i) in loc.specificClosures" :key="i">
-                        {{ formatDateRange(closure.startDate, closure.endDate) }}
-                      </li>
-                    </ul>
-                  </div>
-                  
-                  <!-- Related Time Slots Chips -->
-                  <div class="related-slots-section">
-                    <span class="info-label">Créneaux réservés à cet endroit :</span>
-                    <div class="chips-list mt-1">
-                      <span 
-                        v-for="slot in getSlotsForLocation(loc.documentId)" 
-                        :key="slot.documentId"
-                        class="data-chip slot-chip clickable"
-                        @click="navigateTo('timeslots', slot.documentId)"
-                        title="Aller sur ce créneau"
-                      >
-                        📅 {{ slot.activityTemplate?.name }} ({{ formatSlotShortDate(slot.startDate) }})
-                      </span>
-                      <span v-if="getSlotsForLocation(loc.documentId).length === 0" class="no-data">Aucun créneau réservé</span>
-                    </div>
-                  </div>
 
-                  <button 
-                    class="action-btn mt-2 no-print" 
-                    @click="viewIndividualSchedule('location', loc.documentId)"
-                    style="padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 500;"
-                  >
-                    📅 Voir le planning
-                  </button>
-                </div>
+            <!-- TAB: LOCATIONS (LIEUX) (Redirecting to new view) -->
+            <div v-if="currentPage === 'locations'">
+              <div style="padding: 2rem; text-align: center; background: rgba(30, 41, 59, 0.15); border: 1px solid var(--border-color); border-radius: 0.75rem;">
+                <h2>Gestion des Lieux</h2>
+                <p style="margin: 1rem 0;">La gestion des lieux se fait désormais sur une page dédiée (DataTable VueTify).</p>
+                <button class="action-btn primary" @click="$router.push('/admin/locations')">
+                  Aller à la page de gestion des lieux
+                </button>
               </div>
             </div>
+
 
             <!-- TAB: ACTIVITIES (ACTIVITÉS) -->
             <div v-if="currentPage === 'activities'" class="activities-grid">

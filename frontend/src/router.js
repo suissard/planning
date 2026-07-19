@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import MainApp from './MainApp.vue';
+import LocationsList from './views/locations/LocationsList.vue';
 import { useAuthStore } from './stores/auth';
 
 const routes = [
@@ -21,12 +22,8 @@ const routes = [
     component: MainApp,
     meta: { requiresAuth: true }
   },
-  {
-    path: '/locations',
-    name: 'locations',
-    component: MainApp,
-    meta: { requiresAuth: true }
-  },
+  { path: '/locations', name: 'locations', component: LocationsList, meta: { requiresAuth: true } },
+  { path: '/admin/locations', name: 'admin-locations', component: LocationsList, meta: { requiresAuth: true } },
   {
     path: '/locations/:id',
     name: 'locations-detail',
