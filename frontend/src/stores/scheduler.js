@@ -1,16 +1,5 @@
 import { defineStore } from 'pinia';
-import axios from 'axios';
-
-const STRAPI_URL = 'http://localhost:1337';
-const API_TOKEN = 'c2058c4ca8f6f6ec8943603e7c265c7fc02cdd1dd1e3d92c230fdcd58a8f09512d3f7f3ed0ee9c82a78ae16b820b17b590777945ec32da18c2e551623dc1259e8795f1e222f3da5c8e11fb49da246e7e7e3ba4e177b02398a44d7d9ecacb91538a00566b9618385f4d9dc5ff643fc1ad8bc4ea61de1ee23714cc24d23832477f';
-
-const api = axios.create({
-  baseURL: `${STRAPI_URL}/api`,
-  headers: {
-    'Authorization': `Bearer ${API_TOKEN}`,
-    'Content-Type': 'application/json'
-  }
-});
+import api from '../services/api';
 
 export const useSchedulerStore = defineStore('scheduler', {
   state: () => ({
