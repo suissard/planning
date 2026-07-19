@@ -1,9 +1,16 @@
+import FacilitatorsList from './views/admin/FacilitatorsList.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import MainApp from './MainApp.vue';
 import LocationsList from './views/locations/LocationsList.vue';
 import { useAuthStore } from './stores/auth';
 
 const routes = [
+  {
+    path: '/admin/facilitators',
+    name: 'admin-facilitators',
+    component: FacilitatorsList,
+    meta: { requiresAuth: true } // adjust as needed if there is admin auth
+  },
   {
     path: '/login',
     name: 'login',
