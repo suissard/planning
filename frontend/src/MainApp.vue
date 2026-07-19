@@ -289,6 +289,11 @@
             <div class="view-title">
               <h2>{{ currentTabTitle }}</h2>
               <span class="count-badge">{{ filteredItems.length }} élément(s)</span>
+
+              <!-- Add Button Based on Tab -->
+              <button class="action-btn" v-if="currentPage === 'activities'" @click="openActivityModal()" style="margin-left: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
+                ➕ Nouvelle Activité
+              </button>
             </div>
           </div>
 
@@ -552,8 +557,14 @@
                 :id="'act-' + act.documentId"
               >
                 <div class="card-header">
-                  <h3>🎯 {{ act.name }}</h3>
-                  <span class="badge duration">{{ act.standardDuration }} min</span>
+                  <div style="display: flex; justify-content: space-between; width: 100%;">
+                    <h3>🎯 {{ act.name }}</h3>
+                    <div class="card-actions" style="display: flex; gap: 0.5rem;">
+                      <button class="icon-btn edit-btn" @click.stop="openActivityModal(act)" title="Modifier">✏️</button>
+                      <button class="icon-btn delete-btn" @click.stop="deleteActivity(act.documentId)" title="Supprimer">🗑️</button>
+                    </div>
+                  </div>
+                  <span class="badge duration" style="align-self: flex-start;">{{ act.standardDuration }} min</span>
                 </div>
                 <div class="card-content">
                   <div class="stats-row">
@@ -936,6 +947,102 @@
         </v-main>
       </div>
 
+      <!-- ACTIVITY MODAL -->
+      <div class="modal-backdrop" v-if="showActivityModal" @click.self="closeActivityModal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>{{ editingActivityId ? '✏️ Modifier l\'Activité' : '🎯 Nouvelle Activité' }}</h3>
+            <button class="close-modal-btn" @click="closeActivityModal">✕</button>
+          </div>
+
+          <div class="modal-body">
+            <!-- Form Validation Errors -->
+            <div class="validation-error-box" v-if="activityModalError">
+              <span class="error-box-icon">🚫</span>
+              <div class="error-box-content">
+                <h4>Erreur</h4>
+                <p>{{ activityModalError }}</p>
+              </div>
+              <button class="clear-error-btn" @click="activityModalError = ''">✕</button>
+            </div>
+
+            <form @submit.prevent="submitActivityForm">
+              <div class="form-group">
+                <label for="actName">Nom de l'activité</label>
+                <input
+                  type="text"
+                  id="actName"
+                  v-model="activityForm.name"
+                  required
+                  class="form-input"
+                  placeholder="Ex: Yoga Débutant"
+                />
+              </div>
+
+              <div class="form-grid mt-2">
+                <div class="form-group">
+                  <label for="actDuration">Durée standard (minutes)</label>
+                  <input
+                    type="number"
+                    id="actDuration"
+                    v-model="activityForm.standardDuration"
+                    required
+                    min="1"
+                    class="form-input"
+                  />
+                </div>
+              </div>
+
+              <div class="form-grid mt-2">
+                <div class="form-group">
+                  <label for="actMinPart">Min Participants</label>
+                  <input
+                    type="number"
+                    id="actMinPart"
+                    v-model="activityForm.minParticipants"
+                    required
+                    min="0"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="actMaxPart">Max Participants</label>
+                  <input
+                    type="number"
+                    id="actMaxPart"
+                    v-model="activityForm.maxParticipants"
+                    required
+                    min="1"
+                    class="form-input"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group mt-2">
+                <label>👨‍🏫 Animateurs Autorisés</label>
+                <div class="multi-select-container mt-1">
+                  <label v-for="fac in facilitators" :key="fac.documentId" class="multi-select-option">
+                    <input type="checkbox" :value="fac.documentId" v-model="activityForm.authorizedFacilitators" />
+                    <span>
+                      <strong>{{ fac.firstName }} {{ fac.lastName }}</strong>
+                      <span class="email-text" style="margin-left: 0.5rem; font-size: 0.75rem;">{{ fac.email }}</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="cancel-btn" @click="closeActivityModal">Annuler</button>
+                <button type="submit" class="submit-btn" :disabled="activityModalLoading">
+                  {{ activityModalLoading ? 'Enregistrement...' : 'Enregistrer' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- NEW TIME SLOT MODAL -->
       <div class="modal-backdrop" v-if="showModal" @click.self="closeCreateModal">
         <div class="modal-card">
@@ -1166,6 +1273,8 @@ import { storeToRefs } from 'pinia';
 import { useAuthStore } from './stores/auth';
 import { useAppSettingsStore } from './stores/appSettings';
 import { useActiveSchedulerStore } from './stores/activeScheduler';
+import { useActivityStore } from './stores/activityStore';
+
 
 const DAYS_FR = {
   '0': 'Dimanche',
@@ -1206,7 +1315,10 @@ export default {
       isConnected 
     } = storeToRefs(schedulerStore);
 
+    const activityStore = useActivityStore();
+
     return {
+      activityStore,
       appSettingsStore,
       handleMockDataToggle,
       authStore,
@@ -1262,6 +1374,19 @@ export default {
       // Filter State
       filterItemId: null,
       filterItemType: null,
+
+      // Activity Modal State
+      showActivityModal: false,
+      activityModalLoading: false,
+      activityModalError: '',
+      editingActivityId: null,
+      activityForm: {
+        name: '',
+        standardDuration: 60,
+        minParticipants: 0,
+        maxParticipants: 10,
+        authorizedFacilitators: []
+      },
 
       // Modal / Creation
       showModal: false,
@@ -2012,6 +2137,65 @@ export default {
         this.successMessage = '';
       }, 3500);
     },
+
+    // Activities
+    openActivityModal(act = null) {
+      this.activityModalError = '';
+      this.activityModalLoading = false;
+      if (act) {
+        this.editingActivityId = act.documentId;
+        this.activityForm = {
+          name: act.name,
+          standardDuration: act.standardDuration,
+          minParticipants: act.minParticipants,
+          maxParticipants: act.maxParticipants,
+          authorizedFacilitators: act.authorizedFacilitators ? act.authorizedFacilitators.map(f => f.documentId || f.id || f) : []
+        };
+      } else {
+        this.editingActivityId = null;
+        this.activityForm = {
+          name: '',
+          standardDuration: 60,
+          minParticipants: 0,
+          maxParticipants: 10,
+          authorizedFacilitators: []
+        };
+      }
+      this.showActivityModal = true;
+    },
+    closeActivityModal() {
+      this.showActivityModal = false;
+    },
+    async submitActivityForm() {
+      this.activityModalLoading = true;
+      this.activityModalError = '';
+      try {
+        if (this.editingActivityId) {
+          await this.activityStore.updateActivity(this.editingActivityId, this.activityForm);
+          this.showToast('Activité modifiée avec succès !');
+        } else {
+          await this.activityStore.createActivity(this.activityForm);
+          this.showToast('Activité créée avec succès !');
+        }
+        this.closeActivityModal();
+      } catch (err) {
+        console.error(err);
+        this.activityModalError = err.message || 'Erreur lors de la sauvegarde de l\'activité.';
+      } finally {
+        this.activityModalLoading = false;
+      }
+    },
+    async deleteActivity(documentId) {
+      if (!confirm('Voulez-vous vraiment supprimer cette activité ?')) return;
+      try {
+        await this.activityStore.deleteActivity(documentId);
+        this.showToast('Activité supprimée avec succès.');
+      } catch (err) {
+        alert("Erreur lors de la suppression : " + err.message);
+      }
+    },
+
+    // Formatters
 
     // Formatters
     formatSlotDate(isoString) {
