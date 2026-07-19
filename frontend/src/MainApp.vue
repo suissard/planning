@@ -142,7 +142,7 @@
     <!-- LOGGED IN VIEW: MAIN APP DASHBOARD -->
     <div v-else class="dashboard-wrapper">
       <!-- Header -->
-      <header class="app-header">
+      <v-app-bar class="app-header">
         <div class="header-logo" @click="clearFilter(); navigateTo('timeslots')">
           <span class="logo-icon">⚡</span>
           <h1>AetherScheduler</h1>
@@ -175,7 +175,7 @@
             <span class="status-text">{{ isConnected ? 'API en ligne' : 'API hors ligne' }}</span>
           </div>
         </div>
-      </header>
+      </v-app-bar>
 
       <!-- Global Active Filter Banner -->
       <div class="filter-banner" v-if="filterItemId">
@@ -194,7 +194,7 @@
       <!-- Main Container -->
       <div class="app-body">
         <!-- Sidebar Navigation -->
-        <nav class="app-nav">
+        <v-navigation-drawer permanent class="app-nav">
           <!-- Premium User Sidebar Card -->
           <div 
             class="user-sidebar-card" 
@@ -270,10 +270,10 @@
               🚪 Se déconnecter
             </button>
           </div>
-        </nav>
+        </v-navigation-drawer>
 
         <!-- Main Content Area -->
-        <main class="app-content">
+        <v-main class="app-content">
           <!-- Search & Info Bar (Hidden on Profile & Schedules View) -->
           <div class="content-header" v-if="!error && currentPage !== 'profile' && currentPage !== 'individual-schedules'">
             <div class="search-wrapper">
@@ -933,7 +933,7 @@
             </div>
 
           </div>
-        </main>
+        </v-main>
       </div>
 
       <!-- NEW TIME SLOT MODAL -->
