@@ -13,44 +13,55 @@ module.exports = {
    */
   async bootstrap({ strapi }) {
     try {
-      // Find the 'authenticated' role
-      const authenticatedRole = await strapi
-        .query('plugin::users-permissions.role')
-        .findOne({ where: { type: 'authenticated' } });
+      // Setup permissions dynamically
 
-      if (authenticatedRole) {
-        // Find existing permissions for activity-template for this role
-        const permissions = await strapi
-          .query('plugin::users-permissions.permission')
-          .findMany({
-            where: {
-              role: authenticatedRole.id,
-              action: { $startsWith: 'api::activity-template.activity-template.' }
-            }
-          });
-
-        const existingActions = permissions.map(p => p.action);
-        const requiredActions = [
-          'api::activity-template.activity-template.find',
-          'api::activity-template.activity-template.findOne',
-          'api::activity-template.activity-template.create',
-          'api::activity-template.activity-template.update',
-          'api::activity-template.activity-template.delete'
-        ];
-
-        // Create missing permissions
-        for (const action of requiredActions) {
-          if (!existingActions.includes(action)) {
-            await strapi.query('plugin::users-permissions.permission').create({
-              data: {
-                action: action,
-                role: authenticatedRole.id,
-              }
-            });
-            console.log(`Granted ${action} to authenticated role.`);
-          }
-        }
+      const rolesToUpdate = ['authenticated'];
+      if (process.env.NODE_ENV === 'development') {
+         rolesToUpdate.push('public');
       }
+
+      for (const roleType of rolesToUpdate) {
+         const role = await strapi
+          .query('plugin::users-permissions.role')
+          .findOne({ where: { type: roleType } });
+
+         if (role) {
+            const collections = ['activity-template', 'facilitator', 'location', 'participant', 'time-slot'];
+            const crudActions = ['find', 'findOne', 'create', 'update', 'delete'];
+
+            let requiredActions = [];
+            for (const coll of collections) {
+                for (const act of crudActions) {
+                     requiredActions.push(`api::${coll}.${coll}.${act}`);
+                }
+            }
+
+             // Find existing permissions for this role
+            const permissions = await strapi
+              .query('plugin::users-permissions.permission')
+              .findMany({
+                where: {
+                  role: role.id,
+                }
+              });
+
+            const existingActions = permissions.map(p => p.action);
+
+            // Create missing permissions
+            for (const action of requiredActions) {
+              if (!existingActions.includes(action)) {
+                await strapi.query('plugin::users-permissions.permission').create({
+                  data: {
+                    action: action,
+                    role: role.id,
+                  }
+                });
+                console.log(`Granted ${action} to ${roleType} role.`);
+              }
+            }
+         }
+      }
+
     } catch (error) {
       console.error('Error in bootstrap setting permissions:', error);
     }
