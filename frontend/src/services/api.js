@@ -19,7 +19,7 @@ api.interceptors.request.use(
 
     // Get token from localStorage
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && token !== 'fake-token-admin') {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
