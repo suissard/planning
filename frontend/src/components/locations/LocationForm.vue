@@ -1,16 +1,25 @@
 <template>
-  <v-card>
-    <v-card-title>
-      <span class="text-h5">{{ location ? 'Modifier le Lieu' : 'Ajouter un Lieu' }}</span>
+  <v-card class="pa-2 border rounded-xl">
+    <v-card-title class="d-flex align-center justify-space-between py-3 px-4">
+      <span class="text-h6 font-weight-bold d-flex align-center ga-2">
+        <span>📍</span> {{ location ? 'Modifier le Lieu' : 'Ajouter un Lieu' }}
+      </span>
+      <v-btn icon="mdi-close" variant="text" size="small" @click="$emit('cancel')"></v-btn>
     </v-card-title>
+
+    <v-divider class="mb-4"></v-divider>
 
     <v-card-text>
       <v-form ref="form" v-model="valid">
         <v-text-field
           v-model="formData.name"
           :rules="[v => !!v || 'Le nom est requis']"
-          label="Nom"
+          label="Nom du lieu / Salle"
+          prepend-inner-icon="mdi-format-title"
+          variant="outlined"
+          density="comfortable"
           required
+          class="mb-3"
         ></v-text-field>
 
         <v-text-field
@@ -19,52 +28,73 @@
             v => !!v || 'La capacité est requise',
             v => v > 0 || 'La capacité doit être supérieure à 0'
           ]"
-          label="Capacité"
+          label="Capacité d'accueil"
           type="number"
+          prepend-inner-icon="mdi-account-group"
+          variant="outlined"
+          density="comfortable"
           required
+          class="mb-3"
         ></v-text-field>
 
-        <v-row>
-            <v-col cols="6">
-                <v-text-field
-                v-model="formData.globalOpeningStart"
-                label="Heure d'ouverture (ex: 08:00)"
-                type="time"
-                required
-                ></v-text-field>
-            </v-col>
-            <v-col cols="6">
-                <v-text-field
-                v-model="formData.globalOpeningEnd"
-                label="Heure de fermeture (ex: 18:00)"
-                type="time"
-                required
-                ></v-text-field>
-            </v-col>
+        <v-row class="mb-3">
+          <v-col cols="6">
+            <v-text-field
+              v-model="formData.globalOpeningStart"
+              label="Ouverture (ex: 08:00)"
+              type="time"
+              prepend-inner-icon="mdi-clock-outline"
+              variant="outlined"
+              density="comfortable"
+              required
+            ></v-text-field>
+          </v-col>
+          <v-col cols="6">
+            <v-text-field
+              v-model="formData.globalOpeningEnd"
+              label="Fermeture (ex: 18:00)"
+              type="time"
+              prepend-inner-icon="mdi-clock-check-outline"
+              variant="outlined"
+              density="comfortable"
+              required
+            ></v-text-field>
+          </v-col>
         </v-row>
 
         <v-textarea
           v-model="weeklyClosuresString"
-          label="Fermetures hebdomadaires (JSON)"
-          rows="3"
-          hint="Exemple: [{ 'dayOfWeek': 'Monday', 'startTime': '12:00', 'endTime': '14:00' }]"
+          label="Fermetures hebdomadaires (Format JSON)"
+          rows="2"
+          prepend-inner-icon="mdi-calendar-sync"
+          variant="outlined"
+          density="comfortable"
+          hint='Ex: [{"dayOfWeek": "Monday", "startTime": "12:00", "endTime": "14:00"}]'
           persistent-hint
+          class="mb-3"
         ></v-textarea>
 
         <v-textarea
           v-model="specificClosuresString"
-          label="Fermetures spécifiques (JSON)"
-          rows="3"
-          hint="Exemple: [{ 'startDate': '2023-12-25', 'endDate': '2023-12-26', 'reason': 'Noël' }]"
+          label="Fermetures spécifiques (Format JSON)"
+          rows="2"
+          prepend-inner-icon="mdi-calendar-remove"
+          variant="outlined"
+          density="comfortable"
+          hint='Ex: [{"startDate": "2026-12-25", "endDate": "2026-12-26", "reason": "Férié"}]'
           persistent-hint
         ></v-textarea>
       </v-form>
     </v-card-text>
 
-    <v-card-actions>
+    <v-card-actions class="px-4 pb-4">
       <v-spacer></v-spacer>
-      <v-btn color="blue darken-1" text @click="$emit('cancel')">Annuler</v-btn>
-      <v-btn color="blue darken-1" text @click="save" :disabled="!valid">Enregistrer</v-btn>
+      <v-btn color="grey-lighten-1" variant="text" @click="$emit('cancel')" class="text-none">
+        Annuler
+      </v-btn>
+      <v-btn color="primary" variant="flat" @click="save" :disabled="!valid" class="text-none px-5">
+        Enregistrer
+      </v-btn>
     </v-card-actions>
   </v-card>
 </template>
@@ -73,6 +103,7 @@
 import { ref, watch, onMounted } from 'vue';
 
 export default {
+  name: 'LocationForm',
   props: {
     location: {
       type: Object,
@@ -99,7 +130,6 @@ export default {
         formData.value = {
           name: props.location.name,
           capacity: props.location.capacity,
-          // Extract time portion if it's a full time string
           globalOpeningStart: props.location.globalOpeningStart ? props.location.globalOpeningStart.substring(0, 5) : '08:00',
           globalOpeningEnd: props.location.globalOpeningEnd ? props.location.globalOpeningEnd.substring(0, 5) : '18:00',
         };
@@ -121,24 +151,21 @@ export default {
     watch(() => props.location, initForm);
 
     const save = () => {
-      if (form.value.validate()) {
+      if (form.value && form.value.validate()) {
         try {
-          const weeklyClosures = JSON.parse(weeklyClosuresString.value);
-          const specificClosures = JSON.parse(specificClosuresString.value);
+          const weeklyClosures = JSON.parse(weeklyClosuresString.value || '[]');
+          const specificClosures = JSON.parse(specificClosuresString.value || '[]');
 
-          // Format time properly to include seconds and ms for Strapi Time field
-          // Strapi 'time' type often expects HH:mm:ss.SSS format
           const formattedData = {
-              ...formData.value,
-              globalOpeningStart: `${formData.value.globalOpeningStart}:00.000`,
-              globalOpeningEnd: `${formData.value.globalOpeningEnd}:00.000`,
-              weeklyClosures,
-              specificClosures
+            ...formData.value,
+            globalOpeningStart: `${formData.value.globalOpeningStart}:00.000`,
+            globalOpeningEnd: `${formData.value.globalOpeningEnd}:00.000`,
+            weeklyClosures,
+            specificClosures
           };
           emit('save', formattedData);
         } catch (e) {
-            // Use global error store here in a real app, or local alert
-            alert("Erreur de syntaxe JSON dans les fermetures.");
+          alert("Erreur de syntaxe JSON dans les fermetures. Veuillez corriger la syntaxe.");
         }
       }
     };

@@ -136,16 +136,34 @@
             {{ authLoading ? 'Création du compte...' : 'Créer un compte' }}
           </button>
         </form>
+
+        <!-- DEV MOCK DATA OPTION -->
+        <div class="dev-mode-option" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)); text-align: center;">
+          <button 
+            type="button" 
+            class="secondary-btn" 
+            @click="enableDevMockMode" 
+            style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px dashed rgba(99, 102, 241, 0.4); border-radius: 0.5rem; padding: 0.6rem 1rem; cursor: pointer; font-weight: 500;"
+          >
+            <span>⚡</span> Passer en Mode Dev (Fausses données sans connexion)
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- LOGGED IN VIEW: MAIN APP DASHBOARD -->
     <div v-else class="dashboard-wrapper">
       <!-- Header -->
-      <v-app-bar class="app-header">
-        <div class="header-logo" @click="clearFilter(); navigateTo('timeslots')">
-          <span class="logo-icon">⚡</span>
-          <h1>AetherScheduler</h1>
+      <header class="app-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <button class="nav-toggle-btn" @click="isSidebarOpen = !isSidebarOpen" title="Ouvrir le menu">
+            <span v-if="!isSidebarOpen">☰</span>
+            <span v-else>✕</span>
+          </button>
+          <div class="header-logo" @click="clearFilter(); navigateTo('timeslots')">
+            <span class="logo-icon">⚡</span>
+            <h1>AetherScheduler</h1>
+          </div>
         </div>
         
         <!-- Connection Status & Stats -->
@@ -159,7 +177,7 @@
           </div>
 
           <!-- User Profiling in Header -->
-                    <!-- Mock Data Toggle -->
+          <!-- Mock Data Toggle -->
           <div class="mock-toggle" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.05); padding: 0.35rem 0.75rem; border-radius: 2rem; border: 1px solid var(--border-color);">
             <label for="mockToggle" style="font-size: 0.8rem; cursor: pointer; color: var(--text-secondary);">Fausses données</label>
             <input type="checkbox" id="mockToggle" v-model="appSettingsStore.useMockData" @change="handleMockDataToggle" style="cursor: pointer;" />
@@ -175,7 +193,7 @@
             <span class="status-text">{{ isConnected ? 'API en ligne' : 'API hors ligne' }}</span>
           </div>
         </div>
-      </v-app-bar>
+      </header>
 
       <!-- Global Active Filter Banner -->
       <div class="filter-banner" v-if="filterItemId">
@@ -193,8 +211,11 @@
 
       <!-- Main Container -->
       <div class="app-body">
+        <!-- Sidebar Mobile Backdrop -->
+        <div class="sidebar-backdrop" v-if="isSidebarOpen" @click="isSidebarOpen = false"></div>
+
         <!-- Sidebar Navigation -->
-        <v-navigation-drawer permanent class="app-nav">
+        <aside class="app-nav" :class="{ 'mobile-open': isSidebarOpen }">
           <!-- Premium User Sidebar Card -->
           <div 
             class="user-sidebar-card" 
@@ -270,10 +291,10 @@
               🚪 Se déconnecter
             </button>
           </div>
-        </v-navigation-drawer>
+        </aside>
 
         <!-- Main Content Area -->
-        <v-main class="app-content">
+        <main class="app-content">
           <!-- Search & Info Bar (Hidden on Profile & Schedules View) -->
           <div class="content-header" v-if="!error && currentPage !== 'profile' && currentPage !== 'individual-schedules'">
             <div class="search-wrapper">
@@ -489,15 +510,9 @@
             </div>
 
 
-            <!-- TAB: LOCATIONS (LIEUX) (Redirecting to new view) -->
+            <!-- TAB: LOCATIONS (LIEUX) -->
             <div v-if="currentPage === 'locations'">
-              <div style="padding: 2rem; text-align: center; background: rgba(30, 41, 59, 0.15); border: 1px solid var(--border-color); border-radius: 0.75rem;">
-                <h2>Gestion des Lieux</h2>
-                <p style="margin: 1rem 0;">La gestion des lieux se fait désormais sur une page dédiée (DataTable VueTify).</p>
-                <button class="action-btn primary" @click="$router.push('/admin/locations')">
-                  Aller à la page de gestion des lieux
-                </button>
-              </div>
+              <LocationsList />
             </div>
 
 
@@ -568,61 +583,84 @@
             </div>
 
             <!-- TAB: FACILITATORS (ANIMATEURS) -->
-            <div v-if="currentPage === 'facilitators'" class="facilitators-grid">
-              <div 
-                v-for="fac in filteredItems" 
-                :key="fac.documentId" 
-                class="data-card facilitator-card"
-                :class="{ 'highlighted-item': fac.documentId === highlightedId }"
-                :id="'fac-' + fac.documentId"
-              >
-                <div class="card-header">
-                  <h3>👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}</h3>
-                  <span class="email-text">{{ fac.email }}</span>
-                </div>
-                <div class="card-content">
-                  <div class="info-group" v-if="fac.skills">
-                    <span class="info-label">Compétences</span>
-                    <span class="info-value text-italic">{{ fac.skills }}</span>
-                  </div>
-                  <div class="info-group">
-                    <span class="info-label">Disponibilités Hebdomadaires</span>
-                    <div class="availability-block">
-                      {{ formatWeeklyAvailabilities(fac.weeklyAvailabilities) }}
-                    </div>
-                  </div>
-                  <div class="info-group" v-if="fac.specificUnavailabilities && fac.specificUnavailabilities.length > 0">
-                    <span class="info-label">Indisponibilités Spécifiques</span>
-                    <ul class="closures-list">
-                      <li v-for="(unavail, i) in fac.specificUnavailabilities" :key="i">
-                        {{ formatDateRange(unavail.startDate, unavail.endDate) }}
-                      </li>
-                    </ul>
-                  </div>
-
-                  <!-- Related Time Slots Chips -->
-                  <div class="related-slots-section mt-2">
-                    <span class="info-label">Planning assigné :</span>
-                    <div class="chips-list mt-1">
-                      <span 
-                        v-for="slot in getSlotsForFacilitator(fac.documentId)" 
-                        :key="slot.documentId"
-                        class="data-chip slot-chip clickable"
-                        @click="navigateTo('timeslots', slot.documentId)"
-                      >
-                        📅 {{ slot.activityTemplate?.name }} @ {{ slot.location?.name }} ({{ formatSlotShortDate(slot.startDate) }})
-                      </span>
-                      <span v-if="getSlotsForFacilitator(fac.documentId).length === 0" class="no-data">Libre</span>
-                    </div>
-                  </div>
-
+            <div v-if="currentPage === 'facilitators'">
+              <div class="facilitator-mode-bar" style="margin-bottom: 1.25rem; display: flex; justify-content: flex-end; align-items: center;">
+                <div class="auth-tabs" style="max-width: 320px;">
                   <button 
-                    class="action-btn mt-2 no-print" 
-                    @click="viewIndividualSchedule('facilitator', fac.documentId)"
-                    style="padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 500;"
+                    class="auth-tab-btn" 
+                    :class="{ active: facilitatorViewMode === 'cards' }" 
+                    @click="facilitatorViewMode = 'cards'"
                   >
-                    📅 Voir le planning
+                    🎴 Vue Cartes
                   </button>
+                  <button 
+                    class="auth-tab-btn" 
+                    :class="{ active: facilitatorViewMode === 'table' }" 
+                    @click="facilitatorViewMode = 'table'"
+                  >
+                    📊 Administration
+                  </button>
+                </div>
+              </div>
+
+              <FacilitatorsList v-if="facilitatorViewMode === 'table'" />
+
+              <div v-else class="facilitators-grid">
+                <div 
+                  v-for="fac in filteredItems" 
+                  :key="fac.documentId" 
+                  class="data-card facilitator-card"
+                  :class="{ 'highlighted-item': fac.documentId === highlightedId }"
+                  :id="'fac-' + fac.documentId"
+                >
+                  <div class="card-header">
+                    <h3>👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}</h3>
+                    <span class="email-text">{{ fac.email }}</span>
+                  </div>
+                  <div class="card-content">
+                    <div class="info-group" v-if="fac.skills">
+                      <span class="info-label">Compétences</span>
+                      <span class="info-value text-italic">{{ fac.skills }}</span>
+                    </div>
+                    <div class="info-group">
+                      <span class="info-label">Disponibilités Hebdomadaires</span>
+                      <div class="availability-block">
+                        {{ formatWeeklyAvailabilities(fac.weeklyAvailabilities) }}
+                      </div>
+                    </div>
+                    <div class="info-group" v-if="fac.specificUnavailabilities && fac.specificUnavailabilities.length > 0">
+                      <span class="info-label">Indisponibilités Spécifiques</span>
+                      <ul class="closures-list">
+                        <li v-for="(unavail, i) in fac.specificUnavailabilities" :key="i">
+                          {{ formatDateRange(unavail.startDate, unavail.endDate) }}
+                        </li>
+                      </ul>
+                    </div>
+
+                    <!-- Related Time Slots Chips -->
+                    <div class="related-slots-section mt-2">
+                      <span class="info-label">Planning assigné :</span>
+                      <div class="chips-list mt-1">
+                        <span 
+                          v-for="slot in getSlotsForFacilitator(fac.documentId)" 
+                          :key="slot.documentId"
+                          class="data-chip slot-chip clickable"
+                          @click="navigateTo('timeslots', slot.documentId)"
+                        >
+                          📅 {{ slot.activityTemplate?.name }} @ {{ slot.location?.name }} ({{ formatSlotShortDate(slot.startDate) }})
+                        </span>
+                        <span v-if="getSlotsForFacilitator(fac.documentId).length === 0" class="no-data">Libre</span>
+                      </div>
+                    </div>
+
+                    <button 
+                      class="action-btn mt-2 no-print" 
+                      @click="viewIndividualSchedule('facilitator', fac.documentId)"
+                      style="padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 500;"
+                    >
+                      📅 Voir le planning
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -898,7 +936,7 @@
             </div>
 
           </div>
-        </v-main>
+        </main>
       </div>
 
       <!-- ACTIVITY MODAL -->
@@ -1224,10 +1262,14 @@
 
 <script>
 import { storeToRefs } from 'pinia';
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from './stores/auth';
 import { useAppSettingsStore } from './stores/appSettings';
 import { useActiveSchedulerStore } from './stores/activeScheduler';
 import { useActivityStore } from './stores/activityStore';
+import LocationsList from './views/locations/LocationsList.vue';
+import FacilitatorsList from './views/admin/FacilitatorsList.vue';
 
 
 const DAYS_FR = {
@@ -1242,17 +1284,28 @@ const DAYS_FR = {
 
 export default {
   name: 'App',
+  components: {
+    LocationsList,
+    FacilitatorsList
+  },
   setup() {
     const authStore = useAuthStore();
     const appSettingsStore = useAppSettingsStore();
+    const schedulerStore = useActiveSchedulerStore();
+    const router = useRouter();
 
     const handleMockDataToggle = () => {
-      schedulerStore.fetchData();
+      appSettingsStore.setMockData(appSettingsStore.useMockData);
+      if (appSettingsStore.useMockData) {
+        schedulerStore.fetchData();
+      } else if (!authStore.isAuthenticated) {
+        router.replace('/login');
+      }
     };
-    const schedulerStore = useActiveSchedulerStore();
+
+    const user = computed(() => authStore.user || authStore.currentUser);
 
     const { 
-      user, 
       isAuthenticated, 
       loading: authLoading, 
       error: authError 
@@ -1293,6 +1346,8 @@ export default {
   },
   data() {
     return {
+      isSidebarOpen: false,
+      facilitatorViewMode: 'cards',
       pendingTimeslotId: null,
       // Auth State
       authTab: 'login',
@@ -1622,7 +1677,7 @@ export default {
         } else {
           this.clearFilter();
         }
-      } else if (path.startsWith('/locations')) {
+      } else if (path.startsWith('/admin/locations') || path.startsWith('/locations')) {
         this.currentPage = 'locations';
         const id = route.params.id;
         if (id) {
@@ -1640,6 +1695,9 @@ export default {
         } else {
           this.highlightedId = null;
         }
+      } else if (path.startsWith('/admin/facilitators')) {
+        this.currentPage = 'facilitators';
+        this.facilitatorViewMode = 'table';
       } else if (path.startsWith('/facilitators')) {
         this.currentPage = 'facilitators';
         const id = route.params.id;
@@ -1764,6 +1822,12 @@ export default {
     handleLogout() {
       this.authStore.logout();
       this.showToast('Déconnexion réussie.');
+      this.$router.replace('/login');
+    },
+    enableDevMockMode() {
+      this.appSettingsStore.setMockData(true);
+      this.fetchData();
+      this.$router.replace('/timeslots');
     },
 
     // User Profile Edit Method
@@ -1816,6 +1880,7 @@ export default {
     },
 
     navigateTo(tab, highlightId = null) {
+      this.isSidebarOpen = false;
       if (highlightId) {
         this.$router.push(`/${tab}/${highlightId}`);
       } else {
@@ -2839,22 +2904,116 @@ export default {
   background: #4f46e5;
 }
 
+/* Nav Toggle Button */
+.nav-toggle-btn {
+  display: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 0.5rem;
+  font-size: 1.2rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.nav-toggle-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Sidebar Backdrop for Mobile */
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 998;
+}
+
 /* Body Container */
 .app-body {
   display: flex;
+  flex-direction: row;
   flex-grow: 1;
+  width: 100%;
+  position: relative;
 }
 
 /* Sidebar Navigation */
 .app-nav {
   width: 260px;
-  background: rgba(15, 23, 42, 0.2);
+  min-width: 260px;
+  max-width: 260px;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-right: 1px solid var(--border-color);
   padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   flex-shrink: 0;
+  min-height: calc(100vh - 80px);
+}
+
+/* Responsive Media Queries */
+@media (max-width: 1024px) {
+  .nav-toggle-btn {
+    display: flex;
+  }
+
+  .app-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .stats-pills {
+    display: none;
+  }
+
+  .app-nav {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh;
+    z-index: 999;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    background: #0f172a !important;
+  }
+
+  .app-nav.mobile-open {
+    transform: translateX(0);
+  }
+
+  .app-content {
+    padding: 1.5rem 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .header-logo h1 {
+    font-size: 1.1rem;
+  }
+  .username {
+    display: none;
+  }
+  .status-text {
+    display: none;
+  }
+  .app-content {
+    padding: 1rem 0.5rem;
+  }
 }
 
 .nav-item {
@@ -2917,7 +3076,8 @@ export default {
 
 /* Main Content Area */
 .app-content {
-  flex-grow: 1;
+  flex: 1;
+  min-width: 0;
   padding: 2.5rem;
   display: flex;
   flex-direction: column;

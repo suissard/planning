@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import api from '../services/api';
+import { useAppSettingsStore } from './appSettings';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -9,7 +10,22 @@ export const useAuthStore = defineStore('auth', {
     error: null
   }),
   getters: {
-    isAuthenticated: (state) => !!state.token
+    isAuthenticated: (state) => {
+      const appSettingsStore = useAppSettingsStore();
+      return appSettingsStore.useMockData || !!state.token;
+    },
+    currentUser: (state) => {
+      if (state.user) return state.user;
+      const appSettingsStore = useAppSettingsStore();
+      if (appSettingsStore.useMockData) {
+        return {
+          id: 'mock-dev-id',
+          username: 'Mode Dev (Fausse Données)',
+          email: 'dev@localhost'
+        };
+      }
+      return null;
+    }
   },
   actions: {
     async login(identifier, password) {
@@ -58,6 +74,15 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async updateProfile(data) {
+      const appSettingsStore = useAppSettingsStore();
+      if (appSettingsStore.useMockData && (!this.user || !this.user.id)) {
+        this.user = {
+          ...(this.user || { id: 'mock-dev-id', email: 'dev@localhost' }),
+          username: data.username || 'Mode Dev (Fausse Données)',
+          email: data.email || 'dev@localhost'
+        };
+        return this.user;
+      }
       if (!this.user || !this.user.id) throw new Error('Utilisateur non connecté.');
       this.loading = true;
       this.error = null;
@@ -80,6 +105,11 @@ export const useAuthStore = defineStore('auth', {
       this.user = null;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      const appSettingsStore = useAppSettingsStore();
+      if (appSettingsStore.useMockData) {
+        appSettingsStore.setMockData(false);
+      }
     }
   }
 });
+

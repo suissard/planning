@@ -8,8 +8,8 @@ const routes = [
   {
     path: '/admin/facilitators',
     name: 'admin-facilitators',
-    component: FacilitatorsList,
-    meta: { requiresAuth: true } // adjust as needed if there is admin auth
+    component: MainApp,
+    meta: { requiresAuth: true }
   },
   {
     path: '/login',
@@ -29,8 +29,8 @@ const routes = [
     component: MainApp,
     meta: { requiresAuth: true }
   },
-  { path: '/locations', name: 'locations', component: LocationsList, meta: { requiresAuth: true } },
-  { path: '/admin/locations', name: 'admin-locations', component: LocationsList, meta: { requiresAuth: true } },
+  { path: '/locations', name: 'locations', component: MainApp, meta: { requiresAuth: true } },
+  { path: '/admin/locations', name: 'admin-locations', component: MainApp, meta: { requiresAuth: true } },
   {
     path: '/locations/:id',
     name: 'locations-detail',
