@@ -39,6 +39,12 @@
       "relation": "oneToMany",
       "target": "api::time-slot.time-slot",
       "mappedBy": "location"
+    },
+    "roomSessions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::room-session.room-session",
+      "mappedBy": "location"
     }
   }
 }

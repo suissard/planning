@@ -164,7 +164,43 @@ async function seedActivityTemplates(facilitatorsMap) {
   return created;
 }
 
-async function seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, participantsMap) {
+async function seedRoomSessions(locationsMap, facilitatorsMap, participantsMap) {
+  const sessions = loadJSON('room-sessions.json');
+  const createdMap = {};
+
+  for (const sess of sessions) {
+    const { _location, _manager, _participants, date } = sess;
+    const locationId = locationsMap[_location];
+    const managerId = facilitatorsMap[_manager]?.documentId;
+    const participantIds = (_participants || [])
+      .map((email) => participantsMap[email])
+      .filter(Boolean);
+
+    if (!locationId || !managerId) {
+      log('⚠️', `${C.yellow}Session ignorée: lieu="${_location}" ou gestionnaire="${_manager}" introuvable${C.reset}`);
+      continue;
+    }
+
+    const res = await apiRequest('/api/room-sessions', {
+      method: 'POST',
+      body: {
+        data: {
+          date,
+          location: locationId,
+          manager: managerId,
+          participants: participantIds,
+        },
+      },
+    });
+    const key = `${date}|${locationId}`;
+    createdMap[key] = res.data.documentId;
+  }
+
+  log('🚪', `${C.green}${Object.keys(createdMap).length} sessions de salle créées${C.reset}`);
+  return createdMap;
+}
+
+async function seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, participantsMap, roomSessionsMap) {
   const slots = loadJSON('time-slots.json');
   let count = 0;
   let errors = 0;
@@ -187,6 +223,9 @@ async function seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, parti
       continue;
     }
 
+    const dateStr = dates.startDate ? dates.startDate.slice(0, 10) : null;
+    const roomSessionId = dateStr ? roomSessionsMap[`${dateStr}|${locationId}`] : null;
+
     try {
       await apiRequest('/api/time-slots', {
         method: 'POST',
@@ -197,6 +236,7 @@ async function seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, parti
             activityTemplate: activityId,
             facilitators: facilitatorIds,
             participants: participantIds,
+            ...(roomSessionId ? { roomSession: roomSessionId } : {}),
           },
         },
       });
@@ -233,6 +273,7 @@ async function main() {
   // 2. Nettoyage (ordre inverse des dépendances)
   log('🧹', `${C.yellow}Nettoyage des collections existantes...${C.reset}`);
   await cleanCollection('time-slots', 'créneaux');
+  await cleanCollection('room-sessions', 'sessions de salle');
   await cleanCollection('activity-templates', 'activités');
   await cleanCollection('participants', 'participants');
   await cleanCollection('facilitators', 'animateurs');
@@ -246,7 +287,8 @@ async function main() {
   const facilitatorsMap = await seedFacilitators();
   const participantsMap = await seedParticipants();
   const activitiesMap = await seedActivityTemplates(facilitatorsMap);
-  await seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, participantsMap);
+  const roomSessionsMap = await seedRoomSessions(locationsMap, facilitatorsMap, participantsMap);
+  await seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, participantsMap, roomSessionsMap);
 
   console.log('');
   console.log(`${C.cyan}──────────────────────────────────────────────────${C.reset}`);

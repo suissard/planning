@@ -281,6 +281,22 @@
             <span class="nav-icon">👤📅</span>
             Plannings Individuels
           </button>
+          <button 
+            class="nav-item" 
+            :class="{ active: currentPage === 'room-sessions' }"
+            @click="navigateTo('room-sessions')"
+          >
+            <span class="nav-icon">🚪</span>
+            Ouverture Salles
+          </button>
+          <button 
+            class="nav-item" 
+            :class="{ active: currentPage === 'extractions' }"
+            @click="navigateTo('extractions')"
+          >
+            <span class="nav-icon">📊</span>
+            Extractions & Fiches
+          </button>
 
 
           <div class="nav-footer">
@@ -295,8 +311,8 @@
 
         <!-- Main Content Area -->
         <main class="app-content">
-          <!-- Search & Info Bar (Hidden on Profile & Schedules View) -->
-          <div class="content-header" v-if="!error && currentPage !== 'profile' && currentPage !== 'individual-schedules'">
+          <!-- Search & Info Bar (Hidden on Custom Views) -->
+          <div class="content-header" v-if="!error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
             <div class="search-wrapper">
               <span class="search-icon">🔍</span>
               <input 
@@ -319,13 +335,13 @@
           </div>
 
           <!-- Loading State -->
-          <div class="loading-state" v-if="loading && currentPage !== 'profile' && currentPage !== 'individual-schedules'">
+          <div class="loading-state" v-if="loading && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
             <div class="spinner"></div>
             <p>Chargement des données depuis Strapi...</p>
           </div>
 
           <!-- Error State -->
-          <div class="error-state" v-else-if="error && currentPage !== 'profile' && currentPage !== 'individual-schedules'">
+          <div class="error-state" v-else-if="error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
             <span class="error-icon">⚠️</span>
             <h3>Impossible de contacter l'API Strapi</h3>
             <p>{{ error }}</p>
@@ -333,7 +349,7 @@
           </div>
 
           <!-- Empty State -->
-          <div class="empty-state" v-else-if="filteredItems.length === 0 && currentPage !== 'profile' && currentPage !== 'individual-schedules'">
+          <div class="empty-state" v-else-if="filteredItems.length === 0 && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
             <span class="empty-icon">📁</span>
             <h3>Aucune donnée trouvée</h3>
             <p v-if="searchQuery || filterItemId">Aucun élément ne correspond à votre recherche ou filtre.</p>
@@ -346,6 +362,21 @@
           <!-- Data Views -->
           <div class="view-container" v-else>
             
+            <!-- TAB: ROOM SESSIONS -->
+            <RoomSessionsView 
+              v-if="currentPage === 'room-sessions'" 
+              :locations="locations" 
+              :facilitators="facilitators" 
+              :participants="participants" 
+            />
+
+            <!-- TAB: EXTRACTIONS -->
+            <ExtractionsView 
+              v-if="currentPage === 'extractions'" 
+              :facilitators="facilitators" 
+              :participants="participants" 
+            />
+
             <!-- TAB: PROFILE (PROFIL UTILISATEUR ET EDITION) -->
             <div v-if="currentPage === 'profile'" class="profile-container">
               <div class="profile-card">
@@ -425,84 +456,114 @@
               </div>
             </div>
 
-            <!-- TAB: PLANNING (TIME SLOTS) -->
-            <div v-if="currentPage === 'timeslots'" class="slots-grid">
-              <div 
-                v-for="slot in filteredItems" 
-                :key="slot.documentId" 
-                class="slot-card"
-                :class="{ 'highlighted-item': slot.documentId === highlightedId }"
-                :id="'slot-' + slot.documentId"
-              >
-                <div class="slot-header">
-                  <div class="slot-time-info">
-                    <span class="calendar-icon">🕒</span>
-                    <div class="time-texts">
-                      <span class="date">{{ formatSlotDate(slot.startDate) }}</span>
-                      <span class="time">{{ formatSlotTimeRange(slot.startDate, slot.endDate) }}</span>
-                    </div>
-                  </div>
-                  <div class="slot-actions">
-                    <button class="delete-slot-btn" title="Supprimer le créneau" @click="deleteSlot(slot.documentId)">✕</button>
-                  </div>
+            <!-- TAB: PLANNING (TIME SLOTS & CALENDAR) -->
+            <div v-if="currentPage === 'timeslots'" class="timeslots-page-wrapper">
+              <!-- View Display Switcher -->
+              <div class="display-mode-bar no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div class="mode-tabs">
+                  <button 
+                    class="tab-btn" 
+                    :class="{ active: timeslotViewMode === 'calendar' }" 
+                    @click="timeslotViewMode = 'calendar'"
+                  >
+                    🗓️ Vue Calendrier (Mois / Semaine / Jour / Planning)
+                  </button>
+                  <button 
+                    class="tab-btn" 
+                    :class="{ active: timeslotViewMode === 'cards' }" 
+                    @click="timeslotViewMode = 'cards'"
+                  >
+                    🎴 Vue Cartes Liste
+                  </button>
                 </div>
+              </div>
 
-                <div class="slot-relations">
-                  <!-- Activity Chip -->
-                  <div class="relation-row">
-                    <span class="row-label">Activité</span>
-                    <span 
-                      class="data-chip activity-chip clickable"
-                      @click="navigateTo('activities', slot.activityTemplate?.documentId)"
-                      title="Voir l'activité"
-                    >
-                      🎯 {{ slot.activityTemplate?.name || 'Inconnue' }}
-                    </span>
-                  </div>
+              <!-- Calendar Component View -->
+              <CalendarView 
+                v-if="timeslotViewMode === 'calendar'" 
+                :timeslots="filteredItems" 
+                @select-slot="handleCalendarSelectSlot" 
+              />
 
-                  <!-- Location Chip -->
-                  <div class="relation-row">
-                    <span class="row-label">Lieu</span>
-                    <span 
-                      class="data-chip location-chip clickable"
-                      @click="navigateTo('locations', slot.location?.documentId)"
-                      title="Voir le lieu"
-                    >
-                      📍 {{ slot.location?.name || 'Inconnu' }}
-                    </span>
-                  </div>
-
-                  <!-- Facilitator Chips -->
-                  <div class="relation-row">
-                    <span class="row-label">Animateurs</span>
-                    <div class="chips-list">
-                      <span 
-                        v-for="fac in slot.facilitators" 
-                        :key="fac.documentId" 
-                        class="data-chip facilitator-chip clickable"
-                        @click="navigateTo('facilitators', fac.documentId)"
-                        title="Voir l'animateur"
-                      >
-                        👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}
-                      </span>
-                      <span v-if="!slot.facilitators || slot.facilitators.length === 0" class="no-data">Aucun</span>
+              <!-- Cards Grid View -->
+              <div v-else class="slots-grid">
+                <div 
+                  v-for="slot in filteredItems" 
+                  :key="slot.documentId" 
+                  class="slot-card"
+                  :class="{ 'highlighted-item': slot.documentId === highlightedId }"
+                  :id="'slot-' + slot.documentId"
+                >
+                  <div class="slot-header">
+                    <div class="slot-time-info">
+                      <span class="calendar-icon">🕒</span>
+                      <div class="time-texts">
+                        <span class="date">{{ formatSlotDate(slot.startDate) }}</span>
+                        <span class="time">{{ formatSlotTimeRange(slot.startDate, slot.endDate) }}</span>
+                      </div>
+                    </div>
+                    <div class="slot-actions">
+                      <button class="delete-slot-btn" title="Supprimer le créneau" @click="deleteSlot(slot.documentId)">✕</button>
                     </div>
                   </div>
 
-                  <!-- Participant Chips -->
-                  <div class="relation-row">
-                    <span class="row-label">Participants</span>
-                    <div class="chips-list">
+                  <div class="slot-relations">
+                    <!-- Activity Chip -->
+                    <div class="relation-row">
+                      <span class="row-label">Activité</span>
                       <span 
-                        v-for="part in slot.participants" 
-                        :key="part.documentId" 
-                        class="data-chip participant-chip clickable"
-                        @click="navigateTo('participants', part.documentId)"
-                        title="Voir le participant"
+                        class="data-chip activity-chip clickable"
+                        @click="navigateTo('activities', slot.activityTemplate?.documentId)"
+                        title="Voir l'activité"
                       >
-                        👥 {{ part.firstName }} {{ part.lastName }}
+                        🎯 {{ slot.activityTemplate?.name || 'Inconnue' }}
                       </span>
-                      <span v-if="!slot.participants || slot.participants.length === 0" class="no-data">Aucun</span>
+                    </div>
+
+                    <!-- Location Chip -->
+                    <div class="relation-row">
+                      <span class="row-label">Lieu</span>
+                      <span 
+                        class="data-chip location-chip clickable"
+                        @click="navigateTo('locations', slot.location?.documentId)"
+                        title="Voir le lieu"
+                      >
+                        📍 {{ slot.location?.name || 'Inconnu' }}
+                      </span>
+                    </div>
+
+                    <!-- Facilitator Chips -->
+                    <div class="relation-row">
+                      <span class="row-label">Animateurs</span>
+                      <div class="chips-list">
+                        <span 
+                          v-for="fac in slot.facilitators" 
+                          :key="fac.documentId" 
+                          class="data-chip facilitator-chip clickable"
+                          @click="navigateTo('facilitators', fac.documentId)"
+                          title="Voir l'animateur"
+                        >
+                          👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}
+                        </span>
+                        <span v-if="!slot.facilitators || slot.facilitators.length === 0" class="no-data">Aucun</span>
+                      </div>
+                    </div>
+
+                    <!-- Participant Chips -->
+                    <div class="relation-row">
+                      <span class="row-label">Participants</span>
+                      <div class="chips-list">
+                        <span 
+                          v-for="part in slot.participants" 
+                          :key="part.documentId" 
+                          class="data-chip participant-chip clickable"
+                          @click="navigateTo('participants', part.documentId)"
+                          title="Voir le participant"
+                        >
+                          👥 {{ part.firstName }} {{ part.lastName }}
+                        </span>
+                        <span v-if="!slot.participants || slot.participants.length === 0" class="no-data">Aucun</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1270,6 +1331,9 @@ import { useActiveSchedulerStore } from './stores/activeScheduler';
 import { useActivityStore } from './stores/activityStore';
 import LocationsList from './views/locations/LocationsList.vue';
 import FacilitatorsList from './views/admin/FacilitatorsList.vue';
+import RoomSessionsView from './components/RoomSessionsView.vue';
+import ExtractionsView from './components/ExtractionsView.vue';
+import CalendarView from './components/CalendarView.vue';
 
 
 const DAYS_FR = {
@@ -1286,7 +1350,10 @@ export default {
   name: 'App',
   components: {
     LocationsList,
-    FacilitatorsList
+    FacilitatorsList,
+    RoomSessionsView,
+    ExtractionsView,
+    CalendarView
   },
   setup() {
     const authStore = useAuthStore();
@@ -1347,6 +1414,7 @@ export default {
   data() {
     return {
       isSidebarOpen: false,
+      timeslotViewMode: 'calendar',
       facilitatorViewMode: 'cards',
       pendingTimeslotId: null,
       // Auth State
@@ -1652,6 +1720,17 @@ export default {
     }
   },
   methods: {
+    handleCalendarSelectSlot(slot) {
+      if (slot && (slot.documentId || slot.id)) {
+        const id = slot.documentId || slot.id;
+        this.highlightedId = id;
+        this.timeslotViewMode = 'cards';
+        this.$nextTick(() => {
+          const el = document.getElementById('slot-' + id);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
+    },
     // Route Sync Methods
     syncRouteToState(route) {
       if (!this.isAuthenticated) {
@@ -1730,6 +1809,10 @@ export default {
           this.selectedSchedulePersonType = 'facilitator';
           this.selectedSchedulePersonId = null;
         }
+      } else if (path.startsWith('/room-sessions')) {
+        this.currentPage = 'room-sessions';
+      } else if (path.startsWith('/extractions')) {
+        this.currentPage = 'extractions';
       } else if (path.startsWith('/profile')) {
         this.currentPage = 'profile';
         if (this.user) {

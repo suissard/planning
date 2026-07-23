@@ -1,0 +1,83 @@
+[
+  {
+    "date": "2026-09-07",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "marcelle.martin@senior.dev",
+      "germaine.bernard@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-07",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "marcelle.martin@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-07",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "suzanne.lefevre@senior.dev",
+      "germaine.bernard@senior.dev",
+      "marcelle.martin@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-07",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "suzanne.lefevre@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-08",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "lucien.moreau@senior.dev",
+      "raymond.roux@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-08",
+    "_location": "Cuisine Thérapeutique",
+    "_manager": "valerie.moreau@ehpad-accueil.fr",
+    "_participants": [
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "lucien.moreau@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-08",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-08",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "suzanne.lefevre@senior.dev",
+      "germaine.bernard@senior.dev"
+    ]
+  }
+]

@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "room_sessions",
+  "info": {
+    "singularName": "room-session",
+    "pluralName": "room-sessions",
+    "displayName": "RoomSession",
+    "description": "Daily room opening session with assigned manager and beneficiaries"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "date": {
+      "type": "date",
+      "required": true
+    },
+    "location": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::location.location"
+    },
+    "manager": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::facilitator.facilitator"
+    },
+    "participants": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::participant.participant"
+    },
+    "timeSlots": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::time-slot.time-slot",
+      "mappedBy": "roomSession"
+    }
+  }
+}

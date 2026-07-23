@@ -44,6 +44,12 @@
       "relation": "manyToMany",
       "target": "api::time-slot.time-slot",
       "mappedBy": "facilitators"
+    },
+    "managedRoomSessions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::room-session.room-session",
+      "mappedBy": "manager"
     }
   }
 }

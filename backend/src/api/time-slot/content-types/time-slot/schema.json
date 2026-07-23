@@ -42,6 +42,12 @@
       "relation": "manyToMany",
       "target": "api::facilitator.facilitator",
       "inversedBy": "timeSlots"
+    },
+    "roomSession": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::room-session.room-session",
+      "inversedBy": "timeSlots"
     }
   }
 }

@@ -86,6 +86,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/room-sessions',
+    name: 'room-sessions',
+    component: MainApp,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/extractions',
+    name: 'extractions',
+    component: MainApp,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: MainApp,
