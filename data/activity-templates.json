@@ -1,72 +1,72 @@
 [
   {
-    "name": "Yoga Matinal",
+    "name": "Atelier Mémoire & Stimulation Cognitive",
     "standardDuration": 60,
-    "minParticipants": 2,
-    "maxParticipants": 15,
-    "_authorizedFacilitators": ["sophie.durand@aether.dev", "julie.petit@aether.dev"]
+    "minParticipants": 3,
+    "maxParticipants": 8,
+    "_authorizedFacilitators": ["marc.lefevre@ehpad-accueil.fr"]
   },
   {
-    "name": "Pilates Avancé",
+    "name": "Gym Douce & Équilibre",
     "standardDuration": 45,
     "minParticipants": 3,
-    "maxParticipants": 12,
-    "_authorizedFacilitators": ["sophie.durand@aether.dev"]
+    "maxParticipants": 8,
+    "_authorizedFacilitators": ["claire.dubois@ehpad-accueil.fr"]
   },
   {
-    "name": "Natation Libre",
-    "standardDuration": 60,
-    "minParticipants": 2,
-    "maxParticipants": 20,
-    "_authorizedFacilitators": ["marc.lefevre@aether.dev", "thomas.moreau@aether.dev"]
-  },
-  {
-    "name": "Aquagym Seniors",
-    "standardDuration": 45,
-    "minParticipants": 3,
-    "maxParticipants": 15,
-    "_authorizedFacilitators": ["marc.lefevre@aether.dev"]
-  },
-  {
-    "name": "Danse Contemporaine",
+    "name": "Cuisine Thérapeutique & Pâtisserie",
     "standardDuration": 90,
+    "minParticipants": 2,
+    "maxParticipants": 6,
+    "_authorizedFacilitators": ["valerie.moreau@ehpad-accueil.fr"]
+  },
+  {
+    "name": "Musicothérapie & Chansons d'Antan",
+    "standardDuration": 60,
     "minParticipants": 4,
-    "maxParticipants": 15,
-    "_authorizedFacilitators": ["claire.martin@aether.dev"]
-  },
-  {
-    "name": "Zumba Fitness",
-    "standardDuration": 60,
-    "minParticipants": 3,
-    "maxParticipants": 25,
-    "_authorizedFacilitators": ["claire.martin@aether.dev", "julie.petit@aether.dev"]
-  },
-  {
-    "name": "Atelier Poterie",
-    "standardDuration": 120,
-    "minParticipants": 2,
-    "maxParticipants": 10,
-    "_authorizedFacilitators": ["antoine.bernard@aether.dev"]
-  },
-  {
-    "name": "Dessin & Peinture",
-    "standardDuration": 90,
-    "minParticipants": 2,
     "maxParticipants": 12,
-    "_authorizedFacilitators": ["antoine.bernard@aether.dev"]
+    "_authorizedFacilitators": ["sophie.martin@ehpad-accueil.fr"]
   },
   {
-    "name": "CrossFit Intensif",
+    "name": "Jardinage Thérapeutique & Potager Sensoriel",
     "standardDuration": 60,
-    "minParticipants": 3,
-    "maxParticipants": 20,
-    "_authorizedFacilitators": ["julie.petit@aether.dev"]
+    "minParticipants": 2,
+    "maxParticipants": 8,
+    "_authorizedFacilitators": ["antoine.bernard@ehpad-accueil.fr"]
   },
   {
-    "name": "Séminaire Leadership",
-    "standardDuration": 180,
-    "minParticipants": 5,
-    "maxParticipants": 40,
-    "_authorizedFacilitators": ["thomas.moreau@aether.dev"]
+    "name": "Séance Snoezelen & Relaxation Sensorielle",
+    "standardDuration": 45,
+    "minParticipants": 1,
+    "maxParticipants": 4,
+    "_authorizedFacilitators": ["claire.dubois@ehpad-accueil.fr", "sophie.martin@ehpad-accueil.fr"]
+  },
+  {
+    "name": "Art-thérapie & Peinture Intuitive",
+    "standardDuration": 75,
+    "minParticipants": 2,
+    "maxParticipants": 8,
+    "_authorizedFacilitators": ["antoine.bernard@ehpad-accueil.fr"]
+  },
+  {
+    "name": "Atelier Revue de Presse & Discussion",
+    "standardDuration": 45,
+    "minParticipants": 3,
+    "maxParticipants": 10,
+    "_authorizedFacilitators": ["marc.lefevre@ehpad-accueil.fr"]
+  },
+  {
+    "name": "Parcours de Motricité",
+    "standardDuration": 45,
+    "minParticipants": 2,
+    "maxParticipants": 8,
+    "_authorizedFacilitators": ["claire.dubois@ehpad-accueil.fr", "valerie.moreau@ehpad-accueil.fr"]
+  },
+  {
+    "name": "Atelier Toucher-Massage & Bien-Être",
+    "standardDuration": 45,
+    "minParticipants": 1,
+    "maxParticipants": 4,
+    "_authorizedFacilitators": ["sophie.martin@ehpad-accueil.fr"]
   }
 ]

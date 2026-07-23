@@ -1,82 +1,138 @@
 [
   {
-    "_activity": "Yoga Matinal",
-    "_location": "Studio Danse",
-    "_facilitators": ["sophie.durand@aether.dev"],
-    "_participants": ["emma.dupont@mail.dev", "lucas.robert@mail.dev", "lea.laurent@mail.dev"],
-    "startDate": "2026-09-07T08:00:00.000Z",
-    "endDate": "2026-09-07T09:00:00.000Z"
+    "_activity": "Atelier Revue de Presse & Discussion",
+    "_location": "Grand Salon & Convivialité",
+    "_facilitators": ["marc.lefevre@ehpad-accueil.fr"],
+    "_participants": ["jeanne.dupont@senior.dev", "marcelle.martin@senior.dev", "germaine.bernard@senior.dev", "suzanne.lefevre@senior.dev", "gaston.leroy@senior.dev"],
+    "startDate": "2026-09-07T09:45:00.000Z",
+    "endDate": "2026-09-07T10:30:00.000Z"
   },
   {
-    "_activity": "Pilates Avancé",
-    "_location": "Studio Danse",
-    "_facilitators": ["sophie.durand@aether.dev"],
-    "_participants": ["emma.dupont@mail.dev", "chloe.richard@mail.dev", "manon.garcia@mail.dev", "lea.laurent@mail.dev"],
+    "_activity": "Gym Douce & Équilibre",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_facilitators": ["claire.dubois@ehpad-accueil.fr"],
+    "_participants": ["jeanne.dupont@senior.dev", "marcelle.martin@senior.dev", "gaston.leroy@senior.dev"],
+    "startDate": "2026-09-07T10:45:00.000Z",
+    "endDate": "2026-09-07T11:30:00.000Z"
+  },
+  {
+    "_activity": "Art-thérapie & Peinture Intuitive",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_facilitators": ["antoine.bernard@ehpad-accueil.fr"],
+    "_participants": ["suzanne.lefevre@senior.dev", "germaine.bernard@senior.dev", "marcelle.martin@senior.dev"],
     "startDate": "2026-09-07T14:00:00.000Z",
-    "endDate": "2026-09-07T14:45:00.000Z"
+    "endDate": "2026-09-07T15:15:00.000Z"
   },
   {
-    "_activity": "Natation Libre",
-    "_location": "Piscine Olympique",
-    "_facilitators": ["marc.lefevre@aether.dev"],
-    "_participants": ["lucas.robert@mail.dev", "hugo.simon@mail.dev", "raphael.fournier@mail.dev", "louis.bonnet@mail.dev"],
-    "startDate": "2026-09-07T09:00:00.000Z",
-    "endDate": "2026-09-07T10:00:00.000Z"
+    "_activity": "Séance Snoezelen & Relaxation Sensorielle",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_facilitators": ["sophie.martin@ehpad-accueil.fr"],
+    "_participants": ["jeanne.dupont@senior.dev", "suzanne.lefevre@senior.dev"],
+    "startDate": "2026-09-07T15:30:00.000Z",
+    "endDate": "2026-09-07T16:15:00.000Z"
   },
   {
-    "_activity": "Atelier Poterie",
-    "_location": "Atelier Créatif",
-    "_facilitators": ["antoine.bernard@aether.dev"],
-    "_participants": ["nathan.michel@mail.dev", "ines.roux@mail.dev", "lea.laurent@mail.dev"],
-    "startDate": "2026-09-08T08:00:00.000Z",
-    "endDate": "2026-09-08T10:00:00.000Z"
+    "_activity": "Atelier Mémoire & Stimulation Cognitive",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_facilitators": ["marc.lefevre@ehpad-accueil.fr"],
+    "_participants": ["robert.durand@senior.dev", "marcelle.martin@senior.dev", "lucien.moreau@senior.dev", "raymond.roux@senior.dev", "gaston.leroy@senior.dev"],
+    "startDate": "2026-09-08T09:45:00.000Z",
+    "endDate": "2026-09-08T10:45:00.000Z"
   },
   {
-    "_activity": "Danse Contemporaine",
-    "_location": "Studio Danse",
-    "_facilitators": ["claire.martin@aether.dev"],
-    "_participants": ["chloe.richard@mail.dev", "manon.garcia@mail.dev", "emma.dupont@mail.dev", "lea.laurent@mail.dev"],
-    "startDate": "2026-09-09T14:00:00.000Z",
-    "endDate": "2026-09-09T15:30:00.000Z"
+    "_activity": "Cuisine Thérapeutique & Pâtisserie",
+    "_location": "Cuisine Thérapeutique",
+    "_facilitators": ["valerie.moreau@ehpad-accueil.fr"],
+    "_participants": ["marcelle.martin@senior.dev", "gaston.leroy@senior.dev", "robert.durand@senior.dev"],
+    "startDate": "2026-09-08T11:00:00.000Z",
+    "endDate": "2026-09-08T12:30:00.000Z"
   },
   {
-    "_activity": "CrossFit Intensif",
-    "_location": "Gymnase Municipal",
-    "_facilitators": ["julie.petit@aether.dev"],
-    "_participants": ["hugo.simon@mail.dev", "lucas.robert@mail.dev", "raphael.fournier@mail.dev", "louis.bonnet@mail.dev", "nathan.michel@mail.dev"],
-    "startDate": "2026-09-08T07:00:00.000Z",
-    "endDate": "2026-09-08T08:00:00.000Z"
+    "_activity": "Parcours de Motricité",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_facilitators": ["claire.dubois@ehpad-accueil.fr"],
+    "_participants": ["lucien.moreau@senior.dev", "raymond.roux@senior.dev", "robert.durand@senior.dev"],
+    "startDate": "2026-09-08T14:00:00.000Z",
+    "endDate": "2026-09-08T14:45:00.000Z"
   },
   {
-    "_activity": "Zumba Fitness",
-    "_location": "Gymnase Municipal",
-    "_facilitators": ["claire.martin@aether.dev"],
-    "_participants": ["emma.dupont@mail.dev", "chloe.richard@mail.dev", "nathan.michel@mail.dev", "raphael.fournier@mail.dev"],
-    "startDate": "2026-09-10T12:00:00.000Z",
-    "endDate": "2026-09-10T13:00:00.000Z"
+    "_activity": "Musicothérapie & Chansons d'Antan",
+    "_location": "Grand Salon & Convivialité",
+    "_facilitators": ["sophie.martin@ehpad-accueil.fr"],
+    "_participants": ["robert.durand@senior.dev", "marcelle.martin@senior.dev", "lucien.moreau@senior.dev", "raymond.roux@senior.dev", "gaston.leroy@senior.dev"],
+    "startDate": "2026-09-08T15:00:00.000Z",
+    "endDate": "2026-09-08T16:00:00.000Z"
   },
   {
-    "_activity": "Dessin & Peinture",
-    "_location": "Atelier Créatif",
-    "_facilitators": ["antoine.bernard@aether.dev"],
-    "_participants": ["nathan.michel@mail.dev", "louis.bonnet@mail.dev"],
-    "startDate": "2026-09-10T13:30:00.000Z",
-    "endDate": "2026-09-10T15:00:00.000Z"
+    "_activity": "Jardinage Thérapeutique & Potager Sensoriel",
+    "_location": "Jardin Thérapeutique & Potager Sensoriel",
+    "_facilitators": ["antoine.bernard@ehpad-accueil.fr"],
+    "_participants": ["jeanne.dupont@senior.dev", "henri.petit@senior.dev", "lucien.moreau@senior.dev", "suzanne.lefevre@senior.dev", "gaston.leroy@senior.dev"],
+    "startDate": "2026-09-09T09:45:00.000Z",
+    "endDate": "2026-09-09T10:45:00.000Z"
   },
   {
-    "_activity": "Aquagym Seniors",
-    "_location": "Piscine Olympique",
-    "_facilitators": ["marc.lefevre@aether.dev"],
-    "_participants": ["emma.dupont@mail.dev", "lucas.robert@mail.dev", "raphael.fournier@mail.dev"],
-    "startDate": "2026-09-09T09:00:00.000Z",
-    "endDate": "2026-09-09T09:45:00.000Z"
+    "_activity": "Gym Douce & Équilibre",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_facilitators": ["claire.dubois@ehpad-accueil.fr"],
+    "_participants": ["jeanne.dupont@senior.dev", "henri.petit@senior.dev", "gaston.leroy@senior.dev"],
+    "startDate": "2026-09-09T11:00:00.000Z",
+    "endDate": "2026-09-09T11:45:00.000Z"
   },
   {
-    "_activity": "Yoga Matinal",
-    "_location": "Studio Danse",
-    "_facilitators": ["julie.petit@aether.dev"],
-    "_participants": ["hugo.simon@mail.dev", "louis.bonnet@mail.dev", "nathan.michel@mail.dev"],
-    "startDate": "2026-09-10T08:00:00.000Z",
-    "endDate": "2026-09-10T09:00:00.000Z"
+    "_activity": "Atelier Toucher-Massage & Bien-Être",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_facilitators": ["sophie.martin@ehpad-accueil.fr"],
+    "_participants": ["jeanne.dupont@senior.dev", "suzanne.lefevre@senior.dev"],
+    "startDate": "2026-09-09T15:15:00.000Z",
+    "endDate": "2026-09-09T16:00:00.000Z"
+  },
+  {
+    "_activity": "Atelier Revue de Presse & Discussion",
+    "_location": "Grand Salon & Convivialité",
+    "_facilitators": ["marc.lefevre@ehpad-accueil.fr"],
+    "_participants": ["robert.durand@senior.dev", "marcelle.martin@senior.dev", "germaine.bernard@senior.dev", "colette.bonnet@senior.dev"],
+    "startDate": "2026-09-10T09:45:00.000Z",
+    "endDate": "2026-09-10T10:30:00.000Z"
+  },
+  {
+    "_activity": "Cuisine Thérapeutique & Pâtisserie",
+    "_location": "Cuisine Thérapeutique",
+    "_facilitators": ["valerie.moreau@ehpad-accueil.fr"],
+    "_participants": ["germaine.bernard@senior.dev", "colette.bonnet@senior.dev", "robert.durand@senior.dev"],
+    "startDate": "2026-09-10T10:45:00.000Z",
+    "endDate": "2026-09-10T12:15:00.000Z"
+  },
+  {
+    "_activity": "Musicothérapie & Chansons d'Antan",
+    "_location": "Grand Salon & Convivialité",
+    "_facilitators": ["sophie.martin@ehpad-accueil.fr"],
+    "_participants": ["robert.durand@senior.dev", "marcelle.martin@senior.dev", "germaine.bernard@senior.dev", "colette.bonnet@senior.dev"],
+    "startDate": "2026-09-10T15:00:00.000Z",
+    "endDate": "2026-09-10T16:00:00.000Z"
+  },
+  {
+    "_activity": "Jardinage Thérapeutique & Potager Sensoriel",
+    "_location": "Jardin Thérapeutique & Potager Sensoriel",
+    "_facilitators": ["antoine.bernard@ehpad-accueil.fr"],
+    "_participants": ["jeanne.dupont@senior.dev", "henri.petit@senior.dev", "germaine.bernard@senior.dev", "raymond.roux@senior.dev", "colette.bonnet@senior.dev"],
+    "startDate": "2026-09-11T09:45:00.000Z",
+    "endDate": "2026-09-11T10:45:00.000Z"
+  },
+  {
+    "_activity": "Gym Douce & Équilibre",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_facilitators": ["claire.dubois@ehpad-accueil.fr"],
+    "_participants": ["jeanne.dupont@senior.dev", "henri.petit@senior.dev", "colette.bonnet@senior.dev"],
+    "startDate": "2026-09-11T11:00:00.000Z",
+    "endDate": "2026-09-11T11:45:00.000Z"
+  },
+  {
+    "_activity": "Séance Snoezelen & Relaxation Sensorielle",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_facilitators": ["sophie.martin@ehpad-accueil.fr"],
+    "_participants": ["jeanne.dupont@senior.dev", "raymond.roux@senior.dev"],
+    "startDate": "2026-09-11T15:30:00.000Z",
+    "endDate": "2026-09-11T16:15:00.000Z"
   }
 ]

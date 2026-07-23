@@ -1,73 +1,54 @@
 [
   {
-    "name": "Gymnase Municipal",
-    "capacity": 30,
+    "name": "Salle de Gym Douce & Psychomotricité",
+    "capacity": 10,
     "globalOpeningStart": "2026-01-01",
     "globalOpeningEnd": "2026-12-31",
-    "weeklyClosures": [0],
+    "weeklyClosures": [0, 6],
+    "specificClosures": []
+  },
+  {
+    "name": "Atelier Mémoire & Stimulation Cognitive",
+    "capacity": 8,
+    "globalOpeningStart": "2026-01-01",
+    "globalOpeningEnd": "2026-12-31",
+    "weeklyClosures": [0, 6],
+    "specificClosures": []
+  },
+  {
+    "name": "Espace Snoezelen & Relaxation Sensorielle",
+    "capacity": 4,
+    "globalOpeningStart": "2026-01-01",
+    "globalOpeningEnd": "2026-12-31",
+    "weeklyClosures": [0, 6],
+    "specificClosures": []
+  },
+  {
+    "name": "Cuisine Thérapeutique",
+    "capacity": 8,
+    "globalOpeningStart": "2026-01-01",
+    "globalOpeningEnd": "2026-12-31",
+    "weeklyClosures": [0, 6],
+    "specificClosures": []
+  },
+  {
+    "name": "Jardin Thérapeutique & Potager Sensoriel",
+    "capacity": 12,
+    "globalOpeningStart": "2026-04-01",
+    "globalOpeningEnd": "2026-11-01",
+    "weeklyClosures": [0, 6],
+    "specificClosures": []
+  },
+  {
+    "name": "Grand Salon & Convivialité",
+    "capacity": 15,
+    "globalOpeningStart": "2026-01-01",
+    "globalOpeningEnd": "2026-12-31",
+    "weeklyClosures": [0, 6],
     "specificClosures": [
       {
         "startDate": "2026-08-01T00:00:00.000Z",
         "endDate": "2026-08-15T23:59:59.000Z"
-      }
-    ]
-  },
-  {
-    "name": "Salle Polyvalente A",
-    "capacity": 20,
-    "globalOpeningStart": "2026-01-01",
-    "globalOpeningEnd": "2026-12-31",
-    "weeklyClosures": [0, 6],
-    "specificClosures": [
-      {
-        "startDate": "2026-12-23T00:00:00.000Z",
-        "endDate": "2026-12-31T23:59:59.000Z"
-      }
-    ]
-  },
-  {
-    "name": "Atelier Créatif",
-    "capacity": 12,
-    "globalOpeningStart": "2026-01-01",
-    "globalOpeningEnd": "2026-12-31",
-    "weeklyClosures": [0, 6],
-    "specificClosures": []
-  },
-  {
-    "name": "Piscine Olympique",
-    "capacity": 25,
-    "globalOpeningStart": "2026-03-01",
-    "globalOpeningEnd": "2026-10-31",
-    "weeklyClosures": [0],
-    "specificClosures": [
-      {
-        "startDate": "2026-07-14T00:00:00.000Z",
-        "endDate": "2026-07-14T23:59:59.000Z"
-      }
-    ]
-  },
-  {
-    "name": "Studio Danse",
-    "capacity": 15,
-    "globalOpeningStart": "2026-01-01",
-    "globalOpeningEnd": "2026-12-31",
-    "weeklyClosures": [0],
-    "specificClosures": []
-  },
-  {
-    "name": "Salle de Conférence B",
-    "capacity": 50,
-    "globalOpeningStart": "2026-01-01",
-    "globalOpeningEnd": "2026-12-31",
-    "weeklyClosures": [0, 6],
-    "specificClosures": [
-      {
-        "startDate": "2026-05-01T00:00:00.000Z",
-        "endDate": "2026-05-01T23:59:59.000Z"
-      },
-      {
-        "startDate": "2026-11-11T00:00:00.000Z",
-        "endDate": "2026-11-11T23:59:59.000Z"
       }
     ]
   }
