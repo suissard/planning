@@ -23,6 +23,16 @@
         ></v-text-field>
 
         <v-text-field
+          v-model="formData.address"
+          label="Adresse"
+          prepend-inner-icon="mdi-map-marker"
+          variant="outlined"
+          density="comfortable"
+          placeholder="ex: 12 Rue des Sports, 75015 Paris"
+          class="mb-3"
+        ></v-text-field>
+
+        <v-text-field
           v-model.number="formData.capacity"
           :rules="[
             v => !!v || 'La capacité est requise',
@@ -117,6 +127,7 @@ export default {
 
     const formData = ref({
       name: '',
+      address: '',
       capacity: 1,
       globalOpeningStart: '08:00',
       globalOpeningEnd: '18:00',
@@ -129,6 +140,7 @@ export default {
       if (props.location) {
         formData.value = {
           name: props.location.name,
+          address: props.location.address || '',
           capacity: props.location.capacity,
           globalOpeningStart: props.location.globalOpeningStart ? props.location.globalOpeningStart.substring(0, 5) : '08:00',
           globalOpeningEnd: props.location.globalOpeningEnd ? props.location.globalOpeningEnd.substring(0, 5) : '18:00',
@@ -138,6 +150,7 @@ export default {
       } else {
         formData.value = {
           name: '',
+          address: '',
           capacity: 1,
           globalOpeningStart: '08:00',
           globalOpeningEnd: '18:00',

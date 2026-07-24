@@ -1,14 +1,359 @@
 [
   {
+    "date": "2026-09-01",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-01",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-01",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-01",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-02",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-02",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-02",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-02",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-03",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-03",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-03",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-03",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-04",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-04",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-04",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-04",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-05",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-05",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-05",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-05",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-06",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-06",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-06",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-06",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
     "date": "2026-09-07",
     "_location": "Grand Salon & Convivialité",
     "_manager": "marc.lefevre@ehpad-accueil.fr",
     "_participants": [
       "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
       "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
       "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
       "suzanne.lefevre@senior.dev",
-      "gaston.leroy@senior.dev"
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
     ]
   },
   {
@@ -16,19 +361,11 @@
     "_location": "Salle de Gym Douce & Psychomotricité",
     "_manager": "claire.dubois@ehpad-accueil.fr",
     "_participants": [
-      "jeanne.dupont@senior.dev",
-      "marcelle.martin@senior.dev",
-      "gaston.leroy@senior.dev"
-    ]
-  },
-  {
-    "date": "2026-09-07",
-    "_location": "Atelier Mémoire & Stimulation Cognitive",
-    "_manager": "antoine.bernard@ehpad-accueil.fr",
-    "_participants": [
+      "lucien.moreau@senior.dev",
       "suzanne.lefevre@senior.dev",
-      "germaine.bernard@senior.dev",
-      "marcelle.martin@senior.dev"
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
     ]
   },
   {
@@ -37,29 +374,42 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [
       "jeanne.dupont@senior.dev",
-      "suzanne.lefevre@senior.dev"
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-07",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
     ]
   },
   {
     "date": "2026-09-08",
-    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_location": "Grand Salon & Convivialité",
     "_manager": "marc.lefevre@ehpad-accueil.fr",
     "_participants": [
+      "jeanne.dupont@senior.dev",
       "robert.durand@senior.dev",
       "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
       "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
       "raymond.roux@senior.dev",
-      "gaston.leroy@senior.dev"
-    ]
-  },
-  {
-    "date": "2026-09-08",
-    "_location": "Cuisine Thérapeutique",
-    "_manager": "valerie.moreau@ehpad-accueil.fr",
-    "_participants": [
-      "robert.durand@senior.dev",
-      "marcelle.martin@senior.dev",
-      "lucien.moreau@senior.dev"
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
     ]
   },
   {
@@ -67,17 +417,1266 @@
     "_location": "Salle de Gym Douce & Psychomotricité",
     "_manager": "claire.dubois@ehpad-accueil.fr",
     "_participants": [
-      "jeanne.dupont@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
       "gaston.leroy@senior.dev"
     ]
   },
   {
     "date": "2026-09-08",
-    "_location": "Grand Salon & Convivialité",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-08",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-09",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
       "suzanne.lefevre@senior.dev",
-      "germaine.bernard@senior.dev"
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-09",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-09",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-09",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-10",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-10",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-10",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-10",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-11",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-11",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-11",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-11",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-12",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-12",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-12",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-12",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-13",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-13",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-13",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-13",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-14",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-14",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-14",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-14",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-15",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-15",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-15",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-15",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-16",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-16",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-16",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-16",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-17",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-17",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-17",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-17",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-18",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-18",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-18",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-18",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-19",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-19",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-19",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-19",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-20",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-20",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-20",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-20",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-21",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-21",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-21",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-21",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-22",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-22",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-22",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-22",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-23",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-23",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-23",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-23",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-24",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-24",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-24",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-24",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-25",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-25",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-25",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-25",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-26",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-26",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-26",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-26",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-27",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-27",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-27",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-27",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-28",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-28",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-28",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-28",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-29",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-29",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-29",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-29",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-30",
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev",
+      "germaine.bernard@senior.dev",
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev",
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-30",
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [
+      "lucien.moreau@senior.dev",
+      "suzanne.lefevre@senior.dev",
+      "raymond.roux@senior.dev",
+      "colette.bonnet@senior.dev",
+      "gaston.leroy@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-30",
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [
+      "jeanne.dupont@senior.dev",
+      "robert.durand@senior.dev",
+      "marcelle.martin@senior.dev",
+      "henri.petit@senior.dev"
+    ]
+  },
+  {
+    "date": "2026-09-30",
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "antoine.bernard@ehpad-accueil.fr",
+    "_participants": [
+      "pierrette.dubois@senior.dev",
+      "andre.morel@senior.dev",
+      "monique.girard@senior.dev",
+      "jacques.lambert@senior.dev",
+      "simone.faure@senior.dev"
     ]
   }
 ]

@@ -20,7 +20,7 @@
           style="min-width: 220px;"
         ></v-text-field>
 
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="openDialog()" class="text-none">
+        <v-btn v-if="isAdminMode" color="primary" prepend-icon="mdi-plus" @click="openDialog()" class="text-none">
           Nouvel Animateur
         </v-btn>
       </div>
@@ -62,7 +62,7 @@
       </template>
 
       <template v-slot:item.actions="{ item }">
-        <div class="d-flex ga-1">
+        <div v-if="isAdminMode" class="d-flex ga-1">
           <v-btn
             icon="mdi-pencil"
             size="x-small"
@@ -256,6 +256,7 @@
 
 <script>
 import { useFacilitatorStore } from '../../stores/admin/facilitatorStore';
+import { useAppSettingsStore } from '../../stores/appSettings';
 import { storeToRefs } from 'pinia';
 import { computed, ref, onMounted } from 'vue';
 
@@ -263,11 +264,14 @@ export default {
   name: 'FacilitatorsList',
   setup() {
     const store = useFacilitatorStore();
+    const appSettingsStore = useAppSettingsStore();
     const { facilitators, loading } = storeToRefs(store);
 
     const dialog = ref(false);
     const saving = ref(false);
     const search = ref('');
+
+    const isAdminMode = computed(() => appSettingsStore.isAdminMode);
 
     const daysOfWeek = [
       { text: 'Lundi', value: '1' },
@@ -279,12 +283,17 @@ export default {
       { text: 'Dimanche', value: '0' },
     ];
 
-    const headers = [
-      { title: 'Animateur', key: 'name' },
-      { title: 'Email', key: 'email' },
-      { title: 'Disponibilités Hebdo.', key: 'weeklyAvailabilities' },
-      { title: 'Actions', key: 'actions', sortable: false, align: 'end' },
-    ];
+    const headers = computed(() => {
+      const base = [
+        { title: 'Animateur', key: 'name' },
+        { title: 'Email', key: 'email' },
+        { title: 'Disponibilités Hebdo.', key: 'weeklyAvailabilities' },
+      ];
+      if (isAdminMode.value) {
+        base.push({ title: 'Actions', key: 'actions', sortable: false, align: 'end' });
+      }
+      return base;
+    });
 
     const defaultItem = {
       firstName: '',
@@ -412,6 +421,7 @@ export default {
     };
 
     return {
+      isAdminMode,
       facilitators,
       loading,
       headers,

@@ -1,72 +1,166 @@
 [
   {
+    "name": "Accueil & Café du Matin",
+    "standardDuration": 45,
+    "minParticipants": 3,
+    "maxParticipants": 15,
+    "tags": ["Social", "Convivialité"],
+    "_authorizedFacilitators": [
+      "marc.lefevre@ehpad-accueil.fr",
+      "sophie.martin@ehpad-accueil.fr",
+      "claire.dubois@ehpad-accueil.fr",
+      "antoine.bernard@ehpad-accueil.fr",
+      "valerie.moreau@ehpad-accueil.fr"
+    ]
+  },
+  {
     "name": "Atelier Mémoire & Stimulation Cognitive",
     "standardDuration": 60,
     "minParticipants": 3,
     "maxParticipants": 8,
-    "_authorizedFacilitators": ["marc.lefevre@ehpad-accueil.fr"]
+    "tags": ["Cognitif", "Mémoire"],
+    "_authorizedFacilitators": [
+      "marc.lefevre@ehpad-accueil.fr"
+    ]
   },
   {
     "name": "Gym Douce & Équilibre",
     "standardDuration": 45,
     "minParticipants": 3,
     "maxParticipants": 8,
-    "_authorizedFacilitators": ["claire.dubois@ehpad-accueil.fr"]
+    "tags": ["Moteur", "Activité physique"],
+    "_authorizedFacilitators": [
+      "claire.dubois@ehpad-accueil.fr"
+    ]
   },
   {
     "name": "Cuisine Thérapeutique & Pâtisserie",
-    "standardDuration": 90,
+    "standardDuration": 60,
     "minParticipants": 2,
     "maxParticipants": 6,
-    "_authorizedFacilitators": ["valerie.moreau@ehpad-accueil.fr"]
+    "tags": ["Cuisine", "Créatif", "Sensorielles"],
+    "_authorizedFacilitators": [
+      "valerie.moreau@ehpad-accueil.fr"
+    ]
+  },
+  {
+    "name": "Déjeuner Thérapeutique & Repas Convivial",
+    "standardDuration": 90,
+    "minParticipants": 3,
+    "maxParticipants": 15,
+    "tags": ["Repas", "Social"],
+    "_authorizedFacilitators": [
+      "valerie.moreau@ehpad-accueil.fr",
+      "marc.lefevre@ehpad-accueil.fr",
+      "sophie.martin@ehpad-accueil.fr"
+    ]
+  },
+  {
+    "name": "Temps Calme & Sieste Thérapeutique",
+    "standardDuration": 60,
+    "minParticipants": 2,
+    "maxParticipants": 12,
+    "tags": ["Bien-être", "Relaxation"],
+    "_authorizedFacilitators": [
+      "sophie.martin@ehpad-accueil.fr",
+      "claire.dubois@ehpad-accueil.fr",
+      "marc.lefevre@ehpad-accueil.fr"
+    ]
   },
   {
     "name": "Musicothérapie & Chansons d'Antan",
     "standardDuration": 60,
     "minParticipants": 4,
     "maxParticipants": 12,
-    "_authorizedFacilitators": ["sophie.martin@ehpad-accueil.fr"]
+    "tags": ["Musique", "Bien-être", "Culture"],
+    "_authorizedFacilitators": [
+      "sophie.martin@ehpad-accueil.fr"
+    ]
   },
   {
     "name": "Jardinage Thérapeutique & Potager Sensoriel",
     "standardDuration": 60,
     "minParticipants": 2,
     "maxParticipants": 8,
-    "_authorizedFacilitators": ["antoine.bernard@ehpad-accueil.fr"]
+    "tags": ["Extérieur", "Sensorielles", "Nature"],
+    "_authorizedFacilitators": [
+      "antoine.bernard@ehpad-accueil.fr"
+    ]
   },
   {
     "name": "Séance Snoezelen & Relaxation Sensorielle",
     "standardDuration": 45,
     "minParticipants": 1,
     "maxParticipants": 4,
-    "_authorizedFacilitators": ["claire.dubois@ehpad-accueil.fr", "sophie.martin@ehpad-accueil.fr"]
+    "tags": ["Sensorielles", "Bien-être", "Relaxation"],
+    "_authorizedFacilitators": [
+      "claire.dubois@ehpad-accueil.fr",
+      "sophie.martin@ehpad-accueil.fr"
+    ]
   },
   {
     "name": "Art-thérapie & Peinture Intuitive",
     "standardDuration": 75,
     "minParticipants": 2,
     "maxParticipants": 8,
-    "_authorizedFacilitators": ["antoine.bernard@ehpad-accueil.fr"]
+    "tags": ["Créatif", "Art", "Cognitif"],
+    "_authorizedFacilitators": [
+      "antoine.bernard@ehpad-accueil.fr"
+    ]
   },
   {
     "name": "Atelier Revue de Presse & Discussion",
     "standardDuration": 45,
     "minParticipants": 3,
     "maxParticipants": 10,
-    "_authorizedFacilitators": ["marc.lefevre@ehpad-accueil.fr"]
+    "tags": ["Cognitif", "Social"],
+    "_authorizedFacilitators": [
+      "marc.lefevre@ehpad-accueil.fr"
+    ]
   },
   {
     "name": "Parcours de Motricité",
     "standardDuration": 45,
     "minParticipants": 2,
     "maxParticipants": 8,
-    "_authorizedFacilitators": ["claire.dubois@ehpad-accueil.fr", "valerie.moreau@ehpad-accueil.fr"]
+    "tags": ["Moteur", "Activité physique"],
+    "_authorizedFacilitators": [
+      "claire.dubois@ehpad-accueil.fr",
+      "valerie.moreau@ehpad-accueil.fr"
+    ]
   },
   {
     "name": "Atelier Toucher-Massage & Bien-Être",
     "standardDuration": 45,
     "minParticipants": 1,
     "maxParticipants": 4,
-    "_authorizedFacilitators": ["sophie.martin@ehpad-accueil.fr"]
+    "tags": ["Bien-être", "Relaxation"],
+    "_authorizedFacilitators": [
+      "sophie.martin@ehpad-accueil.fr"
+    ]
+  },
+  {
+    "name": "Goûter & Temps d'Échange",
+    "standardDuration": 45,
+    "minParticipants": 3,
+    "maxParticipants": 15,
+    "tags": ["Social", "Convivialité", "Repas"],
+    "_authorizedFacilitators": [
+      "marc.lefevre@ehpad-accueil.fr",
+      "sophie.martin@ehpad-accueil.fr",
+      "claire.dubois@ehpad-accueil.fr"
+    ]
+  },
+  {
+    "name": "Atelier Détente & Préparation du Soir",
+    "standardDuration": 45,
+    "minParticipants": 2,
+    "maxParticipants": 15,
+    "tags": ["Bien-être", "Relaxation"],
+    "_authorizedFacilitators": [
+      "sophie.martin@ehpad-accueil.fr",
+      "marc.lefevre@ehpad-accueil.fr",
+      "claire.dubois@ehpad-accueil.fr"
+    ]
   }
 ]

@@ -486,6 +486,7 @@ export interface ApiActivityTemplateActivityTemplate
         },
         number
       >;
+    tags: Schema.Attribute.JSON;
     timeSlots: Schema.Attribute.Relation<
       'oneToMany',
       'api::time-slot.time-slot'
@@ -556,6 +557,7 @@ export interface ApiLocationLocation extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    address: Schema.Attribute.String;
     capacity: Schema.Attribute.Integer &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<

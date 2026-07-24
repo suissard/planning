@@ -12,7 +12,8 @@ export const useActivityStore = defineStore('activity', {
             standardDuration: parseInt(activityData.standardDuration),
             minParticipants: parseInt(activityData.minParticipants),
             maxParticipants: parseInt(activityData.maxParticipants),
-            authorizedFacilitators: activityData.authorizedFacilitators
+            authorizedFacilitators: activityData.authorizedFacilitators,
+            tags: activityData.tags || []
           }
         };
         const res = await api.post('/activity-templates', payload);
@@ -37,7 +38,8 @@ export const useActivityStore = defineStore('activity', {
             standardDuration: parseInt(activityData.standardDuration),
             minParticipants: parseInt(activityData.minParticipants),
             maxParticipants: parseInt(activityData.maxParticipants),
-            authorizedFacilitators: activityData.authorizedFacilitators
+            authorizedFacilitators: activityData.authorizedFacilitators,
+            tags: activityData.tags || []
           }
         };
         const res = await api.put(`/activity-templates/${documentId}`, payload);

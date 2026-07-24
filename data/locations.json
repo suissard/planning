@@ -1,50 +1,56 @@
 [
   {
     "name": "Salle de Gym Douce & Psychomotricité",
+    "address": "12 Rue des Sports, 75015 Paris",
     "capacity": 10,
     "globalOpeningStart": "2026-01-01",
     "globalOpeningEnd": "2026-12-31",
-    "weeklyClosures": [0, 6],
+    "weeklyClosures": [],
     "specificClosures": []
   },
   {
     "name": "Atelier Mémoire & Stimulation Cognitive",
+    "address": "45 Avenue de la République, 75011 Paris",
     "capacity": 8,
     "globalOpeningStart": "2026-01-01",
     "globalOpeningEnd": "2026-12-31",
-    "weeklyClosures": [0, 6],
+    "weeklyClosures": [],
     "specificClosures": []
   },
   {
     "name": "Espace Snoezelen & Relaxation Sensorielle",
+    "address": "8 Rue de la Paix, 75002 Paris",
     "capacity": 4,
     "globalOpeningStart": "2026-01-01",
     "globalOpeningEnd": "2026-12-31",
-    "weeklyClosures": [0, 6],
+    "weeklyClosures": [],
     "specificClosures": []
   },
   {
     "name": "Cuisine Thérapeutique",
+    "address": "24 Boulevard Haussmann, 75009 Paris",
     "capacity": 8,
     "globalOpeningStart": "2026-01-01",
     "globalOpeningEnd": "2026-12-31",
-    "weeklyClosures": [0, 6],
+    "weeklyClosures": [],
     "specificClosures": []
   },
   {
     "name": "Jardin Thérapeutique & Potager Sensoriel",
+    "address": "15 Rue de la Nature, 75012 Paris",
     "capacity": 12,
-    "globalOpeningStart": "2026-04-01",
-    "globalOpeningEnd": "2026-11-01",
-    "weeklyClosures": [0, 6],
+    "globalOpeningStart": "2026-01-01",
+    "globalOpeningEnd": "2026-12-31",
+    "weeklyClosures": [],
     "specificClosures": []
   },
   {
     "name": "Grand Salon & Convivialité",
+    "address": "3 Place de l'Hôtel de Ville, 75004 Paris",
     "capacity": 15,
     "globalOpeningStart": "2026-01-01",
     "globalOpeningEnd": "2026-12-31",
-    "weeklyClosures": [0, 6],
+    "weeklyClosures": [],
     "specificClosures": [
       {
         "startDate": "2026-08-01T00:00:00.000Z",

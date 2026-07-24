@@ -8,8 +8,10 @@ export const useAppSettingsStore = defineStore('appSettings', {
                   window.location.hostname.endsWith('.local') ||
                   !!import.meta.env.DEV ||
                   window.location.search.includes('mock=true');
+    const savedAdmin = localStorage.getItem('isAdminMode');
     return {
       useMockData: saved !== null ? saved === 'true' : isDev,
+      isAdminMode: savedAdmin !== null ? savedAdmin === 'true' : true,
     };
   },
   actions: {
@@ -19,7 +21,15 @@ export const useAppSettingsStore = defineStore('appSettings', {
     },
     toggleMockData() {
       this.setMockData(!this.useMockData);
+    },
+    setAdminMode(value) {
+      this.isAdminMode = !!value;
+      localStorage.setItem('isAdminMode', String(this.isAdminMode));
+    },
+    toggleAdminMode() {
+      this.setAdminMode(!this.isAdminMode);
     }
   }
 });
+
 

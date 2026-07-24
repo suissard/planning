@@ -24,13 +24,6 @@
         >
           📆 Jour
         </button>
-        <button 
-          class="view-btn" 
-          :class="{ active: viewMode === 'planning' }" 
-          @click="setViewMode('planning')"
-        >
-          📋 Planning
-        </button>
       </div>
 
       <!-- DATE NAVIGATION -->
@@ -38,7 +31,9 @@
         <button class="nav-arrow-btn" @click="navigateDate(-1)" title="Période précédente">◄</button>
         <button class="today-btn" @click="goToToday" title="Revenir au jour présent">Aujourd'hui</button>
         <button class="nav-arrow-btn" @click="navigateDate(1)" title="Période suivante">►</button>
-        <span class="current-period-title">{{ periodTitle }}</span>
+        <Transition :name="transitionName" mode="out-in">
+          <span :key="periodTitle" class="current-period-title">{{ periodTitle }}</span>
+        </Transition>
       </div>
 
       <!-- ACTIONS -->
@@ -55,9 +50,12 @@
       <p>Vue sélectionnée : <strong>{{ viewModeLabel }}</strong> | Imprimé le {{ currentFormattedDate }}</p>
     </div>
 
-    <!-- ════════════════ 1. MONTH VIEW ════════════════ -->
-    <div v-if="viewMode === 'month'" class="month-view">
-      <div class="month-grid-header">
+    <!-- CALENDAR VIEWS WRAPPER WITH TIME SLIDE TRANSITION -->
+    <Transition :name="transitionName" mode="out-in">
+      <div :key="periodKey" class="calendar-animated-view-wrapper">
+        <!-- ════════════════ 1. MONTH VIEW ════════════════ -->
+        <div v-if="viewMode === 'month'" class="month-view">
+          <div class="month-grid-header">
         <div v-for="dayName in weekDays" :key="dayName" class="month-header-cell">
           {{ dayName }}
         </div>
@@ -69,7 +67,8 @@
           class="month-day-cell"
           :class="{ 
             'other-month': !cell.isCurrentMonth, 
-            'is-today': cell.isToday 
+            'is-today': cell.isToday,
+            'is-past-day': cell.isPast
           }"
           @click="cell.isCurrentMonth && selectDayFromCell(cell.date)"
         >
@@ -83,6 +82,7 @@
               v-for="slot in cell.slots.slice(0, 4)" 
               :key="slot.documentId || slot.id"
               class="month-slot-badge"
+              :class="{ 'is-past-slot': isSlotPast(slot) }"
               @click.stop="$emit('select-slot', slot)"
               :title="getSlotTooltip(slot)"
             >
@@ -105,7 +105,7 @@
           v-for="day in weekDaysList" 
           :key="day.dateKey" 
           class="week-header-cell"
-          :class="{ 'is-today': day.isToday }"
+          :class="{ 'is-today': day.isToday, 'is-past-day': day.isPast }"
         >
           <span class="day-name">{{ day.dayName }}</span>
           <span class="day-date">{{ day.dayNumber }} {{ day.monthShort }}</span>
@@ -202,79 +202,69 @@
         </div>
       </div>
     </div>
-
-    <!-- ════════════════ 4. PLANNING / AGENDA VIEW ════════════════ -->
-    <div v-else-if="viewMode === 'planning'" class="planning-view">
-      <div v-if="groupedSlotsByDate.length === 0" class="empty-state-card">
-        <span class="empty-icon">📋</span>
-        <p>Aucun créneau n'est disponible pour la période courante.</p>
-      </div>
-
-      <div v-else class="planning-groups">
-        <div 
-          v-for="group in groupedSlotsByDate" 
-          :key="group.dateKey" 
-          class="planning-date-group"
-        >
-          <div class="group-header">
-            <span class="header-icon">📅</span>
-            <h4>{{ group.dateFormatted }}</h4>
-            <span class="group-count-badge">{{ group.slots.length }} créneau(x)</span>
-          </div>
-
-          <div class="group-slots-grid">
-            <div 
-              v-for="slot in group.slots" 
-              :key="slot.documentId || slot.id"
-              class="planning-slot-card"
-              @click="$emit('select-slot', slot)"
-            >
-              <div class="p-slot-header">
-                <div class="p-time">
-                  🕒 {{ formatTimeOnly(slot.startDate) }} - {{ formatTimeOnly(slot.endDate) }}
-                </div>
-                <span class="p-location" v-if="slot.location">📍 {{ slot.location.name }}</span>
-              </div>
-
-              <h5 class="p-activity-name">🎯 {{ slot.activityTemplate?.name || 'Activité' }}</h5>
-
-              <div class="p-people-info">
-                <div v-if="slot.facilitators && slot.facilitators.length" class="p-facs">
-                  <strong>Animateurs :</strong>
-                  <span>{{ slot.facilitators.map(f => f.firstName + ' ' + f.lastName).join(', ') }}</span>
-                </div>
-                <div v-if="slot.participants && slot.participants.length" class="p-parts">
-                  <strong>Participants ({{ slot.participants.length }}) :</strong>
-                  <span>{{ slot.participants.map(p => p.firstName + ' ' + p.lastName).join(', ') }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
+    </Transition>
   </div>
 </template>
 
 <script>
+import { useAppSettingsStore } from '../stores/appSettings';
+
 export default {
   name: 'CalendarView',
   props: {
     timeslots: {
       type: Array,
       default: () => []
+    },
+    targetDate: {
+      type: [Date, String],
+      default: null
     }
   },
   emits: ['select-slot'],
   data() {
     return {
-      viewMode: 'month', // 'month', 'week', 'day', 'planning'
+      viewMode: 'month', // 'month', 'week', 'day'
       currentDate: new Date(),
+      transitionName: 'slide-left',
       weekDays: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
       hoursList: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     };
   },
+  watch: {
+    targetDate: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal) {
+          const d = new Date(newVal);
+          if (!isNaN(d.getTime())) {
+            if (d > this.currentDate) {
+              this.transitionName = 'slide-left';
+            } else if (d < this.currentDate) {
+              this.transitionName = 'slide-right';
+            }
+            this.currentDate = d;
+          }
+        }
+      }
+    }
+  },
   computed: {
+    periodKey() {
+      if (this.viewMode === 'month') {
+        return `${this.viewMode}-${this.currentDate.getFullYear()}-${this.currentDate.getMonth()}`;
+      } else if (this.viewMode === 'week') {
+        const start = this.getStartOfWeek(this.currentDate);
+        return `${this.viewMode}-${this.toDateKey(start)}`;
+      } else {
+        return `${this.viewMode}-${this.toDateKey(this.currentDate)}`;
+      }
+    },
+    isAdminMode() {
+      const store = useAppSettingsStore();
+      return store.isAdminMode;
+    },
     currentFormattedDate() {
       return new Date().toLocaleDateString('fr-FR', {
         day: '2-digit',
@@ -289,7 +279,6 @@ export default {
         case 'month': return 'Mois';
         case 'week': return 'Semaine';
         case 'day': return 'Jour';
-        case 'planning': return 'Planning (Agenda)';
         default: return '';
       }
     },
@@ -335,6 +324,7 @@ export default {
           dayNumber: d.getDate(),
           isCurrentMonth: false,
           isToday: dateKey === todayStr,
+          isPast: dateKey < todayStr,
           slots: this.getSlotsForDateKey(dateKey)
         });
       }
@@ -348,6 +338,7 @@ export default {
           dayNumber: day,
           isCurrentMonth: true,
           isToday: dateKey === todayStr,
+          isPast: dateKey < todayStr,
           slots: this.getSlotsForDateKey(dateKey)
         });
       }
@@ -363,6 +354,7 @@ export default {
           dayNumber: day,
           isCurrentMonth: false,
           isToday: dateKey === todayStr,
+          isPast: dateKey < todayStr,
           slots: this.getSlotsForDateKey(dateKey)
         });
       }
@@ -386,7 +378,8 @@ export default {
           dayNumber: d.getDate(),
           dayName: this.weekDays[i],
           monthShort: d.toLocaleDateString('fr-FR', { month: 'short' }),
-          isToday: dateKey === todayStr
+          isToday: dateKey === todayStr,
+          isPast: dateKey < todayStr
         });
       }
 
@@ -425,10 +418,19 @@ export default {
     }
   },
   methods: {
+    isSlotPast(slot) {
+      if (!slot || !slot.startDate) return false;
+      return new Date(slot.endDate || slot.startDate) < new Date();
+    },
     setViewMode(mode) {
       this.viewMode = mode;
     },
     navigateDate(direction) {
+      if (direction > 0) {
+        this.transitionName = 'slide-left';
+      } else {
+        this.transitionName = 'slide-right';
+      }
       const d = new Date(this.currentDate);
       if (this.viewMode === 'month') {
         d.setMonth(d.getMonth() + direction);
@@ -442,7 +444,13 @@ export default {
       this.currentDate = d;
     },
     goToToday() {
-      this.currentDate = new Date();
+      const today = new Date();
+      if (today > this.currentDate) {
+        this.transitionName = 'slide-left';
+      } else if (today < this.currentDate) {
+        this.transitionName = 'slide-right';
+      }
+      this.currentDate = today;
     },
     selectDayFromCell(date) {
       this.currentDate = new Date(date);
@@ -581,6 +589,7 @@ export default {
 }
 
 .current-period-title {
+  display: inline-block;
   font-size: 1.05rem;
   font-weight: 700;
   color: #f8fafc;
@@ -962,27 +971,27 @@ export default {
 .planning-groups {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.65rem;
 }
 
 .planning-date-group {
-  background: rgba(15, 23, 42, 0.5);
-  border-radius: 0.75rem;
-  padding: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 0.65rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .group-header {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .group-header h4 {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #818cf8;
   margin: 0;
@@ -990,54 +999,87 @@ export default {
 
 .group-count-badge {
   margin-left: auto;
-  font-size: 0.75rem;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.15rem 0.5rem;
   border-radius: 1rem;
-  color: #cbd5e1;
-}
-
-.group-slots-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 0.75rem;
-}
-
-.planning-slot-card {
-  background: rgba(30, 41, 59, 0.8);
-  border-top: 3px solid #6366f1;
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.planning-slot-card:hover {
-  transform: translateY(-2px);
-  background: rgba(30, 41, 59, 1);
-}
-
-.p-slot-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: #a5b4fc;
-  margin-bottom: 0.4rem;
-}
-
-.p-activity-name {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 0.5rem 0;
-}
-
-.p-people-info {
-  font-size: 0.78rem;
   color: #94a3b8;
+}
+
+.planning-slots-list {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.4rem;
+}
+
+.planning-slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(30, 41, 59, 0.7);
+  border-left: 3px solid #6366f1;
+  border-radius: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.planning-slot-row:hover {
+  background: rgba(30, 41, 59, 1);
+  transform: translateX(3px);
+  border-left-color: #818cf8;
+}
+
+.p-row-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.p-row-time {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.15);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.35rem;
+  white-space: nowrap;
+}
+
+.p-row-activity {
+  font-size: 0.9rem;
+  color: #f8fafc;
+}
+
+.p-row-location {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.35rem;
+}
+
+.p-row-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.8rem;
+}
+
+.p-row-facs {
+  color: #c7d2fe;
+}
+
+.p-row-parts {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 0.15rem 0.65rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
 }
 
 .empty-state-card {

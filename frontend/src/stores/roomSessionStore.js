@@ -89,7 +89,7 @@ export const useRoomSessionStore = defineStore('roomSession', {
             'populate[1]': 'manager',
             'populate[2]': 'participants',
             'populate[3]': 'timeSlots',
-            'pagination[pageSize]': 100
+            'pagination[pageSize]': 5000
           }
         });
         this.sessions = res.data.data || [];

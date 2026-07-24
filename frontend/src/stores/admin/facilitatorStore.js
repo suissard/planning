@@ -13,7 +13,7 @@ export const useFacilitatorStore = defineStore('adminFacilitator', {
       this.loading = true;
       this.error = null;
       try {
-        const response = await api.get('/facilitators?populate=*&pagination[pageSize]=100');
+        const response = await api.get('/facilitators?populate=*&pagination[pageSize]=5000');
         this.facilitators = response.data.data || [];
       } catch (err) {
         console.error('Error fetching facilitators:', err);

@@ -15,6 +15,9 @@
       "type": "string",
       "required": true
     },
+    "address": {
+      "type": "string"
+    },
     "capacity": {
       "type": "integer",
       "required": true,

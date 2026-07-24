@@ -24,11 +24,11 @@ export const useSchedulerStore = defineStore('scheduler', {
           resParticipants,
           resTimeSlots
         ] = await Promise.all([
-          api.get('/locations?pagination[pageSize]=100'),
-          api.get('/activity-templates?populate=*&pagination[pageSize]=100'),
-          api.get('/facilitators?populate=*&pagination[pageSize]=100'),
-          api.get('/participants?populate=*&pagination[pageSize]=100'),
-          api.get('/time-slots?populate[location]=true&populate[activityTemplate]=true&populate[facilitators]=true&populate[participants]=true&pagination[pageSize]=100')
+          api.get('/locations?pagination[pageSize]=5000'),
+          api.get('/activity-templates?populate=*&pagination[pageSize]=5000'),
+          api.get('/facilitators?populate=*&pagination[pageSize]=5000'),
+          api.get('/participants?populate=*&pagination[pageSize]=5000'),
+          api.get('/time-slots?populate[location]=true&populate[activityTemplate]=true&populate[facilitators]=true&populate[participants]=true&pagination[pageSize]=5000')
         ]);
 
         this.locations = resLocations.data.data || [];

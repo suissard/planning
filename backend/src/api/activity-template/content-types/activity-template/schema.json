@@ -40,6 +40,9 @@
       "relation": "oneToMany",
       "target": "api::time-slot.time-slot",
       "mappedBy": "activityTemplate"
+    },
+    "tags": {
+      "type": "json"
     }
   }
 }

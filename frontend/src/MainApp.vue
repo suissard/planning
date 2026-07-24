@@ -176,6 +176,17 @@
             <span class="stat-pill highlight">📅 {{ timeslots.length }} Créneaux</span>
           </div>
 
+          <!-- Mode Switcher Pill in Header -->
+          <div 
+            class="mode-toggle-pill clickable" 
+            :class="appSettingsStore.isAdminMode ? 'admin-mode' : 'user-mode'" 
+            @click="appSettingsStore.toggleAdminMode()" 
+            :title="appSettingsStore.isAdminMode ? 'Mode Administratif (Vue d\'édition complet). Cliquer pour passer en Mode Utilisateur.' : 'Mode Utilisateur (Données personnelles uniquement). Cliquer pour passer en Mode Administratif.'"
+          >
+            <span>{{ appSettingsStore.isAdminMode ? '👑' : '👤' }}</span>
+            <span>{{ appSettingsStore.isAdminMode ? 'Mode Administratif' : 'Mode Utilisateur' }}</span>
+          </div>
+
           <!-- User Profiling in Header -->
           <!-- Mock Data Toggle -->
           <div class="mock-toggle" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.05); padding: 0.35rem 0.75rem; border-radius: 2rem; border: 1px solid var(--border-color);">
@@ -196,16 +207,20 @@
       </header>
 
       <!-- Global Active Filter Banner -->
-      <div class="filter-banner" v-if="filterItemId">
+      <div class="filter-banner" v-if="filterItemId || selectedTagFilter">
         <span class="filter-icon">🔍</span>
         <div class="filter-desc">
-          Filtre actif : 
-          <strong>
+          Filtres actifs : 
+          <strong v-if="filterItemId">
             {{ filterItemTypeLabel }} — {{ filterItemName }}
           </strong>
+          <span v-if="filterItemId && selectedTagFilter"> | </span>
+          <strong v-if="selectedTagFilter">
+            🏷️ Étiquette : {{ selectedTagFilter }}
+          </strong>
         </div>
-        <button class="clear-filter-btn" @click="clearFilter">
-          Effacer le filtre
+        <button class="clear-filter-btn" @click="clearSearchAndFilter">
+          Effacer les filtres
         </button>
       </div>
 
@@ -223,13 +238,27 @@
             @click="navigateTo('profile')"
             title="Gérer mon profil"
           >
-            <div class="user-avatar-badge">👤</div>
+            <div class="user-avatar-badge">{{ appSettingsStore.isAdminMode ? '👑' : '👤' }}</div>
             <div class="user-sidebar-info">
               <span class="user-sidebar-username">{{ user?.username }}</span>
-              <span class="user-sidebar-role">Mon profil utilisateur</span>
+              <span class="user-sidebar-role" :style="{ color: appSettingsStore.isAdminMode ? '#fbbf24' : '#60a5fa' }">
+                {{ appSettingsStore.isAdminMode ? '👑 Mode Administratif' : '👤 Mode Utilisateur' }}
+              </span>
             </div>
             <span class="edit-profile-icon">⚙️</span>
           </div>
+
+          <!-- Quick Toggle Button in Sidebar -->
+          <button 
+            type="button"
+            class="sidebar-mode-switch-btn"
+            @click="appSettingsStore.toggleAdminMode()"
+            style="width: 100%; margin-top: 0.5rem; display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.85rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;"
+            :style="appSettingsStore.isAdminMode ? { background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' } : { background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' }"
+          >
+            <span>{{ appSettingsStore.isAdminMode ? '👑 Mode Admin' : '👤 Mode Utilisateur' }}</span>
+            <span style="font-size: 0.75rem; text-decoration: underline;">Basculer</span>
+          </button>
 
           <div class="nav-divider"></div>
 
@@ -258,6 +287,7 @@
             Activités
           </button>
           <button 
+            v-if="appSettingsStore.isAdminMode"
             class="nav-item" 
             :class="{ active: currentPage === 'facilitators' }"
             @click="navigateTo('facilitators')"
@@ -266,6 +296,7 @@
             Animateurs
           </button>
           <button 
+            v-if="appSettingsStore.isAdminMode"
             class="nav-item" 
             :class="{ active: currentPage === 'participants' }"
             @click="navigateTo('participants')"
@@ -274,6 +305,7 @@
             Participants
           </button>
           <button 
+            v-if="appSettingsStore.isAdminMode"
             class="nav-item" 
             :class="{ active: currentPage === 'individual-schedules' }"
             @click="navigateTo('individual-schedules')"
@@ -282,6 +314,7 @@
             Plannings Individuels
           </button>
           <button 
+            v-if="appSettingsStore.isAdminMode"
             class="nav-item" 
             :class="{ active: currentPage === 'room-sessions' }"
             @click="navigateTo('room-sessions')"
@@ -290,6 +323,7 @@
             Ouverture Salles
           </button>
           <button 
+            v-if="appSettingsStore.isAdminMode"
             class="nav-item" 
             :class="{ active: currentPage === 'extractions' }"
             @click="navigateTo('extractions')"
@@ -300,7 +334,7 @@
 
 
           <div class="nav-footer">
-            <button class="action-btn new-slot-btn" @click="openCreateModal">
+            <button v-if="appSettingsStore.isAdminMode" class="action-btn new-slot-btn" @click="openCreateModal">
               ➕ Nouveau Créneau
             </button>
             <button class="logout-sidebar-btn" @click="handleLogout">
@@ -311,6 +345,19 @@
 
         <!-- Main Content Area -->
         <main class="app-content">
+          <!-- User Mode Notification Banner -->
+          <div class="user-mode-banner" v-if="!appSettingsStore.isAdminMode && currentPage !== 'profile'">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="banner-icon">👤</span>
+              <div class="banner-text">
+                <strong>Mode Utilisateur Actif</strong> — Affichage uniquement des données qui vous concernent ({{ currentUserPersona?.facName || currentUserPersona?.partName || user?.username }}). Les vues et outils d'édition sont désactivés.
+              </div>
+            </div>
+            <button class="switch-admin-link-btn" @click="appSettingsStore.setAdminMode(true)">
+              👑 Passer en Mode Administratif
+            </button>
+          </div>
+
           <!-- Search & Info Bar (Hidden on Custom Views) -->
           <div class="content-header" v-if="!error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
             <div class="search-wrapper">
@@ -327,9 +374,37 @@
               <h2>{{ currentTabTitle }}</h2>
               <span class="count-badge">{{ filteredItems.length }} élément(s)</span>
 
-              <!-- Add Button Based on Tab -->
-              <button class="action-btn" v-if="currentPage === 'activities'" @click="openActivityModal()" style="margin-left: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
+              <!-- Add Button Based on Tab (Admin Mode only) -->
+              <button class="action-btn" v-if="appSettingsStore.isAdminMode && currentPage === 'activities'" @click="openActivityModal()" style="margin-left: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
                 ➕ Nouvelle Activité
+              </button>
+            </div>
+          </div>
+
+          <!-- Tag Filters Bar -->
+          <div class="tag-filter-bar mb-3" v-if="!error && (currentPage === 'activities' || currentPage === 'timeslots')">
+            <div class="tag-filter-header">
+              <span class="tag-filter-icon">🏷️</span>
+              <span class="tag-filter-label">Catégories & Étiquettes :</span>
+            </div>
+            <div class="tag-chips-wrapper">
+              <button 
+                type="button"
+                class="tag-filter-pill" 
+                :class="{ active: !selectedTagFilter }" 
+                @click="selectedTagFilter = ''"
+              >
+                Toutes
+              </button>
+              <button 
+                type="button"
+                v-for="tag in allAvailableTags" 
+                :key="tag" 
+                class="tag-filter-pill" 
+                :class="{ active: selectedTagFilter === tag }"
+                @click="toggleTagFilter(tag)"
+              >
+                🏷️ {{ tag }}
               </button>
             </div>
           </div>
@@ -346,17 +421,6 @@
             <h3>Impossible de contacter l'API Strapi</h3>
             <p>{{ error }}</p>
             <button class="action-btn retry-btn" @click="fetchData">Réessayer</button>
-          </div>
-
-          <!-- Empty State -->
-          <div class="empty-state" v-else-if="filteredItems.length === 0 && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
-            <span class="empty-icon">📁</span>
-            <h3>Aucune donnée trouvée</h3>
-            <p v-if="searchQuery || filterItemId">Aucun élément ne correspond à votre recherche ou filtre.</p>
-            <p v-else>Cette collection est vide. Utilisez le bouton ci-dessous pour ajouter un élément.</p>
-            <button class="action-btn reset-btn" v-if="searchQuery || filterItemId" @click="clearSearchAndFilter">
-              Réinitialiser les filtres
-            </button>
           </div>
 
           <!-- Data Views -->
@@ -459,126 +523,233 @@
             <!-- TAB: PLANNING (TIME SLOTS & CALENDAR) -->
             <div v-if="currentPage === 'timeslots'" class="timeslots-page-wrapper">
               <!-- View Display Switcher -->
-              <div class="display-mode-bar no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <div class="mode-tabs">
+              <div class="display-mode-bar user-planning-switcher-bar no-print">
+                <div class="mode-tabs hero-mode-switch">
                   <button 
-                    class="tab-btn" 
+                    class="tab-btn main-view-btn" 
                     :class="{ active: timeslotViewMode === 'calendar' }" 
                     @click="timeslotViewMode = 'calendar'"
                   >
-                    🗓️ Vue Calendrier (Mois / Semaine / Jour / Planning)
+                    <span class="tab-icon">🗓️</span>
+                    <span class="tab-text">Vue Calendrier</span>
                   </button>
                   <button 
-                    class="tab-btn" 
+                    class="tab-btn main-view-btn" 
                     :class="{ active: timeslotViewMode === 'cards' }" 
                     @click="timeslotViewMode = 'cards'"
                   >
-                    🎴 Vue Cartes Liste
+                    <span class="tab-icon">📋</span>
+                    <span class="tab-text">Vue Planning</span>
+                  </button>
+                </div>
+
+                <div class="time-filter-tabs hero-filter-switch">
+                  <button 
+                    class="tab-btn filter-btn" 
+                    :class="{ active: timeFilterMode === 'all' }" 
+                    @click="setTimeFilterMode('all')"
+                  >
+                    ⏳ Tous les créneaux
+                  </button>
+                  <button 
+                    class="tab-btn filter-btn" 
+                    :class="{ active: timeFilterMode === 'upcoming' }" 
+                    @click="setTimeFilterMode('upcoming')"
+                  >
+                    🔮 À venir
+                  </button>
+                  <button 
+                    class="tab-btn filter-btn" 
+                    :class="{ active: timeFilterMode === 'past' }" 
+                    @click="setTimeFilterMode('past')"
+                  >
+                    📜 Antérieurs
                   </button>
                 </div>
               </div>
 
+              <!-- Empty State inside Timeslots View -->
+              <div class="empty-state" v-if="filteredItems.length === 0" style="margin-top: 1.5rem;">
+                <span class="empty-icon">📁</span>
+                <h3>Aucun créneau trouvé</h3>
+                <p v-if="isFilterActive">Aucun créneau ne correspond à vos filtres actuels ({{ activeFiltersSummary }}).</p>
+                <p v-else>Aucun créneau n'est disponible.</p>
+                <button class="action-btn reset-btn" v-if="isFilterActive" @click="clearSearchAndFilter">
+                  Réinitialiser les filtres
+                </button>
+              </div>
+
               <!-- Calendar Component View -->
               <CalendarView 
-                v-if="timeslotViewMode === 'calendar'" 
+                v-else-if="timeslotViewMode === 'calendar'" 
                 :timeslots="filteredItems" 
+                :target-date="calendarTargetDate"
                 @select-slot="handleCalendarSelectSlot" 
               />
 
-              <!-- Cards Grid View -->
-              <div v-else class="slots-grid">
-                <div 
-                  v-for="slot in filteredItems" 
-                  :key="slot.documentId" 
-                  class="slot-card"
-                  :class="{ 'highlighted-item': slot.documentId === highlightedId }"
-                  :id="'slot-' + slot.documentId"
-                >
-                  <div class="slot-header">
-                    <div class="slot-time-info">
-                      <span class="calendar-icon">🕒</span>
-                      <div class="time-texts">
-                        <span class="date">{{ formatSlotDate(slot.startDate) }}</span>
-                        <span class="time">{{ formatSlotTimeRange(slot.startDate, slot.endDate) }}</span>
+              <!-- Cards Grid View (Admin mode: Vue détaillée complète | User mode: Vue dense compacte) -->
+              <div v-else :class="appSettingsStore.isAdminMode ? 'slots-grid' : 'user-slots-dense-grid'">
+                <!-- ADMIN MODE FULL DETAILED SLOT CARD -->
+                <template v-if="appSettingsStore.isAdminMode">
+                  <div 
+                    v-for="slot in filteredItems" 
+                    :key="slot.documentId" 
+                    class="slot-card"
+                    :class="{ 
+                      'highlighted-item': slot.documentId === highlightedId,
+                      'is-past-slot': new Date(slot.endDate || slot.startDate) < new Date()
+                    }"
+                    :id="'slot-' + slot.documentId"
+                  >
+                    <div class="slot-header">
+                      <div class="slot-time-info">
+                        <span class="calendar-icon">🕒</span>
+                        <div class="time-texts">
+                          <span class="date">{{ formatSlotDate(slot.startDate) }}</span>
+                          <span class="time">{{ formatSlotTimeRange(slot.startDate, slot.endDate) }}</span>
+                        </div>
+                      </div>
+                      <div class="slot-actions">
+                        <button class="delete-slot-btn" title="Supprimer le créneau" @click="deleteSlot(slot.documentId)">✕</button>
                       </div>
                     </div>
-                    <div class="slot-actions">
-                      <button class="delete-slot-btn" title="Supprimer le créneau" @click="deleteSlot(slot.documentId)">✕</button>
+
+                    <div class="slot-relations">
+                      <div class="relation-row">
+                        <span class="row-label">Activité</span>
+                        <span 
+                          class="data-chip activity-chip clickable"
+                          @click="navigateTo('activities', slot.activityTemplate?.documentId)"
+                          title="Voir l'activité"
+                        >
+                          🎯 {{ slot.activityTemplate?.name || 'Inconnue' }}
+                        </span>
+                      </div>
+
+                      <div class="relation-row">
+                        <span class="row-label">Lieu</span>
+                        <span 
+                          class="data-chip location-chip clickable"
+                          @click="navigateTo('locations', slot.location?.documentId)"
+                          title="Voir le lieu"
+                        >
+                          📍 {{ slot.location?.name || 'Inconnu' }}
+                        </span>
+                      </div>
+
+                      <div class="relation-row">
+                        <span class="row-label">Animateurs</span>
+                        <div class="chips-list">
+                          <span 
+                            v-for="fac in (slot.facilitators || []).slice(0, 3)" 
+                            :key="fac.documentId" 
+                            class="data-chip facilitator-chip clickable"
+                            @click="navigateTo('facilitators', fac.documentId)"
+                            title="Voir l'animateur"
+                          >
+                            👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}
+                          </span>
+                          <span 
+                            v-if="slot.facilitators && slot.facilitators.length > 3" 
+                            class="data-chip count-chip"
+                            :title="`${slot.facilitators.length - 3} autre(s) animateur(s)`"
+                          >
+                            +{{ slot.facilitators.length - 3 }}
+                          </span>
+                          <span v-if="!slot.facilitators || slot.facilitators.length === 0" class="no-data">Aucun</span>
+                        </div>
+                      </div>
+
+                      <div class="relation-row">
+                        <span class="row-label">Participants</span>
+                        <div class="chips-list">
+                          <span 
+                            v-for="part in (slot.participants || []).slice(0, 3)" 
+                            :key="part.documentId" 
+                            class="data-chip participant-chip clickable"
+                            @click="navigateTo('participants', part.documentId)"
+                            title="Voir le participant"
+                          >
+                            👥 {{ part.firstName }} {{ part.lastName }}
+                          </span>
+                          <span 
+                            v-if="slot.participants && slot.participants.length > 3" 
+                            class="data-chip count-chip"
+                            :title="`${slot.participants.length - 3} autre(s) participant(s)`"
+                          >
+                            +{{ slot.participants.length - 3 }}
+                          </span>
+                          <span v-if="!slot.participants || slot.participants.length === 0" class="no-data">Aucun</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                </template>
 
-                  <div class="slot-relations">
-                    <!-- Activity Chip -->
-                    <div class="relation-row">
-                      <span class="row-label">Activité</span>
-                      <span 
-                        class="data-chip activity-chip clickable"
-                        @click="navigateTo('activities', slot.activityTemplate?.documentId)"
-                        title="Voir l'activité"
-                      >
-                        🎯 {{ slot.activityTemplate?.name || 'Inconnue' }}
-                      </span>
-                    </div>
-
-                    <!-- Location Chip -->
-                    <div class="relation-row">
-                      <span class="row-label">Lieu</span>
-                      <span 
-                        class="data-chip location-chip clickable"
-                        @click="navigateTo('locations', slot.location?.documentId)"
-                        title="Voir le lieu"
-                      >
-                        📍 {{ slot.location?.name || 'Inconnu' }}
-                      </span>
-                    </div>
-
-                    <!-- Facilitator Chips -->
-                    <div class="relation-row">
-                      <span class="row-label">Animateurs</span>
-                      <div class="chips-list">
-                        <span 
-                          v-for="fac in slot.facilitators" 
-                          :key="fac.documentId" 
-                          class="data-chip facilitator-chip clickable"
-                          @click="navigateTo('facilitators', fac.documentId)"
-                          title="Voir l'animateur"
-                        >
-                          👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}
-                        </span>
-                        <span v-if="!slot.facilitators || slot.facilitators.length === 0" class="no-data">Aucun</span>
+                <!-- USER MODE ULTRA DENSE COMPACT SLOT CARDS -->
+                <template v-else>
+                  <div 
+                    v-for="slot in filteredItems" 
+                    :key="slot.documentId" 
+                    class="dense-slot-card"
+                    :class="{ 
+                      'highlighted-item': slot.documentId === highlightedId,
+                      'is-past-slot': new Date(slot.endDate || slot.startDate) < new Date()
+                    }"
+                    :id="'slot-' + slot.documentId"
+                  >
+                    <div class="dense-slot-left">
+                      <div class="dense-time-badge">
+                        <span class="dense-date">🕒 {{ formatSlotShortDate(slot.startDate) }}</span>
+                        <span class="dense-range">{{ formatSlotTimeRange(slot.startDate, slot.endDate) }}</span>
+                      </div>
+                      <div class="dense-info">
+                        <span class="dense-activity-title">🎯 {{ slot.activityTemplate?.name || 'Activité' }}</span>
+                        <span class="dense-location" v-if="slot.location">📍 {{ slot.location.name }}</span>
                       </div>
                     </div>
 
-                    <!-- Participant Chips -->
-                    <div class="relation-row">
-                      <span class="row-label">Participants</span>
-                      <div class="chips-list">
-                        <span 
-                          v-for="part in slot.participants" 
-                          :key="part.documentId" 
-                          class="data-chip participant-chip clickable"
-                          @click="navigateTo('participants', part.documentId)"
-                          title="Voir le participant"
-                        >
-                          👥 {{ part.firstName }} {{ part.lastName }}
-                        </span>
-                        <span v-if="!slot.participants || slot.participants.length === 0" class="no-data">Aucun</span>
-                      </div>
+                    <div class="dense-slot-right">
+                      <span class="dense-facs" v-if="slot.facilitators && slot.facilitators.length">
+                        👨‍🏫 {{ slot.facilitators.map(f => f.firstName + ' ' + f.lastName).join(', ') }}
+                      </span>
+                      <span class="dense-count-pill" title="Nombre total de participants inscrits">
+                        👥 <strong>{{ slot.participants?.length || 0 }}</strong> inscrit(s)
+                      </span>
                     </div>
                   </div>
-                </div>
+                </template>
               </div>
             </div>
 
 
             <!-- TAB: LOCATIONS (LIEUX) -->
             <div v-if="currentPage === 'locations'">
-              <LocationsList />
+              <div class="empty-state" v-if="filteredItems.length === 0">
+                <span class="empty-icon">📁</span>
+                <h3>Aucun lieu trouvé</h3>
+                <p v-if="isFilterActive">Aucun lieu ne correspond à votre filtre ({{ activeFiltersSummary }}).</p>
+                <p v-else>Aucun lieu n'est disponible.</p>
+                <button class="action-btn reset-btn" v-if="isFilterActive" @click="clearSearchAndFilter">
+                  Réinitialiser les filtres
+                </button>
+              </div>
+              <LocationsList v-else :custom-locations="!appSettingsStore.isAdminMode ? filteredItems : null" />
             </div>
 
 
             <!-- TAB: ACTIVITIES (ACTIVITÉS) -->
-            <div v-if="currentPage === 'activities'" class="activities-grid">
+            <div v-if="currentPage === 'activities'">
+              <div class="empty-state" v-if="filteredItems.length === 0">
+                <span class="empty-icon">📁</span>
+                <h3>Aucune activité trouvée</h3>
+                <p v-if="isFilterActive">Aucune activité ne correspond à votre filtre ({{ activeFiltersSummary }}).</p>
+                <p v-else>Aucune activité n'est disponible.</p>
+                <button class="action-btn reset-btn" v-if="isFilterActive" @click="clearSearchAndFilter">
+                  Réinitialiser les filtres
+                </button>
+              </div>
+              <div v-else class="activities-grid">
               <div 
                 v-for="act in filteredItems" 
                 :key="act.documentId" 
@@ -589,12 +760,24 @@
                 <div class="card-header">
                   <div style="display: flex; justify-content: space-between; width: 100%;">
                     <h3>🎯 {{ act.name }}</h3>
-                    <div class="card-actions" style="display: flex; gap: 0.5rem;">
+                    <div v-if="appSettingsStore.isAdminMode" class="card-actions" style="display: flex; gap: 0.5rem;">
                       <button class="icon-btn edit-btn" @click.stop="openActivityModal(act)" title="Modifier">✏️</button>
                       <button class="icon-btn delete-btn" @click.stop="deleteActivity(act.documentId)" title="Supprimer">🗑️</button>
                     </div>
                   </div>
-                  <span class="badge duration" style="align-self: flex-start;">{{ act.standardDuration }} min</span>
+                  <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-top: 0.4rem;">
+                    <span class="badge duration">{{ act.standardDuration }} min</span>
+                    <span 
+                      v-for="tag in (act.tags || [])" 
+                      :key="tag" 
+                      class="tag-badge clickable" 
+                      :class="{ active: selectedTagFilter === tag }"
+                      @click.stop="toggleTagFilter(tag)"
+                      title="Filtrer par cette étiquette"
+                    >
+                      🏷️ {{ tag }}
+                    </span>
+                  </div>
                 </div>
                 <div class="card-content">
                   <div class="stats-row">
@@ -613,12 +796,19 @@
                     <span class="info-label">Animateurs Autorisés</span>
                     <div class="chips-list mt-1">
                       <span 
-                        v-for="fac in act.authorizedFacilitators" 
+                        v-for="fac in (act.authorizedFacilitators || []).slice(0, 3)" 
                         :key="fac.documentId" 
                         class="data-chip facilitator-chip clickable"
                         @click="navigateTo('facilitators', fac.documentId)"
                       >
                         👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}
+                      </span>
+                      <span 
+                        v-if="act.authorizedFacilitators && act.authorizedFacilitators.length > 3" 
+                        class="data-chip count-chip"
+                        :title="`${act.authorizedFacilitators.length - 3} autre(s) animateur(s) autorisé(s)`"
+                      >
+                        +{{ act.authorizedFacilitators.length - 3 }}
                       </span>
                       <span v-if="!act.authorizedFacilitators || act.authorizedFacilitators.length === 0" class="no-data">Aucun</span>
                     </div>
@@ -629,12 +819,19 @@
                     <span class="info-label">Créneaux réservés :</span>
                     <div class="chips-list mt-1">
                       <span 
-                        v-for="slot in getSlotsForActivity(act.documentId)" 
+                        v-for="slot in getSlotsForActivity(act.documentId).slice(0, 3)" 
                         :key="slot.documentId"
                         class="data-chip slot-chip clickable"
                         @click="navigateTo('timeslots', slot.documentId)"
                       >
                         📅 {{ slot.location?.name }} ({{ formatSlotShortDate(slot.startDate) }})
+                      </span>
+                      <span 
+                        v-if="getSlotsForActivity(act.documentId).length > 3" 
+                        class="data-chip count-chip"
+                        :title="`${getSlotsForActivity(act.documentId).length - 3} autre(s) créneau(x)`"
+                      >
+                        +{{ getSlotsForActivity(act.documentId).length - 3 }}
                       </span>
                       <span v-if="getSlotsForActivity(act.documentId).length === 0" class="no-data">Aucun créneau</span>
                     </div>
@@ -642,10 +839,11 @@
                 </div>
               </div>
             </div>
+          </div>
 
             <!-- TAB: FACILITATORS (ANIMATEURS) -->
             <div v-if="currentPage === 'facilitators'">
-              <div class="facilitator-mode-bar" style="margin-bottom: 1.25rem; display: flex; justify-content: flex-end; align-items: center;">
+              <div class="facilitator-mode-bar" v-if="appSettingsStore.isAdminMode" style="margin-bottom: 1.25rem; display: flex; justify-content: flex-end; align-items: center;">
                 <div class="auth-tabs" style="max-width: 320px;">
                   <button 
                     class="auth-tab-btn" 
@@ -664,7 +862,7 @@
                 </div>
               </div>
 
-              <FacilitatorsList v-if="facilitatorViewMode === 'table'" />
+              <FacilitatorsList v-if="appSettingsStore.isAdminMode && facilitatorViewMode === 'table'" />
 
               <div v-else class="facilitators-grid">
                 <div 
@@ -703,12 +901,19 @@
                       <span class="info-label">Planning assigné :</span>
                       <div class="chips-list mt-1">
                         <span 
-                          v-for="slot in getSlotsForFacilitator(fac.documentId)" 
+                          v-for="slot in getSlotsForFacilitator(fac.documentId).slice(0, 3)" 
                           :key="slot.documentId"
                           class="data-chip slot-chip clickable"
                           @click="navigateTo('timeslots', slot.documentId)"
                         >
                           📅 {{ slot.activityTemplate?.name }} @ {{ slot.location?.name }} ({{ formatSlotShortDate(slot.startDate) }})
+                        </span>
+                        <span 
+                          v-if="getSlotsForFacilitator(fac.documentId).length > 3" 
+                          class="data-chip count-chip"
+                          :title="`${getSlotsForFacilitator(fac.documentId).length - 3} autre(s) créneau(x)`"
+                        >
+                          +{{ getSlotsForFacilitator(fac.documentId).length - 3 }}
                         </span>
                         <span v-if="getSlotsForFacilitator(fac.documentId).length === 0" class="no-data">Libre</span>
                       </div>
@@ -760,12 +965,19 @@
                     <span class="info-label">Créneaux rejoints :</span>
                     <div class="chips-list mt-1">
                       <span 
-                        v-for="slot in getSlotsForParticipant(part.documentId)" 
+                        v-for="slot in getSlotsForParticipant(part.documentId).slice(0, 3)" 
                         :key="slot.documentId"
                         class="data-chip slot-chip clickable"
                         @click="navigateTo('timeslots', slot.documentId)"
                       >
                         📅 {{ slot.activityTemplate?.name }} ({{ formatSlotShortDate(slot.startDate) }})
+                      </span>
+                      <span 
+                        v-if="getSlotsForParticipant(part.documentId).length > 3" 
+                        class="data-chip count-chip"
+                        :title="`${getSlotsForParticipant(part.documentId).length - 3} autre(s) créneau(x)`"
+                      >
+                        +{{ getSlotsForParticipant(part.documentId).length - 3 }}
                       </span>
                       <span v-if="getSlotsForParticipant(part.documentId).length === 0" class="no-data">Aucun créneau</span>
                     </div>
@@ -891,15 +1103,62 @@
                 <div class="availability-schedule-section">
                   <template v-if="selectedSchedulePersonType === 'location'">
                     <h4>🗓️ Horaires d'ouverture de la salle</h4>
-                    <p class="avail-text">
-                      <strong>Ouverture globale :</strong> Du {{ formatDate(selectedSchedulePerson.globalOpeningStart) }} au {{ formatDate(selectedSchedulePerson.globalOpeningEnd) }}
-                      <br />
-                      <strong>Fermeture hebdomadaire :</strong> {{ formatWeeklyClosures(selectedSchedulePerson.weeklyClosures) }}
-                    </p>
+                    <div class="global-opening-badge">
+                      📍 <strong>Ouverture globale :</strong> Du {{ formatDate(selectedSchedulePerson?.globalOpeningStart) }} au {{ formatDate(selectedSchedulePerson?.globalOpeningEnd) }}
+                    </div>
+                    <div class="weekly-blocks-grid">
+                      <div 
+                        v-for="day in getLocationWeeklyStatus(selectedSchedulePerson)" 
+                        :key="day.key"
+                        class="weekday-card"
+                        :class="{ 'day-closed': day.isClosed, 'day-open': !day.isClosed }"
+                      >
+                        <div class="weekday-header">
+                          <span class="weekday-name">{{ day.name }}</span>
+                        </div>
+                        <div class="weekday-body">
+                          <div v-if="!day.isClosed" class="time-block open-block">
+                            <span class="status-indicator open-dot">●</span> Ouvert
+                          </div>
+                          <div v-else class="time-block closed-block">
+                            <span class="status-indicator closed-dot">●</span> Fermé
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </template>
+
                   <template v-else>
                     <h4>🗓️ Disponibilités de référence</h4>
-                    <p class="avail-text">{{ formatWeeklyAvailabilities(selectedSchedulePerson.weeklyAvailabilities) }}</p>
+                    <div class="weekly-blocks-grid">
+                      <div 
+                        v-for="day in getWeeklyAvailabilityDays(selectedSchedulePerson?.weeklyAvailabilities)" 
+                        :key="day.key"
+                        class="weekday-card"
+                        :class="{ 'day-available': day.isAvailable, 'day-off': !day.isAvailable }"
+                      >
+                        <div class="weekday-header">
+                          <span class="weekday-name">{{ day.name }}</span>
+                        </div>
+                        <div class="weekday-body">
+                          <template v-if="day.isAvailable">
+                            <div 
+                              v-for="(period, idx) in day.periods" 
+                              :key="idx" 
+                              class="time-block avail-block"
+                            >
+                              <span class="time-icon">⏰</span>
+                              <span class="time-range-text">{{ period.start }} - {{ period.end }}</span>
+                            </div>
+                          </template>
+                          <template v-else>
+                            <div class="time-block off-block">
+                              <span class="off-text">Indisponible</span>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
                   </template>
                 </div>
 
@@ -1069,6 +1328,47 @@
                     min="1"
                     class="form-input"
                   />
+                </div>
+              </div>
+
+              <!-- Tags selection & custom tag input -->
+              <div class="form-group mt-3">
+                <label>🏷️ Étiquettes & Catégories</label>
+                
+                <div class="selected-tags-box mt-1" v-if="activityForm.tags && activityForm.tags.length">
+                  <span v-for="tag in activityForm.tags" :key="tag" class="tag-badge removable">
+                    🏷️ {{ tag }}
+                    <button type="button" class="remove-tag-btn" @click="removeFormTag(tag)">✕</button>
+                  </span>
+                </div>
+
+                <div class="preset-tags-list mt-2">
+                  <span class="preset-label">Suggestions :</span>
+                  <div class="preset-pills-row">
+                    <button 
+                      type="button" 
+                      v-for="tag in presetTags" 
+                      :key="tag" 
+                      class="preset-tag-btn" 
+                      :class="{ selected: activityForm.tags && activityForm.tags.includes(tag) }"
+                      @click="toggleFormTag(tag)"
+                    >
+                      {{ activityForm.tags && activityForm.tags.includes(tag) ? '✓ ' + tag : '+ ' + tag }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="custom-tag-input-row mt-2" style="display: flex; gap: 0.5rem;">
+                  <input 
+                    type="text" 
+                    v-model="activityForm.newTagInput" 
+                    placeholder="Nouvelle étiquette..." 
+                    class="form-input" 
+                    @keydown.enter.prevent="addCustomTagToForm"
+                  />
+                  <button type="button" class="action-btn" @click="addCustomTagToForm" style="white-space: nowrap; padding: 0.4rem 0.8rem;">
+                    ➕ Ajouter
+                  </button>
                 </div>
               </div>
 
@@ -1416,6 +1716,8 @@ export default {
       isSidebarOpen: false,
       timeslotViewMode: 'calendar',
       facilitatorViewMode: 'cards',
+      timeFilterMode: 'all',
+      calendarTargetDate: null,
       pendingTimeslotId: null,
       // Auth State
       authTab: 'login',
@@ -1451,6 +1753,8 @@ export default {
       // Filter State
       filterItemId: null,
       filterItemType: null,
+      selectedTagFilter: '',
+      presetTags: ['Cognitif', 'Moteur', 'Bien-être', 'Social', 'Créatif', 'Repas', 'Sensorielles', 'Relaxation', 'Extérieur', 'Musique', 'Cuisine', 'Convivialité', 'Culture', 'Art', 'Nature', 'Activité physique'],
 
       // Activity Modal State
       showActivityModal: false,
@@ -1462,7 +1766,9 @@ export default {
         standardDuration: 60,
         minParticipants: 0,
         maxParticipants: 10,
-        authorizedFacilitators: []
+        authorizedFacilitators: [],
+        tags: [],
+        newTagInput: ''
       },
 
       // Modal / Creation
@@ -1544,7 +1850,7 @@ export default {
     },
     selectedSchedulePerson() {
       if (!this.selectedSchedulePersonId) return null;
-      return this.schedulePeopleList.find(p => p.documentId === this.selectedSchedulePersonId) || null;
+      return this.schedulePeopleList.find(p => p.documentId === this.selectedSchedulePersonId || p.id === this.selectedSchedulePersonId || String(p.id) === String(this.selectedSchedulePersonId)) || null;
     },
     selectedPersonSlots() {
       if (!this.selectedSchedulePersonId) return [];
@@ -1559,7 +1865,10 @@ export default {
       
       // Filter slots by date range
       return baseSlots.filter(slot => {
-        const dateStr = slot.startDate.substring(0, 10);
+        if (!slot || !slot.startDate) return false;
+        const dateStr = typeof slot.startDate === 'string'
+          ? slot.startDate.substring(0, 10)
+          : new Date(slot.startDate).toISOString().substring(0, 10);
         if (this.scheduleStartDate && dateStr < this.scheduleStartDate) return false;
         if (this.scheduleEndDate && dateStr > this.scheduleEndDate) return false;
         return true;
@@ -1601,6 +1910,27 @@ export default {
         .sort()
         .map(key => groups[key]);
     },
+    allAvailableTags() {
+      const set = new Set(this.presetTags);
+      (this.activities || []).forEach(a => {
+        if (Array.isArray(a.tags)) {
+          a.tags.forEach(t => { if (t && typeof t === 'string') set.add(t); });
+        }
+      });
+      return Array.from(set);
+    },
+    activeFiltersSummary() {
+      const parts = [];
+      if (this.timeFilterMode === 'upcoming') parts.push('Créneaux à venir');
+      if (this.timeFilterMode === 'past') parts.push('Créneaux antérieurs');
+      if (this.searchQuery) parts.push(`Recherche "${this.searchQuery}"`);
+      if (this.filterItemId) parts.push(`Filtre ${this.filterItemTypeLabel} (${this.filterItemName})`);
+      if (this.selectedTagFilter) parts.push(`Étiquette "${this.selectedTagFilter}"`);
+      return parts.join(' + ') || 'aucun';
+    },
+    isFilterActive() {
+      return !!(this.searchQuery || this.filterItemId || this.selectedTagFilter || this.timeFilterMode !== 'all');
+    },
     filterItemTypeLabel() {
       switch (this.filterItemType) {
         case 'location': return 'Lieu';
@@ -1630,10 +1960,143 @@ export default {
       }
       return '';
     },
+    currentUserPersona() {
+      const u = this.user;
+      if (!u) return null;
+      const userEmail = (u.email || '').toLowerCase().trim();
+      const username = (u.username || '').toLowerCase().trim();
+
+      let fac = this.facilitators.find(f => 
+        (f.email || '').toLowerCase().trim() === userEmail ||
+        `${f.firstName} ${f.lastName}`.toLowerCase().trim() === username
+      );
+
+      let part = this.participants.find(p => 
+        (p.email || '').toLowerCase().trim() === userEmail ||
+        `${p.firstName} ${p.lastName}`.toLowerCase().trim() === username
+      );
+
+      if (!fac && !part) {
+        fac = this.facilitators.find(f => f.email === 'claire.dubois@ehpad-accueil.fr') || this.facilitators[0] || null;
+      }
+
+      return {
+        user: u,
+        facilitator: fac,
+        participant: part,
+        emails: [
+          userEmail,
+          fac?.email?.toLowerCase(),
+          part?.email?.toLowerCase()
+        ].filter(Boolean),
+        facId: fac?.documentId,
+        partId: part?.documentId,
+        facName: fac ? `${fac.firstName} ${fac.lastName}` : null,
+        partName: part ? `${part.firstName} ${part.lastName}` : null
+      };
+    },
+    userRelevantSlots() {
+      const persona = this.currentUserPersona;
+      let slots = this.timeslots;
+
+      if (persona) {
+        const userEmails = persona.emails;
+        const facId = persona.facId;
+        const partId = persona.partId;
+
+        slots = slots.filter(s => {
+          const isFac = (s.facilitators || []).some(f => 
+            (f.documentId && f.documentId === facId) ||
+            userEmails.includes((f.email || '').toLowerCase())
+          );
+
+          const isPart = (s.participants || []).some(p => 
+            (p.documentId && p.documentId === partId) ||
+            userEmails.includes((p.email || '').toLowerCase())
+          );
+
+          const actFacs = s.activityTemplate?.authorizedFacilitators || s.activityTemplate?._authorizedFacilitators || [];
+          const isActManager = actFacs.some(af => {
+            if (typeof af === 'string') return userEmails.includes(af.toLowerCase());
+            return (af.documentId && af.documentId === facId) || userEmails.includes((af.email || '').toLowerCase());
+          });
+
+          return isFac || isPart || isActManager;
+        });
+      }
+
+      if (this.timeFilterMode === 'upcoming') {
+        const now = new Date();
+        slots = slots.filter(s => new Date(s.endDate || s.startDate) >= now);
+      } else if (this.timeFilterMode === 'past') {
+        const now = new Date();
+        slots = slots.filter(s => new Date(s.endDate || s.startDate) < now);
+      }
+
+      return slots;
+    },
+    userRelevantActivities() {
+      const persona = this.currentUserPersona;
+      const userSlots = this.userRelevantSlots;
+      const userEmails = persona ? persona.emails : [];
+      const facId = persona ? persona.facId : null;
+
+      const slotActIds = new Set(userSlots.map(s => s.activityTemplate?.documentId).filter(Boolean));
+      const slotActNames = new Set(userSlots.map(s => s.activityTemplate?.name).filter(Boolean));
+
+      return this.activities.filter(act => {
+        const authFacs = act.authorizedFacilitators || act._authorizedFacilitators || [];
+        const isManager = authFacs.some(af => {
+          if (typeof af === 'string') return userEmails.includes(af.toLowerCase());
+          return (af.documentId && af.documentId === facId) || userEmails.includes((af.email || '').toLowerCase());
+        });
+
+        const isUsedInSlots = slotActIds.has(act.documentId) || slotActNames.has(act.name);
+
+        return isManager || isUsedInSlots;
+      });
+    },
+    userRelevantLocations() {
+      const userSlots = this.userRelevantSlots;
+      const slotLocIds = new Set(userSlots.map(s => s.location?.documentId).filter(Boolean));
+      const slotLocNames = new Set(userSlots.map(s => s.location?.name).filter(Boolean));
+
+      return this.locations.filter(loc => {
+        return slotLocIds.has(loc.documentId) || slotLocNames.has(loc.name);
+      });
+    },
+    userRelevantFacilitators() {
+      const persona = this.currentUserPersona;
+      if (!persona || !persona.facId) return this.facilitators;
+      const userSlots = this.userRelevantSlots;
+      const coFacIds = new Set();
+      coFacIds.add(persona.facId);
+      userSlots.forEach(s => {
+        (s.facilitators || []).forEach(f => {
+          if (f.documentId) coFacIds.add(f.documentId);
+        });
+      });
+      return this.facilitators.filter(f => coFacIds.has(f.documentId) || persona.emails.includes((f.email || '').toLowerCase()));
+    },
+    userRelevantParticipants() {
+      const persona = this.currentUserPersona;
+      const userSlots = this.userRelevantSlots;
+      const coPartIds = new Set();
+      if (persona?.partId) coPartIds.add(persona.partId);
+      userSlots.forEach(s => {
+        (s.participants || []).forEach(p => {
+          if (p.documentId) coPartIds.add(p.documentId);
+        });
+      });
+      if (coPartIds.size === 0) return this.participants;
+      return this.participants.filter(p => coPartIds.has(p.documentId) || persona.emails.includes((p.email || '').toLowerCase()));
+    },
     filteredItems() {
       let baseList = [];
+      const isAdmin = this.appSettingsStore.isAdminMode;
+
       if (this.currentPage === 'timeslots') {
-        baseList = this.timeslots;
+        baseList = isAdmin ? this.timeslots : this.userRelevantSlots;
         // Apply relationships filters
         if (this.filterItemId) {
           if (this.filterItemType === 'location') {
@@ -1646,6 +2109,9 @@ export default {
             baseList = baseList.filter(s => s.participants?.some(p => p.documentId === this.filterItemId));
           }
         }
+        if (this.selectedTagFilter) {
+          baseList = baseList.filter(s => Array.isArray(s.activityTemplate?.tags) && s.activityTemplate.tags.includes(this.selectedTagFilter));
+        }
         
         // Apply search query
         if (this.searchQuery.trim()) {
@@ -1653,23 +2119,30 @@ export default {
           baseList = baseList.filter(s => 
             (s.activityTemplate?.name || '').toLowerCase().includes(q) ||
             (s.location?.name || '').toLowerCase().includes(q) ||
-            (s.facilitators || []).some(f => `${f.firstName} ${f.lastName}`.toLowerCase().includes(q))
+            (s.facilitators || []).some(f => `${f.firstName} ${f.lastName}`.toLowerCase().includes(q)) ||
+            (Array.isArray(s.activityTemplate?.tags) && s.activityTemplate.tags.some(t => t.toLowerCase().includes(q)))
           );
         }
       } else if (this.currentPage === 'locations') {
-        baseList = this.locations;
+        baseList = isAdmin ? this.locations : this.userRelevantLocations;
         if (this.searchQuery.trim()) {
           const q = this.searchQuery.toLowerCase();
           baseList = baseList.filter(l => l.name.toLowerCase().includes(q));
         }
       } else if (this.currentPage === 'activities') {
-        baseList = this.activities;
+        baseList = isAdmin ? this.activities : this.userRelevantActivities;
+        if (this.selectedTagFilter) {
+          baseList = baseList.filter(a => Array.isArray(a.tags) && a.tags.includes(this.selectedTagFilter));
+        }
         if (this.searchQuery.trim()) {
           const q = this.searchQuery.toLowerCase();
-          baseList = baseList.filter(a => a.name.toLowerCase().includes(q));
+          baseList = baseList.filter(a => 
+            a.name.toLowerCase().includes(q) ||
+            (Array.isArray(a.tags) && a.tags.some(t => t.toLowerCase().includes(q)))
+          );
         }
       } else if (this.currentPage === 'facilitators') {
-        baseList = this.facilitators;
+        baseList = isAdmin ? this.facilitators : this.userRelevantFacilitators;
         if (this.searchQuery.trim()) {
           const q = this.searchQuery.toLowerCase();
           baseList = baseList.filter(f => 
@@ -1678,7 +2151,7 @@ export default {
           );
         }
       } else if (this.currentPage === 'participants') {
-        baseList = this.participants;
+        baseList = isAdmin ? this.participants : this.userRelevantParticipants;
         if (this.searchQuery.trim()) {
           const q = this.searchQuery.toLowerCase();
           baseList = baseList.filter(p => 
@@ -1691,6 +2164,11 @@ export default {
     }
   },
   watch: {
+    'appSettingsStore.isAdminMode'(isAdmin) {
+      if (!isAdmin && !['timeslots', 'locations', 'activities', 'profile'].includes(this.currentPage)) {
+        this.navigateTo('timeslots');
+      }
+    },
     '$route'(to) {
       this.syncRouteToState(to);
     },
@@ -1720,6 +2198,16 @@ export default {
     }
   },
   methods: {
+    setTimeFilterMode(mode) {
+      this.timeFilterMode = mode;
+      if (mode === 'upcoming') {
+        const now = new Date();
+        const upcomingSlot = this.filteredItems.find(s => new Date(s.endDate || s.startDate) >= now);
+        if (upcomingSlot) {
+          this.calendarTargetDate = new Date(upcomingSlot.startDate);
+        }
+      }
+    },
     handleCalendarSelectSlot(slot) {
       if (slot && (slot.documentId || slot.id)) {
         const id = slot.documentId || slot.id;
@@ -1980,8 +2468,22 @@ export default {
       }
     },
 
+    toggleTagFilter(tag) {
+      if (this.selectedTagFilter === tag) {
+        this.selectedTagFilter = '';
+      } else {
+        this.selectedTagFilter = tag;
+      }
+    },
+
+    clearTagFilter() {
+      this.selectedTagFilter = '';
+    },
+
     clearSearchAndFilter() {
       this.searchQuery = '';
+      this.timeFilterMode = 'all';
+      this.selectedTagFilter = '';
       this.clearFilter();
     },
 
@@ -2140,47 +2642,138 @@ export default {
     },
 
     getCoFacilitators(slot) {
-      if (!slot.facilitators || !this.selectedSchedulePersonId) return '';
+      if (!slot || !slot.facilitators || !this.selectedSchedulePersonId) return '';
+      const person = this.selectedSchedulePerson;
       return slot.facilitators
-        .filter(f => f.documentId !== this.selectedSchedulePersonId)
-        .map(f => `${f.firstName} ${f.lastName}`)
+        .filter(f => {
+          if (!f) return false;
+          if (typeof f === 'string') return f !== this.selectedSchedulePersonId && (!person || f !== person.email);
+          const matchId = f.documentId === this.selectedSchedulePersonId || f.id === this.selectedSchedulePersonId || String(f.id) === String(this.selectedSchedulePersonId);
+          const matchEmail = person?.email && f.email === person.email;
+          return !matchId && !matchEmail;
+        })
+        .map(f => typeof f === 'object' ? (`${f.firstName || ''} ${f.lastName || ''}`.trim() || f.email || '') : f)
+        .filter(Boolean)
         .join(', ');
     },
 
     getSlotParticipantsList(slot) {
-      if (!slot.participants) return '';
+      if (!slot || !slot.participants) return '';
       return slot.participants
-        .map(p => `${p.firstName} ${p.lastName}`)
+        .map(p => typeof p === 'object' ? (`${p.firstName || ''} ${p.lastName || ''}`.trim() || p.email || '') : p)
+        .filter(Boolean)
         .join(', ');
     },
 
     getSlotFacilitatorsList(slot) {
-      if (!slot.facilitators) return '';
+      if (!slot || !slot.facilitators) return '';
       return slot.facilitators
-        .map(f => `${f.firstName} ${f.lastName}`)
+        .map(f => typeof f === 'object' ? (`${f.firstName || ''} ${f.lastName || ''}`.trim() || f.email || '') : f)
+        .filter(Boolean)
         .join(', ');
     },
 
     getOtherParticipants(slot) {
-      if (!slot.participants || !this.selectedSchedulePersonId) return '';
+      if (!slot || !slot.participants || !this.selectedSchedulePersonId) return '';
+      const person = this.selectedSchedulePerson;
       return slot.participants
-        .filter(p => p.documentId !== this.selectedSchedulePersonId)
-        .map(p => `${p.firstName} ${p.lastName}`)
+        .filter(p => {
+          if (!p) return false;
+          if (typeof p === 'string') return p !== this.selectedSchedulePersonId && (!person || p !== person.email);
+          const matchId = p.documentId === this.selectedSchedulePersonId || p.id === this.selectedSchedulePersonId || String(p.id) === String(this.selectedSchedulePersonId);
+          const matchEmail = person?.email && p.email === person.email;
+          return !matchId && !matchEmail;
+        })
+        .map(p => typeof p === 'object' ? (`${p.firstName || ''} ${p.lastName || ''}`.trim() || p.email || '') : p)
+        .filter(Boolean)
         .join(', ');
     },
 
     // Related slots helpers
     getSlotsForLocation(locDocId) {
-      return this.timeslots.filter(s => s.location?.documentId === locDocId);
+      if (!locDocId) return [];
+      return this.timeslots.filter(s => {
+        if (!s || !s.location) return false;
+        if (typeof s.location === 'string') return s.location === locDocId;
+        return (
+          s.location.documentId === locDocId ||
+          s.location.id === locDocId ||
+          String(s.location.id) === String(locDocId)
+        );
+      });
     },
+
     getSlotsForActivity(actDocId) {
-      return this.timeslots.filter(s => s.activityTemplate?.documentId === actDocId);
+      if (!actDocId) return [];
+      return this.timeslots.filter(s => {
+        if (!s || !s.activityTemplate) return false;
+        if (typeof s.activityTemplate === 'string') return s.activityTemplate === actDocId;
+        return (
+          s.activityTemplate.documentId === actDocId ||
+          s.activityTemplate.id === actDocId ||
+          String(s.activityTemplate.id) === String(actDocId)
+        );
+      });
     },
+
     getSlotsForFacilitator(facDocId) {
-      return this.timeslots.filter(s => s.facilitators?.some(f => f.documentId === facDocId));
+      if (!facDocId) return [];
+      const person = this.facilitators.find(p => p.documentId === facDocId || p.id === facDocId || String(p.id) === String(facDocId));
+      return this.timeslots.filter(s => {
+        if (!s || !s.facilitators || !Array.isArray(s.facilitators)) return false;
+        return s.facilitators.some(f => {
+          if (!f) return false;
+          if (typeof f === 'string') {
+            return (
+              f === facDocId ||
+              (person && (f === person.email || f === person.documentId || f === String(person.id)))
+            );
+          }
+          if (typeof f === 'object') {
+            return (
+              f.documentId === facDocId ||
+              f.id === facDocId ||
+              String(f.id) === String(facDocId) ||
+              (person && (
+                (f.email && person.email && f.email === person.email) ||
+                (f.documentId && person.documentId && f.documentId === person.documentId) ||
+                (f.id && person.id && String(f.id) === String(person.id))
+              ))
+            );
+          }
+          return false;
+        });
+      });
     },
+
     getSlotsForParticipant(partDocId) {
-      return this.timeslots.filter(s => s.participants?.some(p => p.documentId === partDocId));
+      if (!partDocId) return [];
+      const person = this.participants.find(p => p.documentId === partDocId || p.id === partDocId || String(p.id) === String(partDocId));
+      return this.timeslots.filter(s => {
+        if (!s || !s.participants || !Array.isArray(s.participants)) return false;
+        return s.participants.some(p => {
+          if (!p) return false;
+          if (typeof p === 'string') {
+            return (
+              p === partDocId ||
+              (person && (p === person.email || p === person.documentId || p === String(person.id)))
+            );
+          }
+          if (typeof p === 'object') {
+            return (
+              p.documentId === partDocId ||
+              p.id === partDocId ||
+              String(p.id) === String(partDocId) ||
+              (person && (
+                (p.email && person.email && p.email === person.email) ||
+                (p.documentId && person.documentId && p.documentId === person.documentId) ||
+                (p.id && person.id && String(p.id) === String(person.id))
+              ))
+            );
+          }
+          return false;
+        });
+      });
     },
 
     // Deletion
@@ -2241,6 +2834,33 @@ export default {
     },
 
     // Activities
+    toggleFormTag(tag) {
+      if (!Array.isArray(this.activityForm.tags)) this.activityForm.tags = [];
+      const idx = this.activityForm.tags.indexOf(tag);
+      if (idx > -1) {
+        this.activityForm.tags.splice(idx, 1);
+      } else {
+        this.activityForm.tags.push(tag);
+      }
+    },
+
+    addCustomTagToForm() {
+      const tag = (this.activityForm.newTagInput || '').trim();
+      if (tag) {
+        if (!Array.isArray(this.activityForm.tags)) this.activityForm.tags = [];
+        if (!this.activityForm.tags.includes(tag)) {
+          this.activityForm.tags.push(tag);
+        }
+        this.activityForm.newTagInput = '';
+      }
+    },
+
+    removeFormTag(tag) {
+      if (Array.isArray(this.activityForm.tags)) {
+        this.activityForm.tags = this.activityForm.tags.filter(t => t !== tag);
+      }
+    },
+
     openActivityModal(act = null) {
       this.activityModalError = '';
       this.activityModalLoading = false;
@@ -2251,7 +2871,9 @@ export default {
           standardDuration: act.standardDuration,
           minParticipants: act.minParticipants,
           maxParticipants: act.maxParticipants,
-          authorizedFacilitators: act.authorizedFacilitators ? act.authorizedFacilitators.map(f => f.documentId || f.id || f) : []
+          authorizedFacilitators: act.authorizedFacilitators ? act.authorizedFacilitators.map(f => f.documentId || f.id || f) : [],
+          tags: Array.isArray(act.tags) ? [...act.tags] : [],
+          newTagInput: ''
         };
       } else {
         this.editingActivityId = null;
@@ -2260,7 +2882,9 @@ export default {
           standardDuration: 60,
           minParticipants: 0,
           maxParticipants: 10,
-          authorizedFacilitators: []
+          authorizedFacilitators: [],
+          tags: [],
+          newTagInput: ''
         };
       }
       this.showActivityModal = true;
@@ -2335,6 +2959,48 @@ export default {
         const periodStr = periods.map(p => `${p.start} - ${p.end}`).join(', ');
         return `${dayName} : ${periodStr}`;
       }).join(' | ');
+    },
+    getWeeklyAvailabilityDays(availabilities) {
+      const WEEKDAYS = [
+        { key: '1', name: 'Lundi' },
+        { key: '2', name: 'Mardi' },
+        { key: '3', name: 'Mercredi' },
+        { key: '4', name: 'Jeudi' },
+        { key: '5', name: 'Vendredi' },
+        { key: '6', name: 'Samedi' },
+        { key: '0', name: 'Dimanche' }
+      ];
+      if (!availabilities || typeof availabilities !== 'object') {
+        return WEEKDAYS.map(day => ({ ...day, periods: [], isAvailable: false }));
+      }
+      return WEEKDAYS.map(day => {
+        const periods = availabilities[day.key] || [];
+        return {
+          ...day,
+          periods: Array.isArray(periods) ? periods : [],
+          isAvailable: Array.isArray(periods) && periods.length > 0
+        };
+      });
+    },
+    getLocationWeeklyStatus(location) {
+      const WEEKDAYS = [
+        { key: '1', name: 'Lundi' },
+        { key: '2', name: 'Mardi' },
+        { key: '3', name: 'Mercredi' },
+        { key: '4', name: 'Jeudi' },
+        { key: '5', name: 'Vendredi' },
+        { key: '6', name: 'Samedi' },
+        { key: '0', name: 'Dimanche' }
+      ];
+      if (!location) return WEEKDAYS.map(day => ({ ...day, isClosed: false }));
+      const closures = location.weeklyClosures || [];
+      return WEEKDAYS.map(day => {
+        const isClosed = closures.some(c => c.toString() === day.key);
+        return {
+          ...day,
+          isClosed
+        };
+      });
     },
     getParisTimeAndDay(date) {
       const formatter = new Intl.DateTimeFormat('fr-FR', {
@@ -2489,18 +3155,18 @@ export default {
       this.fetchData();
     }
     
-    // Set default schedule date range: Monday of current week to Sunday of next week
+    // Set default schedule date range: Monday of current week to 90 days out
     const today = new Date();
     const currentDay = today.getDay(); // 0 is Sunday, 1 is Monday, etc.
     const monday = new Date(today);
     const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
     monday.setDate(today.getDate() + diffToMonday);
     
-    const sundayNextWeek = new Date(monday);
-    sundayNextWeek.setDate(monday.getDate() + 13); // Monday + 13 days = Sunday next week
+    const futureLimit = new Date(monday);
+    futureLimit.setDate(monday.getDate() + 90); // 90 days range
     
     this.scheduleStartDate = monday.toISOString().substring(0, 10);
-    this.scheduleEndDate = sundayNextWeek.toISOString().substring(0, 10);
+    this.scheduleEndDate = futureLimit.toISOString().substring(0, 10);
     
     // Sync current route to state
     this.syncRouteToState(this.$route);
@@ -3479,6 +4145,16 @@ export default {
   background: rgba(99, 102, 241, 0.1);
 }
 
+.count-chip {
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px dashed rgba(99, 102, 241, 0.5);
+  color: #a5b4fc;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 2rem;
+}
+
 .no-data {
   font-size: 0.8rem;
   color: var(--text-secondary);
@@ -4166,22 +4842,138 @@ export default {
 .availability-schedule-section {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
   margin-bottom: 2rem;
 }
 
 .availability-schedule-section h4 {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 0.4rem;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
 }
 
 .avail-text {
   font-size: 0.85rem;
   color: var(--text-primary);
   line-height: 1.5;
+}
+
+/* Weekly blocks grid */
+.weekly-blocks-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .weekly-blocks-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .weekly-blocks-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.weekday-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-color);
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.weekday-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-2px);
+}
+
+.weekday-header {
+  width: 100%;
+  text-align: center;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.weekday-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.weekday-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.time-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  width: 100%;
+}
+
+.avail-block {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.off-block {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.open-block {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #60a5fa;
+}
+
+.closed-block {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.global-opening-badge {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.open-dot {
+  color: #10b981;
+  font-size: 0.7rem;
+}
+
+.closed-dot {
+  color: #ef4444;
+  font-size: 0.7rem;
 }
 
 /* Schedule table details */

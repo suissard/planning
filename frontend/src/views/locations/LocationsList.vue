@@ -20,7 +20,7 @@
           style="min-width: 220px;"
         ></v-text-field>
 
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog" class="text-none">
+        <v-btn v-if="isAdminMode" color="primary" prepend-icon="mdi-plus" @click="openCreateDialog" class="text-none">
           Ajouter un Lieu
         </v-btn>
       </div>
@@ -28,7 +28,7 @@
 
     <v-data-table
       :headers="headers"
-      :items="locations"
+      :items="displayLocations"
       :loading="loading"
       :search="search"
       class="elevation-1 border rounded-lg"
@@ -37,6 +37,13 @@
         <div class="d-flex align-center ga-2 font-weight-medium">
           <span class="text-primary">📍</span>
           {{ item.name }}
+        </div>
+      </template>
+
+      <template v-slot:item.address="{ item }">
+        <div class="d-flex align-center ga-1 text-body-2 text-medium-emphasis">
+          <v-icon size="small" color="grey">mdi-map-marker-outline</v-icon>
+          <span>{{ item.address || 'Non spécifiée' }}</span>
         </div>
       </template>
 
@@ -55,7 +62,7 @@
       </template>
 
       <template v-slot:item.actions="{ item }">
-        <div class="d-flex ga-1">
+        <div v-if="isAdminMode" class="d-flex ga-1">
           <v-btn
             icon="mdi-pencil"
             size="x-small"
@@ -88,30 +95,51 @@
 
 <script>
 import { useLocationStore } from '../../stores/locationStore';
+import { useAppSettingsStore } from '../../stores/appSettings';
 import LocationForm from '../../components/locations/LocationForm.vue';
 import { storeToRefs } from 'pinia';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 
 export default {
   name: 'LocationsList',
   components: {
     LocationForm,
   },
-  setup() {
+  props: {
+    customLocations: {
+      type: Array,
+      default: null
+    }
+  },
+  setup(props) {
     const locationStore = useLocationStore();
+    const appSettingsStore = useAppSettingsStore();
     const { locations, loading } = storeToRefs(locationStore);
 
     const dialog = ref(false);
     const selectedLocation = ref(null);
     const search = ref('');
 
-    const headers = [
-      { title: 'Nom du lieu', key: 'name' },
-      { title: 'Capacité d\'accueil', key: 'capacity' },
-      { title: 'Ouverture', key: 'globalOpeningStart' },
-      { title: 'Fermeture', key: 'globalOpeningEnd' },
-      { title: 'Actions', key: 'actions', sortable: false, align: 'end' },
-    ];
+    const isAdminMode = computed(() => appSettingsStore.isAdminMode);
+
+    const displayLocations = computed(() => {
+      if (props.customLocations) return props.customLocations;
+      return locations.value;
+    });
+
+    const headers = computed(() => {
+      const base = [
+        { title: 'Nom du lieu', key: 'name' },
+        { title: 'Adresse', key: 'address' },
+        { title: 'Capacité d\'accueil', key: 'capacity' },
+        { title: 'Ouverture', key: 'globalOpeningStart' },
+        { title: 'Fermeture', key: 'globalOpeningEnd' },
+      ];
+      if (isAdminMode.value) {
+        base.push({ title: 'Actions', key: 'actions', sortable: false, align: 'end' });
+      }
+      return base;
+    });
 
     onMounted(() => {
       locationStore.fetchLocations();
@@ -156,11 +184,13 @@ export default {
 
     return {
       locations,
+      displayLocations,
       loading,
       headers,
       dialog,
       selectedLocation,
       search,
+      isAdminMode,
       openCreateDialog,
       openEditDialog,
       closeDialog,
