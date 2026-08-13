@@ -166,7 +166,14 @@ body {
   .mock-toggle,
   .user-profile,
   .user-sidebar-card,
-  .nav-divider {
+  .nav-divider,
+  .next-activity-hero,
+  .planning-filter-bar,
+  .detail-panel-overlay,
+  .content-header,
+  .tag-filter-bar,
+  .user-mode-banner,
+  .sidebar-mode-switch-btn {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
@@ -182,6 +189,7 @@ body {
   .app-main,
   .app-content,
   .view-container,
+  .client-planning-wrapper,
   .timeslots-page-wrapper,
   .extractions-container,
   .extraction-body,

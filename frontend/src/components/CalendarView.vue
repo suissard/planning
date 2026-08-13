@@ -73,24 +73,26 @@
           @click="cell.isCurrentMonth && selectDayFromCell(cell.date)"
         >
           <div class="cell-day-number">
-            <span class="day-num">{{ cell.dayNumber }}</span>
+            <span class="day-num" :class="{ 'today-pulse': cell.isToday }">{{ cell.dayNumber }}</span>
             <span v-if="cell.slots.length > 0" class="badge-count">{{ cell.slots.length }}</span>
           </div>
 
           <div class="cell-slots-list">
             <div 
-              v-for="slot in cell.slots.slice(0, 4)" 
+              v-for="(slot, sIdx) in cell.slots.slice(0, 3)" 
               :key="slot.documentId || slot.id"
               class="month-slot-badge"
-              :class="{ 'is-past-slot': isSlotPast(slot) }"
+              :class="{ 'is-past-slot': isSlotPast(slot), 'is-first-day-event': sIdx === 0 || isFirstDayEvent(slot), 'is-last-day-event': sIdx === cell.slots.length - 1 || isLastDayEvent(slot) }"
+              :style="getSlotColorStyle(slot)"
               @click.stop="$emit('select-slot', slot)"
               :title="getSlotTooltip(slot)"
             >
               <span class="slot-time">{{ formatTimeOnly(slot.startDate) }}</span>
               <span class="slot-title">{{ slot.activityTemplate?.name || 'Créneau' }}</span>
+              <span class="month-slot-location" v-if="slot.location">📍 {{ slot.location.name }}</span>
             </div>
-            <div v-if="cell.slots.length > 4" class="more-slots">
-              + {{ cell.slots.length - 4 }} autre(s)
+            <div v-if="cell.slots.length > 3" class="more-slots">
+              + {{ cell.slots.length - 3 }} autre(s)
             </div>
           </div>
         </div>
@@ -113,7 +115,7 @@
       </div>
 
       <div class="week-grid-body">
-        <!-- Rows per hour from 08:00 to 19:00 -->
+        <!-- Rows per hour from dynamic range -->
         <div v-for="hour in hoursList" :key="hour" class="week-hour-row">
           <div class="time-cell">{{ hour }}:00</div>
           <div 
@@ -125,13 +127,15 @@
               v-for="slot in getSlotsForDayAndHour(day.date, hour)" 
               :key="slot.documentId || slot.id"
               class="week-slot-card"
+              :class="{ 'is-first-day-event': isFirstDayEvent(slot), 'is-last-day-event': isLastDayEvent(slot) }"
+              :style="getSlotColorStyle(slot)"
               @click="$emit('select-slot', slot)"
             >
               <div class="week-slot-time">
                 {{ formatTimeOnly(slot.startDate) }} - {{ formatTimeOnly(slot.endDate) }}
               </div>
               <div class="week-slot-title">
-                🎯 {{ slot.activityTemplate?.name || 'Activité' }}
+                {{ slot.activityTemplate?.name || 'Activité' }}
               </div>
               <div class="week-slot-location" v-if="slot.location">
                 📍 {{ slot.location.name }}
@@ -146,7 +150,7 @@
     <div v-else-if="viewMode === 'day'" class="day-view">
       <div class="day-view-header">
         <h3>{{ formatFullDate(currentDate) }}</h3>
-        <span class="day-slots-count">{{ currentDaySlots.length }} créneau(x) aujourd'hui</span>
+        <span class="day-slots-count">{{ currentDaySlots.length }} créneau(x)</span>
       </div>
 
       <div v-if="currentDaySlots.length === 0" class="empty-state-card">
@@ -156,19 +160,32 @@
 
       <div v-else class="day-slots-timeline">
         <div 
-          v-for="slot in currentDaySlots" 
+          v-for="(slot, dIdx) in currentDaySlots" 
           :key="slot.documentId || slot.id" 
           class="day-timeline-item"
+          :class="{ 'is-first-day-event': dIdx === 0 || isFirstDayEvent(slot), 'is-last-day-event': dIdx === currentDaySlots.length - 1 || isLastDayEvent(slot) }"
+          @click="$emit('select-slot', slot)"
         >
-          <div class="time-col">
+          <div class="time-col" :style="getSlotAccentStyle(slot)">
             <span class="time-start">{{ formatTimeOnly(slot.startDate) }}</span>
             <span class="time-end">{{ formatTimeOnly(slot.endDate) }}</span>
           </div>
 
-          <div class="day-slot-detail-card" @click="$emit('select-slot', slot)">
+          <div class="day-slot-detail-card" :style="getSlotBorderStyle(slot)">
             <div class="slot-main-info">
-              <span class="activity-name">🎯 {{ slot.activityTemplate?.name || 'Activité sans nom' }}</span>
+              <span class="activity-name">{{ slot.activityTemplate?.name || 'Activité sans nom' }}</span>
               <span class="location-badge" v-if="slot.location">📍 {{ slot.location.name }}</span>
+            </div>
+
+            <div class="slot-tags-row" v-if="slot.activityTemplate?.tags?.length">
+              <span 
+                v-for="tag in slot.activityTemplate.tags" 
+                :key="tag" 
+                class="slot-tag-chip"
+                :style="getTagChipStyle(tag)"
+              >
+                {{ tag }}
+              </span>
             </div>
 
             <p class="activity-desc" v-if="slot.activityTemplate?.description">
@@ -190,11 +207,14 @@
               <div class="people-group" v-if="slot.participants && slot.participants.length">
                 <span class="people-label">Participants ({{ slot.participants.length }}) :</span>
                 <span 
-                  v-for="part in slot.participants" 
+                  v-for="part in slot.participants.slice(0, 5)" 
                   :key="part.documentId || part.id"
                   class="person-chip part-chip"
                 >
-                  👥 {{ part.firstName }} {{ part.lastName }}
+                  {{ part.firstName }} {{ part.lastName }}
+                </span>
+                <span v-if="slot.participants.length > 5" class="person-chip more-chip">
+                  +{{ slot.participants.length - 5 }}
                 </span>
               </div>
             </div>
@@ -210,6 +230,29 @@
 <script>
 import { useAppSettingsStore } from '../stores/appSettings';
 
+// Generate a stable HSL color from a string (tag name)
+function hashStringToHSL(str, saturation = 70, lightness = 55) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    hash = hash & hash;
+  }
+  const hue = Math.abs(hash) % 360;
+  return { h: hue, s: saturation, l: lightness };
+}
+
+function getColorForSlot(slot) {
+  const tags = slot?.activityTemplate?.tags;
+  if (tags && tags.length > 0) {
+    return hashStringToHSL(tags[0]);
+  }
+  const name = slot?.activityTemplate?.name;
+  if (name) {
+    return hashStringToHSL(name, 60, 50);
+  }
+  return { h: 235, s: 70, l: 55 }; // Default indigo
+}
+
 export default {
   name: 'CalendarView',
   props: {
@@ -220,17 +263,29 @@ export default {
     targetDate: {
       type: [Date, String],
       default: null
+    },
+    defaultView: {
+      type: String,
+      default: 'month'
     }
   },
   emits: ['select-slot'],
   data() {
     return {
-      viewMode: 'month', // 'month', 'week', 'day'
+      viewMode: this.defaultView || 'month',
       currentDate: new Date(),
       transitionName: 'slide-left',
       weekDays: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-      hoursList: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+      hoursList: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+      isMobile: false
     };
+  },
+  mounted() {
+    this.checkMobile();
+    window.addEventListener('resize', this.checkMobile);
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.checkMobile);
   },
   watch: {
     targetDate: {
@@ -418,11 +473,45 @@ export default {
     }
   },
   methods: {
+    isFirstDayEvent(slot) {
+      if (!slot || !slot.startDate) return false;
+      const dateKey = this.toDateKey(new Date(slot.startDate));
+      const daySlots = this.getSlotsForDateKey(dateKey);
+      if (!daySlots || !daySlots.length) return false;
+      const sorted = [...daySlots].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+      const firstId = sorted[0]?.documentId || sorted[0]?.id;
+      const currentId = slot.documentId || slot.id;
+      return firstId && currentId && firstId === currentId;
+    },
+    isLastDayEvent(slot) {
+      if (!slot || !slot.startDate) return false;
+      const dateKey = this.toDateKey(new Date(slot.startDate));
+      const daySlots = this.getSlotsForDateKey(dateKey);
+      if (!daySlots || !daySlots.length) return false;
+      const sorted = [...daySlots].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+      const lastSlot = sorted[sorted.length - 1];
+      const lastId = lastSlot?.documentId || lastSlot?.id;
+      const currentId = slot.documentId || slot.id;
+      return lastId && currentId && lastId === currentId;
+    },
+    checkMobile() {
+      const wasMobile = this.isMobile;
+      this.isMobile = window.innerWidth < 768;
+      // Auto-switch to day view on mobile if currently in week view
+      if (this.isMobile && !wasMobile && this.viewMode === 'week') {
+        this.viewMode = 'day';
+      }
+    },
     isSlotPast(slot) {
       if (!slot || !slot.startDate) return false;
       return new Date(slot.endDate || slot.startDate) < new Date();
     },
     setViewMode(mode) {
+      // On mobile, redirect week to day
+      if (this.isMobile && mode === 'week') {
+        this.viewMode = 'day';
+        return;
+      }
       this.viewMode = mode;
     },
     navigateDate(direction) {
@@ -505,6 +594,35 @@ export default {
       const loc = slot.location?.name || 'Lieu inconnu';
       const time = `${this.formatTimeOnly(slot.startDate)} - ${this.formatTimeOnly(slot.endDate)}`;
       return `${time} | ${act} | ${loc}`;
+    },
+    // Tag-based color methods
+    getSlotColorStyle(slot) {
+      const color = getColorForSlot(slot);
+      return {
+        background: `linear-gradient(135deg, hsla(${color.h}, ${color.s}%, ${color.l}%, 0.25), hsla(${color.h}, ${color.s}%, ${color.l - 10}%, 0.35))`,
+        borderLeftColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)`
+      };
+    },
+    getSlotAccentStyle(slot) {
+      const color = getColorForSlot(slot);
+      return {
+        borderColor: `hsla(${color.h}, ${color.s}%, ${color.l}%, 0.3)`,
+        background: `rgba(15, 23, 42, 0.6)`
+      };
+    },
+    getSlotBorderStyle(slot) {
+      const color = getColorForSlot(slot);
+      return {
+        borderLeftColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)`
+      };
+    },
+    getTagChipStyle(tag) {
+      const color = hashStringToHSL(tag);
+      return {
+        background: `hsla(${color.h}, ${color.s}%, ${color.l}%, 0.2)`,
+        color: `hsl(${color.h}, ${color.s}%, ${color.l + 20}%)`,
+        borderColor: `hsla(${color.h}, ${color.s}%, ${color.l}%, 0.4)`
+      };
     },
     printCalendar() {
       window.print();
@@ -617,6 +735,41 @@ export default {
   display: none;
 }
 
+/* ════════════════ TODAY PULSE ANIMATION ════════════════ */
+@keyframes today-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5); }
+  50% { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
+}
+
+.today-pulse {
+  animation: today-glow 2.5s ease-in-out infinite;
+  background: #6366f1;
+  color: white;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+/* ════════════════ TAG CHIPS IN DAY VIEW ════════════════ */
+.slot-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+
+.slot-tag-chip {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+  border: 1px solid;
+}
+
 /* ════════════════ MONTH VIEW STYLES ════════════════ */
 .month-grid-header {
   display: grid;
@@ -679,17 +832,6 @@ export default {
   color: #cbd5e1;
 }
 
-.month-day-cell.is-today .day-num {
-  background: #6366f1;
-  color: white;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .badge-count {
   font-size: 0.7rem;
   background: rgba(99, 102, 241, 0.3);
@@ -705,7 +847,6 @@ export default {
 }
 
 .month-slot-badge {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(79, 70, 229, 0.35));
   border-left: 3px solid #6366f1;
   border-radius: 0.25rem;
   padding: 0.2rem 0.35rem;
@@ -716,11 +857,21 @@ export default {
   display: flex;
   gap: 0.35rem;
   color: #e2e8f0;
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.month-slot-badge:hover {
+  transform: scale(1.03);
+  filter: brightness(1.15);
+}
+
+.month-slot-badge.is-past-slot {
+  opacity: 0.5;
 }
 
 .slot-time {
   font-weight: 700;
-  color: #818cf8;
+  color: #c7d2fe;
 }
 
 .more-slots {
@@ -797,23 +948,22 @@ export default {
 }
 
 .week-slot-card {
-  background: rgba(99, 102, 241, 0.2);
   border-left: 3px solid #818cf8;
   border-radius: 0.25rem;
   padding: 0.25rem 0.4rem;
   cursor: pointer;
-  transition: transform 0.1s ease;
+  transition: transform 0.1s ease, filter 0.1s ease;
 }
 
 .week-slot-card:hover {
   transform: scale(1.02);
-  background: rgba(99, 102, 241, 0.35);
+  filter: brightness(1.15);
 }
 
 .week-slot-time {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #a5b4fc;
+  color: #c7d2fe;
 }
 
 .week-slot-title {
@@ -862,6 +1012,7 @@ export default {
   grid-template-columns: 110px 1fr;
   gap: 1rem;
   align-items: flex-start;
+  cursor: pointer;
 }
 
 .time-col {
@@ -872,6 +1023,7 @@ export default {
   border-radius: 0.5rem;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: border-color 0.2s ease;
 }
 
 .time-start {
@@ -920,6 +1072,7 @@ export default {
   border-radius: 0.4rem;
   font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .activity-desc {
@@ -967,121 +1120,12 @@ export default {
   color: #fbcfe8;
 }
 
-/* ════════════════ PLANNING / AGENDA VIEW STYLES ════════════════ */
-.planning-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.planning-date-group {
-  background: rgba(15, 23, 42, 0.6);
-  border-radius: 0.65rem;
-  padding: 0.5rem 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.group-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.4rem;
-  padding-bottom: 0.3rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.group-header h4 {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #818cf8;
-  margin: 0;
-}
-
-.group-count-badge {
-  margin-left: auto;
-  font-size: 0.7rem;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 0.15rem 0.5rem;
-  border-radius: 1rem;
+.more-chip {
+  background: rgba(255, 255, 255, 0.1);
   color: #94a3b8;
 }
 
-.planning-slots-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.planning-slot-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(30, 41, 59, 0.7);
-  border-left: 3px solid #6366f1;
-  border-radius: 0.4rem;
-  padding: 0.45rem 0.75rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.planning-slot-row:hover {
-  background: rgba(30, 41, 59, 1);
-  transform: translateX(3px);
-  border-left-color: #818cf8;
-}
-
-.p-row-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.p-row-time {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #a5b4fc;
-  background: rgba(99, 102, 241, 0.15);
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.35rem;
-  white-space: nowrap;
-}
-
-.p-row-activity {
-  font-size: 0.9rem;
-  color: #f8fafc;
-}
-
-.p-row-location {
-  font-size: 0.8rem;
-  color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.06);
-  padding: 0.15rem 0.5rem;
-  border-radius: 0.35rem;
-}
-
-.p-row-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 0.8rem;
-}
-
-.p-row-facs {
-  color: #c7d2fe;
-}
-
-.p-row-parts {
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.15);
-  padding: 0.15rem 0.65rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  white-space: nowrap;
-}
-
+/* ════════════════ EMPTY STATE ════════════════ */
 .empty-state-card {
   text-align: center;
   padding: 3rem 1rem;
@@ -1094,95 +1138,314 @@ export default {
   margin-bottom: 0.5rem;
 }
 
-/* ════════════════ PRINT MEDIA OVERRIDES ════════════════ */
+/* ════════════════ TRANSITIONS ════════════════ */
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.25s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(30px);
+  opacity: 0;
+}
+.slide-left-leave-to {
+  transform: translateX(-30px);
+  opacity: 0;
+}
+.slide-right-enter-from {
+  transform: translateX(-30px);
+  opacity: 0;
+}
+.slide-right-leave-to {
+  transform: translateX(30px);
+  opacity: 0;
+}
+
+/* ════════════════ RESPONSIVE ════════════════ */
+@media (max-width: 768px) {
+  .calendar-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-switchers {
+    justify-content: center;
+  }
+
+  .date-navigation {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .calendar-actions {
+    text-align: center;
+  }
+
+  .month-day-cell {
+    min-height: 70px;
+    padding: 0.25rem;
+  }
+
+  .month-slot-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.25rem;
+  }
+
+  .day-timeline-item {
+    grid-template-columns: 85px 1fr;
+    gap: 0.5rem;
+  }
+
+  .time-start {
+    font-size: 0.9rem;
+  }
+
+  .slot-main-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nav-arrow-btn, .today-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* ════════════════ PRINT MEDIA OVERRIDES (STRICT 1 PAGE FIT) ════════════════ */
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 0.3cm;
+  }
+
+  /* Force 1 single page height container */
+  html, body, #app, .app-container, .dashboard-wrapper, .app-body, .app-content, .view-container, .client-planning-wrapper, .calendar-container {
+    height: 100% !important;
+    max-height: 98vh !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
   .no-print,
   .calendar-toolbar {
     display: none !important;
   }
 
-  .calendar-container {
-    background: #ffffff !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    color: #000000 !important;
-  }
-
   .print-only-header {
-    display: block !important;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #000000;
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px !important;
+    padding-bottom: 4px !important;
+    border-bottom: 1.5px solid #000000 !important;
   }
 
   .print-only-header h2 {
-    font-size: 14pt !important;
+    font-size: 11pt !important;
     color: #000000 !important;
-    margin: 0 0 0.25rem 0;
+    margin: 0 !important;
   }
 
   .print-only-header p {
-    font-size: 10pt !important;
+    font-size: 8pt !important;
     color: #333333 !important;
-    margin: 0;
+    margin: 0 !important;
   }
 
-  .month-grid-header,
-  .month-grid-body {
-    background: #000000 !important;
+  /* ════════ MONTH VIEW PRINT (COMPACT 1 PAGE) ════════ */
+  .month-view {
+    display: flex !important;
+    flex-direction: column !important;
+    height: calc(98vh - 1cm) !important;
+  }
+
+  .month-grid-header {
+    background: #e2e8f0 !important;
   }
 
   .month-header-cell {
     background: #f1f5f9 !important;
     color: #000000 !important;
-    font-size: 9pt !important;
+    font-size: 8pt !important;
+    padding: 2px !important;
+  }
+
+  .month-grid-body {
+    background: #cbd5e1 !important;
+    flex: 1 !important;
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    grid-template-rows: repeat(5, minmax(0, 1fr)) !important;
+    gap: 1px !important;
   }
 
   .month-day-cell {
     background: #ffffff !important;
     color: #000000 !important;
-    min-height: 80px !important;
-    border: 1px solid #e2e8f0 !important;
+    min-height: 0 !important;
+    padding: 2px 3px !important;
+    border: none !important;
+    overflow: hidden !important;
   }
 
   .month-day-cell.other-month {
     background: #f8fafc !important;
-    opacity: 0.5 !important;
+    opacity: 0.4 !important;
   }
 
   .cell-day-number {
+    font-size: 7.5pt !important;
+    margin-bottom: 1px !important;
     color: #000000 !important;
   }
 
   .month-slot-badge {
     background: #f1f5f9 !important;
-    border-left: 3px solid #3b82f6 !important;
+    border-left: 2.5px solid #3b82f6 !important;
     color: #000000 !important;
+    font-size: 6.5pt !important;
+    padding: 1px 2px !important;
+    margin-bottom: 1px !important;
   }
 
-  .slot-time, .slot-title {
-    color: #000000 !important;
+  .month-slot-location {
+    font-size: 6pt !important;
+    color: #475569 !important;
   }
 
-  .day-slot-detail-card,
-  .planning-slot-card,
-  .planning-date-group {
-    background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-    color: #000000 !important;
-    box-shadow: none !important;
+  /* ════════ WEEK VIEW PRINT (COMPACT 1 PAGE) ════════ */
+  .week-view {
+    display: flex !important;
+    flex-direction: column !important;
+    height: calc(98vh - 1cm) !important;
   }
 
-  .time-col, .time-start, .time-end,
-  .activity-name, .p-activity-name, .group-header h4 {
-    color: #000000 !important;
+  .week-grid-header {
+    background: #e2e8f0 !important;
   }
 
-  .person-chip, .location-badge {
+  .time-col-header, .week-header-cell {
     background: #f1f5f9 !important;
     color: #000000 !important;
+    font-size: 8pt !important;
+    padding: 2px !important;
+  }
+
+  .week-grid-body {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+  }
+
+  .week-hour-row {
+    flex: 1 !important;
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-columns: 55px repeat(7, 1fr) !important;
+  }
+
+  .time-cell {
+    background: #f8fafc !important;
+    color: #334155 !important;
+    font-size: 7pt !important;
+    padding: 1px !important;
+  }
+
+  .week-day-hour-cell {
+    background: #ffffff !important;
+    padding: 1px !important;
+  }
+
+  .week-slot-card {
+    background: #f1f5f9 !important;
+    border-left: 2.5px solid #4f46e5 !important;
+    color: #000000 !important;
+    padding: 1px 3px !important;
+    font-size: 6.5pt !important;
+    margin-bottom: 1px !important;
+  }
+
+  .week-slot-time {
+    font-size: 6pt !important;
+    color: #334155 !important;
+    font-weight: 700 !important;
+  }
+
+  .week-slot-title {
+    font-size: 6.5pt !important;
+    color: #000000 !important;
+    font-weight: 600 !important;
+  }
+
+  .week-slot-location {
+    font-size: 6pt !important;
+    color: #475569 !important;
+  }
+
+  /* ════════ DAY VIEW PRINT (COMPACT 1 PAGE) ════════ */
+  .day-slots-timeline {
+    gap: 3px !important;
+    margin-top: 4px !important;
+  }
+
+  .day-timeline-item {
+    grid-template-columns: 65px 1fr !important;
+    gap: 6px !important;
+  }
+
+  .time-col {
+    padding: 2px 4px !important;
+    background: #f1f5f9 !important;
+  }
+
+  .time-start, .time-end {
+    font-size: 7.5pt !important;
+    color: #000000 !important;
+  }
+
+  .day-slot-detail-card {
+    padding: 3px 6px !important;
+    background: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
+  }
+
+  .activity-name {
+    font-size: 8.5pt !important;
+    color: #000000 !important;
+  }
+
+  /* Hide non-essential details on print for day view to guarantee 1 page fit */
+  .activity-desc,
+  .slot-tags-row,
+  .slot-people-row {
+    display: none !important;
+  }
+
+  /* ════════ LOCATION PRINT FILTER RULE ════════ */
+  /* Hide room/location for ALL events EXCEPT the FIRST and LAST event of the day */
+  .week-slot-location,
+  .location-badge,
+  .month-slot-location {
+    display: none !important;
+  }
+
+  .is-first-day-event .week-slot-location,
+  .is-first-day-event .location-badge,
+  .is-first-day-event .month-slot-location,
+  .is-last-day-event .week-slot-location,
+  .is-last-day-event .location-badge,
+  .is-last-day-event .month-slot-location {
+    display: block !important;
   }
 }
 </style>

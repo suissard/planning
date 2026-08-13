@@ -168,7 +168,8 @@
         
         <!-- Connection Status & Stats -->
         <div class="header-right">
-          <div class="stats-pills" v-if="!loading && !error">
+          <!-- Admin-only: Stats pills -->
+          <div class="stats-pills" v-if="!loading && !error && appSettingsStore.isAdminMode">
             <span class="stat-pill">📍 {{ locations.length }} Lieux</span>
             <span class="stat-pill">🎯 {{ activities.length }} Activités</span>
             <span class="stat-pill">👨‍🏫 {{ facilitators.length }} Animateurs</span>
@@ -187,9 +188,8 @@
             <span>{{ appSettingsStore.isAdminMode ? 'Mode Administratif' : 'Mode Utilisateur' }}</span>
           </div>
 
-          <!-- User Profiling in Header -->
-          <!-- Mock Data Toggle -->
-          <div class="mock-toggle" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.05); padding: 0.35rem 0.75rem; border-radius: 2rem; border: 1px solid var(--border-color);">
+          <!-- Admin-only: Mock Data Toggle -->
+          <div v-if="appSettingsStore.isAdminMode" class="mock-toggle" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.05); padding: 0.35rem 0.75rem; border-radius: 2rem; border: 1px solid var(--border-color);">
             <label for="mockToggle" style="font-size: 0.8rem; cursor: pointer; color: var(--text-secondary);">Fausses données</label>
             <input type="checkbox" id="mockToggle" v-model="appSettingsStore.useMockData" @change="handleMockDataToggle" style="cursor: pointer;" />
           </div>
@@ -268,9 +268,10 @@
             @click="navigateTo('timeslots')"
           >
             <span class="nav-icon">📅</span>
-            Planning
+            {{ appSettingsStore.isAdminMode ? 'Planning' : 'Mon Planning' }}
           </button>
           <button 
+            v-if="appSettingsStore.isAdminMode"
             class="nav-item" 
             :class="{ active: currentPage === 'locations' }"
             @click="navigateTo('locations')"
@@ -279,6 +280,7 @@
             Lieux
           </button>
           <button 
+            v-if="appSettingsStore.isAdminMode"
             class="nav-item" 
             :class="{ active: currentPage === 'activities' }"
             @click="navigateTo('activities')"
@@ -345,18 +347,8 @@
 
         <!-- Main Content Area -->
         <main class="app-content">
-          <!-- User Mode Notification Banner -->
-          <div class="user-mode-banner" v-if="!appSettingsStore.isAdminMode && currentPage !== 'profile'">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <span class="banner-icon">👤</span>
-              <div class="banner-text">
-                <strong>Mode Utilisateur Actif</strong> — Affichage uniquement des données qui vous concernent ({{ currentUserPersona?.facName || currentUserPersona?.partName || user?.username }}). Les vues et outils d'édition sont désactivés.
-              </div>
-            </div>
-            <button class="switch-admin-link-btn" @click="appSettingsStore.setAdminMode(true)">
-              👑 Passer en Mode Administratif
-            </button>
-          </div>
+          <!-- User Mode Notification Banner (compact) -->
+          <!-- Removed intrusive banner — mode is visible via sidebar/header toggle -->
 
           <!-- Search & Info Bar (Hidden on Custom Views) -->
           <div class="content-header" v-if="!error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
@@ -521,7 +513,16 @@
             </div>
 
             <!-- TAB: PLANNING (TIME SLOTS & CALENDAR) -->
-            <div v-if="currentPage === 'timeslots'" class="timeslots-page-wrapper">
+            <!-- USER MODE: Dedicated Client Planning View -->
+            <ClientPlanningView 
+              v-if="currentPage === 'timeslots' && !appSettingsStore.isAdminMode"
+              :timeslots="timeslots"
+              :user-relevant-slots="userRelevantSlots"
+              :loading="loading"
+            />
+
+            <!-- ADMIN MODE: Full planning with cards/calendar toggle -->
+            <div v-if="currentPage === 'timeslots' && appSettingsStore.isAdminMode" class="timeslots-page-wrapper">
               <!-- View Display Switcher -->
               <div class="display-mode-bar user-planning-switcher-bar no-print">
                 <div class="mode-tabs hero-mode-switch">
@@ -587,10 +588,8 @@
                 @select-slot="handleCalendarSelectSlot" 
               />
 
-              <!-- Cards Grid View (Admin mode: Vue détaillée complète | User mode: Vue dense compacte) -->
-              <div v-else :class="appSettingsStore.isAdminMode ? 'slots-grid' : 'user-slots-dense-grid'">
-                <!-- ADMIN MODE FULL DETAILED SLOT CARD -->
-                <template v-if="appSettingsStore.isAdminMode">
+              <!-- Cards Grid View (Admin mode only now) -->
+              <div v-else class="slots-grid">
                   <div 
                     v-for="slot in filteredItems" 
                     :key="slot.documentId" 
@@ -684,41 +683,6 @@
                       </div>
                     </div>
                   </div>
-                </template>
-
-                <!-- USER MODE ULTRA DENSE COMPACT SLOT CARDS -->
-                <template v-else>
-                  <div 
-                    v-for="slot in filteredItems" 
-                    :key="slot.documentId" 
-                    class="dense-slot-card"
-                    :class="{ 
-                      'highlighted-item': slot.documentId === highlightedId,
-                      'is-past-slot': new Date(slot.endDate || slot.startDate) < new Date()
-                    }"
-                    :id="'slot-' + slot.documentId"
-                  >
-                    <div class="dense-slot-left">
-                      <div class="dense-time-badge">
-                        <span class="dense-date">🕒 {{ formatSlotShortDate(slot.startDate) }}</span>
-                        <span class="dense-range">{{ formatSlotTimeRange(slot.startDate, slot.endDate) }}</span>
-                      </div>
-                      <div class="dense-info">
-                        <span class="dense-activity-title">🎯 {{ slot.activityTemplate?.name || 'Activité' }}</span>
-                        <span class="dense-location" v-if="slot.location">📍 {{ slot.location.name }}</span>
-                      </div>
-                    </div>
-
-                    <div class="dense-slot-right">
-                      <span class="dense-facs" v-if="slot.facilitators && slot.facilitators.length">
-                        👨‍🏫 {{ slot.facilitators.map(f => f.firstName + ' ' + f.lastName).join(', ') }}
-                      </span>
-                      <span class="dense-count-pill" title="Nombre total de participants inscrits">
-                        👥 <strong>{{ slot.participants?.length || 0 }}</strong> inscrit(s)
-                      </span>
-                    </div>
-                  </div>
-                </template>
               </div>
             </div>
 
@@ -1634,6 +1598,7 @@ import FacilitatorsList from './views/admin/FacilitatorsList.vue';
 import RoomSessionsView from './components/RoomSessionsView.vue';
 import ExtractionsView from './components/ExtractionsView.vue';
 import CalendarView from './components/CalendarView.vue';
+import ClientPlanningView from './views/ClientPlanningView.vue';
 
 
 const DAYS_FR = {
@@ -1653,7 +1618,8 @@ export default {
     FacilitatorsList,
     RoomSessionsView,
     ExtractionsView,
-    CalendarView
+    CalendarView,
+    ClientPlanningView
   },
   setup() {
     const authStore = useAuthStore();
@@ -2165,7 +2131,7 @@ export default {
   },
   watch: {
     'appSettingsStore.isAdminMode'(isAdmin) {
-      if (!isAdmin && !['timeslots', 'locations', 'activities', 'profile'].includes(this.currentPage)) {
+      if (!isAdmin && !['timeslots', 'profile'].includes(this.currentPage)) {
         this.navigateTo('timeslots');
       }
     },
