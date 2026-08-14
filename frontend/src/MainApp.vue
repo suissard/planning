@@ -584,6 +584,7 @@
                 v-else-if="timeslotViewMode === 'calendar'" 
                 :timeslots="filteredItems" 
                 :target-date="calendarTargetDate"
+                :default-view="'month'"
                 @select-slot="handleCalendarSelectSlot" 
               />
 
@@ -960,19 +961,11 @@
             <!-- TAB: INDIVIDUAL SCHEDULES -->
             <div v-if="currentPage === 'individual-schedules'" class="individual-schedules-container">
               <div class="schedules-selector-card no-print">
-                <h3>🔍 Sélectionner un planning (Animateur, Participant ou Salle)</h3>
+                <h3>🔍 Sélectionner un planning (Participant, Animateur ou Salle)</h3>
                 
                 <div class="selector-controls">
                   <!-- Type Toggle -->
                   <div class="type-segmented-control">
-                    <button 
-                      type="button" 
-                      class="segment-btn" 
-                      :class="{ active: selectedSchedulePersonType === 'facilitator' }"
-                      @click="setSchedulePersonType('facilitator')"
-                    >
-                      👨‍🏫 Animateur
-                    </button>
                     <button 
                       type="button" 
                       class="segment-btn" 
@@ -984,6 +977,14 @@
                     <button 
                       type="button" 
                       class="segment-btn" 
+                      :class="{ active: selectedSchedulePersonType === 'facilitator' }"
+                      @click="setSchedulePersonType('facilitator')"
+                    >
+                      👨‍🏫 Animateur
+                    </button>
+                    <button 
+                      type="button" 
+                      class="segment-btn" 
                       :class="{ active: selectedSchedulePersonType === 'location' }"
                       @click="setSchedulePersonType('location')"
                     >
@@ -991,230 +992,37 @@
                     </button>
                   </div>
 
-                  <!-- Dropdown Selection -->
+                  <!-- Searchable Dropdown Selection -->
                   <div class="person-dropdown-wrapper">
-                    <select 
-                      v-model="selectedSchedulePersonId" 
-                      class="form-select person-select"
+                    <SearchableSelect
+                      v-model="selectedSchedulePersonId"
+                      :options="schedulePeopleList"
+                      :type="selectedSchedulePersonType"
+                      :placeholder="`Rechercher un ${selectedSchedulePersonType === 'participant' ? 'participant' : (selectedSchedulePersonType === 'facilitator' ? 'animateur' : 'lieu/salle')} par lettre, nom, email...`"
+                      :empty-message="`Aucun ${selectedSchedulePersonType === 'participant' ? 'participant' : (selectedSchedulePersonType === 'facilitator' ? 'animateur' : 'lieu')} trouvé`"
                       @change="onSchedulePersonChange"
-                    >
-                      <option :value="null">-- Choisissez un planning --</option>
-                      <option 
-                        v-for="item in schedulePeopleList" 
-                        :key="item.documentId" 
-                        :value="item.documentId"
-                      >
-                        {{ selectedSchedulePersonType === 'location' ? item.name : `${item.firstName} ${item.lastName}` }}
-                        <template v-if="item.email"> ({{ item.email }})</template>
-                      </option>
-                    </select>
-                  </div>
-
-                  <!-- Date Range Picker -->
-                  <div class="date-range-picker-group">
-                    <div class="date-picker-field">
-                      <label>Début :</label>
-                      <input type="date" v-model="scheduleStartDate" class="form-input date-picker-input" />
-                    </div>
-                    <div class="date-picker-field">
-                      <label>Fin :</label>
-                      <input type="date" v-model="scheduleEndDate" class="form-input date-picker-input" />
-                    </div>
+                    />
                   </div>
                 </div>
               </div>
               
-              <!-- Selected Person/Location Schedule -->
-              <div v-if="selectedSchedulePerson" class="schedule-detail-card printable-schedule-area">
-                <!-- Profile Header -->
-                <div class="schedule-detail-header">
-                  <div class="person-badge-avatar">
-                    {{ selectedSchedulePersonType === 'facilitator' ? '👨‍🏫' : (selectedSchedulePersonType === 'participant' ? '👥' : '📍') }}
-                  </div>
-                  <div class="person-info-block">
-                    <h2 v-if="selectedSchedulePersonType === 'location'">Planning de la salle : {{ selectedSchedulePerson.name }}</h2>
-                    <h2 v-else>Planning de {{ selectedSchedulePerson.firstName }} {{ selectedSchedulePerson.lastName }}</h2>
-                    
-                    <div class="subtitle">
-                      <span class="role-badge" :class="selectedSchedulePersonType">
-                        {{ selectedSchedulePersonType === 'facilitator' ? 'Animateur' : (selectedSchedulePersonType === 'participant' ? 'Participant (Bénéficiaire)' : 'Salle / Lieu') }}
-                      </span>
-                      <span v-if="selectedSchedulePersonType !== 'location'" class="email-info">✉️ {{ selectedSchedulePerson.email }}</span>
-                      <span v-else class="email-info">📍 {{ selectedSchedulePerson.address || 'Pas d\'adresse' }}</span>
-                      <span class="date-range-badge">📅 Période du {{ formatDateFr(scheduleStartDate) }} au {{ formatDateFr(scheduleEndDate) }}</span>
-                    </div>
-                    <p v-if="selectedSchedulePersonType === 'facilitator' && selectedSchedulePerson.skills" class="skills-info">
-                      <strong>Compétences :</strong> {{ selectedSchedulePerson.skills }}
-                    </p>
-                    <p v-if="selectedSchedulePersonType === 'location' && selectedSchedulePerson.capacity" class="skills-info">
-                      <strong>Capacité d'accueil :</strong> {{ selectedSchedulePerson.capacity }} personnes
-                    </p>
-                  </div>
-                  
-                  <!-- Actions (Print & Email) -->
-                  <div class="schedule-actions no-print">
-                    <button class="action-btn print-btn" @click="printSchedule">
-                      🖨️ Imprimer
-                    </button>
-                    <button class="action-btn email-btn" @click="openEmailModal">
-                      ✉️ Envoyer par mail
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Reference constraints / opening section -->
-                <div class="availability-schedule-section">
-                  <template v-if="selectedSchedulePersonType === 'location'">
-                    <h4>🗓️ Horaires d'ouverture de la salle</h4>
-                    <div class="global-opening-badge">
-                      📍 <strong>Ouverture globale :</strong> Du {{ formatDate(selectedSchedulePerson?.globalOpeningStart) }} au {{ formatDate(selectedSchedulePerson?.globalOpeningEnd) }}
-                    </div>
-                    <div class="weekly-blocks-grid">
-                      <div 
-                        v-for="day in getLocationWeeklyStatus(selectedSchedulePerson)" 
-                        :key="day.key"
-                        class="weekday-card"
-                        :class="{ 'day-closed': day.isClosed, 'day-open': !day.isClosed }"
-                      >
-                        <div class="weekday-header">
-                          <span class="weekday-name">{{ day.name }}</span>
-                        </div>
-                        <div class="weekday-body">
-                          <div v-if="!day.isClosed" class="time-block open-block">
-                            <span class="status-indicator open-dot">●</span> Ouvert
-                          </div>
-                          <div v-else class="time-block closed-block">
-                            <span class="status-indicator closed-dot">●</span> Fermé
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </template>
-
-                  <template v-else>
-                    <h4>🗓️ Disponibilités de référence</h4>
-                    <div class="weekly-blocks-grid">
-                      <div 
-                        v-for="day in getWeeklyAvailabilityDays(selectedSchedulePerson?.weeklyAvailabilities)" 
-                        :key="day.key"
-                        class="weekday-card"
-                        :class="{ 'day-available': day.isAvailable, 'day-off': !day.isAvailable }"
-                      >
-                        <div class="weekday-header">
-                          <span class="weekday-name">{{ day.name }}</span>
-                        </div>
-                        <div class="weekday-body">
-                          <template v-if="day.isAvailable">
-                            <div 
-                              v-for="(period, idx) in day.periods" 
-                              :key="idx" 
-                              class="time-block avail-block"
-                            >
-                              <span class="time-icon">⏰</span>
-                              <span class="time-range-text">{{ period.start }} - {{ period.end }}</span>
-                            </div>
-                          </template>
-                          <template v-else>
-                            <div class="time-block off-block">
-                              <span class="off-text">Indisponible</span>
-                            </div>
-                          </template>
-                        </div>
-                      </div>
-                    </div>
-                  </template>
-                </div>
-
-                <!-- Timeline of Days -->
-                <div class="schedule-list-section">
-                  <h3>📅 Liste des activités programmées</h3>
-                  
-                  <div v-if="groupedScheduleSlotsByDay.length === 0" class="no-slots-message">
-                     Aucun créneau horaire n'est planifié sur la période sélectionnée.
-                  </div>
-                  
-                  <div v-else class="days-timeline">
-                    <div 
-                      v-for="dayGroup in groupedScheduleSlotsByDay" 
-                      :key="dayGroup.dateStr" 
-                      class="day-timeline-card"
-                    >
-                      <div class="day-timeline-header">
-                        <h4>📅 {{ dayGroup.label }}</h4>
-                      </div>
-                      
-                      <div class="day-timeline-slots">
-                        <div 
-                          v-for="slot in dayGroup.slots" 
-                          :key="slot.documentId" 
-                          class="timeline-slot-row"
-                        >
-                          <!-- Time Column -->
-                          <div class="slot-time-col">
-                            <span class="time-range">⏰ {{ formatSlotTimeRange(slot.startDate, slot.endDate) }}</span>
-                          </div>
-                          
-                          <!-- Activity Column -->
-                          <div class="slot-activity-col">
-                            <span class="activity-name-text">🎯 {{ slot.activityTemplate?.name || 'Activité inconnue' }}</span>
-                            <span class="activity-duration-text">{{ slot.activityTemplate?.standardDuration }} min</span>
-                          </div>
-                          
-                          <!-- Location Column (Only if not viewing room schedule) -->
-                          <div class="slot-location-col" v-if="selectedSchedulePersonType !== 'location'">
-                            <span class="location-name-text">📍 {{ slot.location?.name || 'Inconnu' }}</span>
-                          </div>
-                          
-                          <!-- Relations Column -->
-                          <div class="slot-relations-col">
-                            <!-- If location schedule: show animators & participants -->
-                            <template v-if="selectedSchedulePersonType === 'location'">
-                              <div class="relation-item">
-                                <span class="relation-label">Animateurs :</span>
-                                <span class="relation-value">{{ getSlotFacilitatorsList(slot) || 'Aucun' }}</span>
-                              </div>
-                              <div class="relation-item">
-                                <span class="relation-label">Participants :</span>
-                                <span class="relation-value">{{ getSlotParticipantsList(slot) || 'Aucun' }}</span>
-                              </div>
-                            </template>
-                            
-                            <!-- If animator schedule: show co-animators & participants -->
-                            <template v-else-if="selectedSchedulePersonType === 'facilitator'">
-                              <div class="relation-item" v-if="getCoFacilitators(slot)">
-                                <span class="relation-label">Co-animateurs :</span>
-                                <span class="relation-value">{{ getCoFacilitators(slot) }}</span>
-                              </div>
-                              <div class="relation-item">
-                                <span class="relation-label">Participants :</span>
-                                <span class="relation-value">{{ getSlotParticipantsList(slot) || 'Aucun' }}</span>
-                              </div>
-                            </template>
-                            
-                            <!-- If participant schedule: show animators & co-participants -->
-                            <template v-else>
-                              <div class="relation-item">
-                                <span class="relation-label">Animateurs :</span>
-                                <span class="relation-value">{{ getSlotFacilitatorsList(slot) || 'Aucun' }}</span>
-                              </div>
-                              <div class="relation-item" v-if="getOtherParticipants(slot)">
-                                <span class="relation-label">Co-participants :</span>
-                                <span class="relation-value">{{ getOtherParticipants(slot) }}</span>
-                              </div>
-                            </template>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <!-- Selected Person/Location Schedule: Rich Planning View (Vue ClientPlanningView) -->
+              <div v-if="selectedSchedulePerson" class="individual-schedule-result">
+                <ClientPlanningView 
+                  :timeslots="timeslots"
+                  :user-relevant-slots="selectedPersonSlots"
+                  :loading="loading"
+                  :user="{ username: selectedSchedulePersonName }"
+                  :current-user-persona="selectedSchedulePersona"
+                  :is-admin-preview="true"
+                />
               </div>
               
               <!-- Empty state when no person selected -->
               <div v-else class="empty-schedule-state">
                 <span class="calendar-icon">📅</span>
                 <h3>Aucun planning sélectionné</h3>
-                <p>Veuillez choisir un animateur, un participant ou une salle dans la liste ci-dessus pour afficher et gérer son planning d'activités.</p>
+                <p>Veuillez choisir un participant, un animateur ou une salle dans la liste ci-dessus pour afficher son planning complet.</p>
               </div>
             </div>
 
@@ -1336,15 +1144,45 @@
               </div>
 
               <div class="form-group mt-2">
-                <label>👨‍🏫 Animateurs Autorisés</label>
+                <div class="field-header-row">
+                  <label>👨‍🏫 Animateurs Autorisés</label>
+                  <span class="selection-count-badge" v-if="activityForm.authorizedFacilitators.length">
+                    {{ activityForm.authorizedFacilitators.length }} sélectionné(s)
+                  </span>
+                </div>
+
+                <!-- Search box for authorized animators -->
+                <div class="modal-search-box mt-1">
+                  <span class="modal-search-icon">🔍</span>
+                  <input
+                    type="text"
+                    v-model="modalActivityFacSearch"
+                    placeholder="Filtrer les animateurs par lettre, nom, compétence..."
+                    class="form-input modal-filter-input"
+                  />
+                  <button
+                    v-if="modalActivityFacSearch"
+                    type="button"
+                    class="clear-filter-btn"
+                    @click="modalActivityFacSearch = ''"
+                    title="Effacer le filtre"
+                  >
+                    ✕
+                  </button>
+                </div>
+
                 <div class="multi-select-container mt-1">
-                  <label v-for="fac in facilitators" :key="fac.documentId" class="multi-select-option">
+                  <label v-for="fac in modalFilteredActivityFacilitators" :key="fac.documentId" class="multi-select-option">
                     <input type="checkbox" :value="fac.documentId" v-model="activityForm.authorizedFacilitators" />
                     <span>
                       <strong>{{ fac.firstName }} {{ fac.lastName }}</strong>
+                      <span v-if="fac.skills" class="skills-pill">{{ fac.skills }}</span>
                       <span class="email-text" style="margin-left: 0.5rem; font-size: 0.75rem;">{{ fac.email }}</span>
                     </span>
                   </label>
+                  <div v-if="modalFilteredActivityFacilitators.length === 0" class="no-filter-results">
+                    Aucun animateur ne correspond à "{{ modalActivityFacSearch }}"
+                  </div>
                 </div>
               </div>
 
@@ -1428,10 +1266,36 @@
 
               <!-- Multi selects for Facilitators & Participants -->
               <div class="form-group mt-2">
-                <label>👨‍🏫 Animateurs (Requis)</label>
-                <div class="selection-grid">
+                <div class="field-header-row">
+                  <label>👨‍🏫 Animateurs (Requis)</label>
+                  <span class="selection-count-badge" v-if="form.facilitators.length">
+                    {{ form.facilitators.length }} sélectionné(s)
+                  </span>
+                </div>
+
+                <!-- Search box for facilitators -->
+                <div class="modal-search-box mt-1">
+                  <span class="modal-search-icon">🔍</span>
+                  <input 
+                    type="text" 
+                    v-model="modalFacilitatorSearch"
+                    placeholder="Filtrer les animateurs par lettre, nom, compétence..."
+                    class="form-input modal-filter-input"
+                  />
+                  <button 
+                    v-if="modalFacilitatorSearch" 
+                    type="button" 
+                    class="clear-filter-btn"
+                    @click="modalFacilitatorSearch = ''"
+                    title="Effacer le filtre"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div class="selection-grid mt-1">
                   <label 
-                    v-for="fac in facilitators" 
+                    v-for="fac in modalFilteredFacilitators" 
                     :key="fac.documentId" 
                     class="selection-card"
                     :class="[
@@ -1460,14 +1324,43 @@
                       </span>
                     </span>
                   </label>
+                  <div v-if="modalFilteredFacilitators.length === 0" class="no-filter-results">
+                    Aucun animateur trouvé pour "{{ modalFacilitatorSearch }}"
+                  </div>
                 </div>
               </div>
 
-              <div class="form-group mt-2">
-                <label>👥 Participants (Requis)</label>
-                <div class="selection-grid">
+              <div class="form-group mt-3">
+                <div class="field-header-row">
+                  <label>👥 Participants (Requis)</label>
+                  <span class="selection-count-badge" v-if="form.participants.length">
+                    {{ form.participants.length }} sélectionné(s)
+                  </span>
+                </div>
+
+                <!-- Search box for participants -->
+                <div class="modal-search-box mt-1">
+                  <span class="modal-search-icon">🔍</span>
+                  <input 
+                    type="text" 
+                    v-model="modalParticipantSearch"
+                    placeholder="Filtrer les participants par lettre, nom, prénom..."
+                    class="form-input modal-filter-input"
+                  />
+                  <button 
+                    v-if="modalParticipantSearch" 
+                    type="button" 
+                    class="clear-filter-btn"
+                    @click="modalParticipantSearch = ''"
+                    title="Effacer le filtre"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div class="selection-grid mt-1">
                   <label 
-                    v-for="part in participants" 
+                    v-for="part in modalFilteredParticipants" 
                     :key="part.documentId" 
                     class="selection-card"
                     :class="[
@@ -1493,6 +1386,9 @@
                       </span>
                     </span>
                   </label>
+                  <div v-if="modalFilteredParticipants.length === 0" class="no-filter-results">
+                    Aucun participant trouvé pour "{{ modalParticipantSearch }}"
+                  </div>
                 </div>
               </div>
 
@@ -1598,6 +1494,7 @@ import RoomSessionsView from './components/RoomSessionsView.vue';
 import ExtractionsView from './components/ExtractionsView.vue';
 import CalendarView from './components/CalendarView.vue';
 import ClientPlanningView from './views/ClientPlanningView.vue';
+import SearchableSelect from './components/SearchableSelect.vue';
 
 
 const DAYS_FR = {
@@ -1618,7 +1515,8 @@ export default {
     RoomSessionsView,
     ExtractionsView,
     CalendarView,
-    ClientPlanningView
+    ClientPlanningView,
+    SearchableSelect
   },
   setup() {
     const authStore = useAuthStore();
@@ -1726,6 +1624,7 @@ export default {
       activityModalLoading: false,
       activityModalError: '',
       editingActivityId: null,
+      modalActivityFacSearch: '',
       activityForm: {
         name: '',
         standardDuration: 60,
@@ -1740,6 +1639,8 @@ export default {
       showModal: false,
       modalLoading: false,
       modalError: '',
+      modalFacilitatorSearch: '',
+      modalParticipantSearch: '',
       successMessage: '',
       successTimeout: null,
       form: {
@@ -1753,7 +1654,7 @@ export default {
 
       // Individual Schedules Page State
       selectedSchedulePersonId: null,
-      selectedSchedulePersonType: 'facilitator',
+      selectedSchedulePersonType: 'participant',
       scheduleStartDate: '',
       scheduleEndDate: '',
       showEmailModal: false,
@@ -1817,6 +1718,38 @@ export default {
       if (!this.selectedSchedulePersonId) return null;
       return this.schedulePeopleList.find(p => p.documentId === this.selectedSchedulePersonId || p.id === this.selectedSchedulePersonId || String(p.id) === String(this.selectedSchedulePersonId)) || null;
     },
+    selectedSchedulePersonName() {
+      const p = this.selectedSchedulePerson;
+      if (!p) return '';
+      if (this.selectedSchedulePersonType === 'location') return p.name || '';
+      return `${p.firstName || ''} ${p.lastName || ''}`.trim();
+    },
+    selectedSchedulePersona() {
+      const p = this.selectedSchedulePerson;
+      if (!p) return null;
+      if (this.selectedSchedulePersonType === 'participant') {
+        return {
+          participant: p,
+          partName: `${p.firstName || ''} ${p.lastName || ''}`.trim(),
+          partId: p.documentId || p.id,
+          emails: [p.email?.toLowerCase()].filter(Boolean)
+        };
+      } else if (this.selectedSchedulePersonType === 'facilitator') {
+        return {
+          facilitator: p,
+          facName: `${p.firstName || ''} ${p.lastName || ''}`.trim(),
+          facId: p.documentId || p.id,
+          emails: [p.email?.toLowerCase()].filter(Boolean)
+        };
+      } else { // location
+        return {
+          location: p,
+          locName: p.name || '',
+          locId: p.documentId || p.id,
+          emails: []
+        };
+      }
+    },
     selectedPersonSlots() {
       if (!this.selectedSchedulePersonId) return [];
       let baseSlots = [];
@@ -1827,17 +1760,7 @@ export default {
       } else { // location
         baseSlots = this.getSlotsForLocation(this.selectedSchedulePersonId);
       }
-      
-      // Filter slots by date range
-      return baseSlots.filter(slot => {
-        if (!slot || !slot.startDate) return false;
-        const dateStr = typeof slot.startDate === 'string'
-          ? slot.startDate.substring(0, 10)
-          : new Date(slot.startDate).toISOString().substring(0, 10);
-        if (this.scheduleStartDate && dateStr < this.scheduleStartDate) return false;
-        if (this.scheduleEndDate && dateStr > this.scheduleEndDate) return false;
-        return true;
-      });
+      return baseSlots;
     },
     groupedScheduleSlotsByDay() {
       const slots = [...this.selectedPersonSlots];
@@ -2126,6 +2049,35 @@ export default {
         }
       }
       return baseList;
+    },
+    modalFilteredActivityFacilitators() {
+      if (!this.modalActivityFacSearch.trim()) return this.facilitators;
+      const q = this.modalActivityFacSearch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return this.facilitators.filter(f => {
+        const name = `${f.firstName || ''} ${f.lastName || ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const email = (f.email || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const skills = (f.skills || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return name.includes(q) || email.includes(q) || skills.includes(q);
+      });
+    },
+    modalFilteredFacilitators() {
+      if (!this.modalFacilitatorSearch.trim()) return this.facilitators;
+      const q = this.modalFacilitatorSearch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return this.facilitators.filter(f => {
+        const name = `${f.firstName || ''} ${f.lastName || ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const email = (f.email || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const skills = (f.skills || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return name.includes(q) || email.includes(q) || skills.includes(q);
+      });
+    },
+    modalFilteredParticipants() {
+      if (!this.modalParticipantSearch.trim()) return this.participants;
+      const q = this.modalParticipantSearch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return this.participants.filter(p => {
+        const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const email = (p.email || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return name.includes(q) || email.includes(q);
+      });
     }
   },
   watch: {
@@ -2259,7 +2211,7 @@ export default {
           this.selectedSchedulePersonType = type;
           this.selectedSchedulePersonId = null;
         } else {
-          this.selectedSchedulePersonType = 'facilitator';
+          this.selectedSchedulePersonType = 'participant';
           this.selectedSchedulePersonId = null;
         }
       } else if (path.startsWith('/room-sessions')) {
@@ -2756,6 +2708,8 @@ export default {
     openCreateModal() {
       this.modalError = '';
       this.modalLoading = false;
+      this.modalFacilitatorSearch = '';
+      this.modalParticipantSearch = '';
       this.form = {
         startDate: '',
         endDate: '',
@@ -2768,6 +2722,8 @@ export default {
     },
     closeCreateModal() {
       this.showModal = false;
+      this.modalFacilitatorSearch = '';
+      this.modalParticipantSearch = '';
     },
     async submitForm() {
       this.modalLoading = true;
@@ -2829,6 +2785,7 @@ export default {
     openActivityModal(act = null) {
       this.activityModalError = '';
       this.activityModalLoading = false;
+      this.modalActivityFacSearch = '';
       if (act) {
         this.editingActivityId = act.documentId;
         this.activityForm = {
@@ -2856,6 +2813,7 @@ export default {
     },
     closeActivityModal() {
       this.showActivityModal = false;
+      this.modalActivityFacSearch = '';
     },
     async submitActivityForm() {
       this.activityModalLoading = true;
@@ -3453,12 +3411,12 @@ export default {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  background: linear-gradient(135deg, #0d9488, #0284c7);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2rem;
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.35);
 }
 
 .profile-title-block h3 {
@@ -3503,7 +3461,7 @@ export default {
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.25rem;
-  color: #a5b4fc;
+  color: #99f6e4;
 }
 
 .section-desc {
@@ -3517,10 +3475,10 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem 2.5rem;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  padding: 1.15rem 2rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -3562,12 +3520,12 @@ export default {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.1rem;
 }
 
 .stats-pills {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .stat-pill {
@@ -3617,10 +3575,11 @@ export default {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: rgba(99, 102, 241, 0.15);
-  border-bottom: 1px solid rgba(99, 102, 241, 0.3);
-  padding: 0.75rem 2.5rem;
-  font-size: 0.9rem;
+  background: rgba(245, 158, 11, 0.15);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 0.75rem 2rem;
+  font-size: 0.875rem;
+  color: #fef08a;
 }
 
 .filter-desc {
@@ -3628,19 +3587,19 @@ export default {
 }
 
 .clear-filter-btn {
-  background: #6366f1;
+  background: #0d9488;
   color: white;
   border: none;
   padding: 0.35rem 1rem;
   border-radius: 0.35rem;
   cursor: pointer;
   font-size: 0.8rem;
-  font-weight: 500;
-  transition: background 0.2s;
+  font-weight: 600;
+  transition: all 0.2s;
 }
 
 .clear-filter-btn:hover {
-  background: #4f46e5;
+  background: #14b8a6;
 }
 
 /* Nav Toggle Button */
@@ -3858,9 +3817,9 @@ export default {
 
 .search-input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--primary);
   background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 10px rgba(13, 148, 136, 0.25);
 }
 
 .clear-search-btn {
@@ -3910,8 +3869,8 @@ export default {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(99, 102, 241, 0.1);
-  border-top-color: #6366f1;
+  border: 3px solid rgba(13, 148, 136, 0.15);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1.5rem;
@@ -3944,9 +3903,9 @@ export default {
 /* Highlights */
 @keyframes highlight-glow {
   0% {
-    box-shadow: 0 0 25px rgba(99, 102, 241, 0.7);
-    border-color: #818cf8;
-    background-color: rgba(99, 102, 241, 0.12);
+    box-shadow: 0 0 25px rgba(13, 148, 136, 0.7);
+    border-color: #5eead4;
+    background-color: rgba(13, 148, 136, 0.15);
   }
   100% {
     box-shadow: none;
@@ -4106,13 +4065,14 @@ export default {
 }
 
 .facilitator-chip {
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  color: #c7d2fe;
+  background: rgba(13, 148, 136, 0.14);
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  color: #99f6e4;
 }
 
 .facilitator-chip.clickable:hover {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(13, 148, 136, 0.25);
+  border-color: #5eead4;
 }
 
 .participant-chip {
@@ -4133,14 +4093,14 @@ export default {
 }
 
 .slot-chip.clickable:hover {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.1);
+  border-color: #0d9488;
+  background: rgba(13, 148, 136, 0.12);
 }
 
 .count-chip {
-  background: rgba(99, 102, 241, 0.18);
-  border: 1px dashed rgba(99, 102, 241, 0.5);
-  color: #a5b4fc;
+  background: rgba(13, 148, 136, 0.18);
+  border: 1px dashed rgba(13, 148, 136, 0.45);
+  color: #5eead4;
   font-weight: 600;
   font-size: 0.8rem;
   padding: 0.25rem 0.6rem;
@@ -4206,8 +4166,9 @@ export default {
 }
 
 .badge.duration {
-  background: rgba(99, 102, 241, 0.1);
-  color: #a5b4fc;
+  background: rgba(13, 148, 136, 0.12);
+  color: #5eead4;
+  border-color: rgba(13, 148, 136, 0.3);
   align-self: flex-start;
   margin-top: 0.25rem;
 }
@@ -4311,8 +4272,8 @@ export default {
 }
 
 .modal-card {
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #101c2c;
+  border: 1px solid rgba(13, 148, 136, 0.35);
   border-radius: 1rem;
   width: 100%;
   max-width: 680px;
@@ -4373,7 +4334,7 @@ export default {
 }
 
 .form-input, .form-select {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   padding: 0.65rem 0.85rem;
@@ -4385,7 +4346,98 @@ export default {
 
 .form-input:focus, .form-select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--primary);
+  box-shadow: 0 0 8px rgba(13, 148, 136, 0.25);
+}
+
+/* Modal Search Filters & Headers */
+.field-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.selection-count-badge {
+  font-size: 0.72rem;
+  background: rgba(13, 148, 136, 0.2);
+  color: #2dd4bf;
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+  font-weight: 600;
+}
+
+.modal-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.modal-search-icon {
+  position: absolute;
+  left: 0.65rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.modal-filter-input {
+  padding-left: 2.1rem !important;
+  padding-right: 2rem !important;
+  height: 2.2rem;
+  font-size: 0.82rem;
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.45rem;
+}
+
+.modal-filter-input:focus {
+  border-color: #0d9488 !important;
+  background: rgba(15, 23, 42, 0.85) !important;
+}
+
+.clear-filter-btn {
+  position: absolute;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.clear-filter-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.no-filter-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.skills-pill {
+  font-size: 0.68rem;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  margin-left: 0.4rem;
+  font-weight: 500;
 }
 
 /* Selection check grids */
@@ -4418,8 +4470,8 @@ export default {
 }
 
 .selection-card.selected {
-  border-color: rgba(99, 102, 241, 0.6);
-  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(13, 148, 136, 0.6);
+  background: rgba(13, 148, 136, 0.14);
 }
 
 .selection-card.status-unavailable {
@@ -4516,7 +4568,7 @@ export default {
 }
 
 .submit-btn {
-  background: #6366f1;
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
   color: white;
   border: none;
   padding: 0.65rem 1.5rem;
@@ -4524,11 +4576,11 @@ export default {
   cursor: pointer;
   font-weight: 600;
   font-size: 0.9rem;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3);
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: #4f46e5;
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
 }
 
 .submit-btn:disabled {
@@ -4635,9 +4687,9 @@ export default {
 
 .auth-form .form-input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--primary);
   background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 10px rgba(13, 148, 136, 0.25);
 }
 
 /* Individual schedules page layout */
@@ -4703,9 +4755,10 @@ export default {
 }
 
 .segment-btn.active {
-  background: #6366f1;
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35);
+  font-weight: 600;
 }
 
 .person-dropdown-wrapper {
@@ -4741,13 +4794,13 @@ export default {
   width: 4rem;
   height: 4rem;
   border-radius: 50%;
-  background: rgba(99, 102, 241, 0.15);
-  border: 2px solid rgba(99, 102, 241, 0.4);
+  background: rgba(13, 148, 136, 0.15);
+  border: 2px solid rgba(13, 148, 136, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2rem;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 4px 10px rgba(13, 148, 136, 0.2);
 }
 
 .person-info-block {
@@ -4818,16 +4871,16 @@ export default {
 }
 
 .email-btn {
-  background: #6366f1;
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
   color: white;
   border: none;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
   transition: all 0.2s;
 }
 
 .email-btn:hover {
-  background: #4f46e5;
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
 }
 
 /* Availability section */
@@ -4884,7 +4937,7 @@ export default {
 }
 
 .weekday-card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: rgba(13, 148, 136, 0.45);
   transform: translateY(-2px);
 }
 
@@ -5130,7 +5183,8 @@ export default {
 
 .email-textarea:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--primary);
+  box-shadow: 0 0 8px rgba(13, 148, 136, 0.25);
 }
 
 .email-sending-state, .email-success-state {
@@ -5164,7 +5218,7 @@ export default {
 }
 
 .email-send-direct-btn {
-  background: #6366f1;
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
   color: white;
   border: none;
   padding: 0.65rem 1.5rem;
@@ -5172,11 +5226,11 @@ export default {
   cursor: pointer;
   font-weight: 600;
   font-size: 0.9rem;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3);
 }
 
 .email-send-direct-btn:hover {
-  background: #4f46e5;
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
 }
 
 /* Date Range Picker Styles */
@@ -5210,13 +5264,14 @@ export default {
 
 .date-picker-input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--primary);
+  box-shadow: 0 0 8px rgba(13, 148, 136, 0.25);
 }
 
 .date-range-badge {
-  background: rgba(99, 102, 241, 0.15);
-  color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: rgba(13, 148, 136, 0.15);
+  color: #5eead4;
+  border: 1px solid rgba(13, 148, 136, 0.35);
   font-size: 0.85rem;
   font-weight: 500;
   padding: 0.25rem 0.65rem;

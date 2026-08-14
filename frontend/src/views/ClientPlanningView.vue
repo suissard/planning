@@ -8,7 +8,7 @@
         </div>
         <div class="user-greeting-text">
           <h1 class="user-greeting-title">
-            Bonjour, {{ displayUserName }} ! 👋
+            {{ userGreetingTitle }}
           </h1>
           <p class="user-greeting-subtitle">
             <span class="user-persona-tag">{{ personaRoleLabel }}</span>
@@ -24,8 +24,8 @@
 
       <!-- Quick Action Controls -->
       <div class="user-bar-actions">
-        <button class="action-btn print-quick-btn" @click="printPlanning" title="Imprimer votre planning">
-          🖨️ Imprimer mon planning
+        <button class="action-btn print-quick-btn" @click="printPlanning" title="Imprimer le planning">
+          🖨️ Imprimer le planning
         </button>
       </div>
     </div>
@@ -79,10 +79,27 @@
     <div class="next-activity-hero hero-empty no-print" v-else-if="!loading">
       <div class="hero-content">
         <div class="hero-left">
-          <span class="hero-label">📅 Mon planning</span>
+          <span class="hero-label">📅 Planning</span>
           <h3 class="hero-empty-title">Aucune activité à venir</h3>
-          <p class="hero-empty-text">Toutes vos activités prévues sont terminées, ou aucun créneau n'est planifié pour le moment.</p>
+          <p class="hero-empty-text">Toutes les activités prévues sont terminées, ou aucun créneau n'est planifié pour le moment.</p>
         </div>
+      </div>
+    </div>
+
+    <!-- ════════════════ REFERENCE AVAILABILITIES BANNER ════════════════ -->
+    <div v-if="weeklyAvailabilityList.length > 0" class="weekly-avail-bar no-print">
+      <span class="avail-title">🗓️ Disponibilités de référence :</span>
+      <div class="avail-pills">
+        <span 
+          v-for="day in weeklyAvailabilityList" 
+          :key="day.key" 
+          class="avail-pill" 
+          :class="{ 'avail-yes': day.isAvailable, 'avail-no': !day.isAvailable }"
+        >
+          <strong class="day-abbr">{{ day.name.slice(0, 3) }} :</strong>
+          <span class="day-hours" v-if="day.isAvailable">{{ day.periods.map(p => `${p.start}-${p.end}`).join(', ') }}</span>
+          <span class="day-hours off" v-else>Indispo.</span>
+        </span>
       </div>
     </div>
 
@@ -104,6 +121,31 @@
         >
           <span class="tab-btn-icon">📋</span>
           <span class="tab-btn-text">Vue Planning (Agenda)</span>
+        </button>
+      </div>
+
+      <!-- Time Filter tabs for agenda -->
+      <div class="time-filter-tabs" v-if="viewMode === 'planning'">
+        <button 
+          class="time-tab-btn" 
+          :class="{ active: timeFilter === 'all' }" 
+          @click="timeFilter = 'all'"
+        >
+          Tous ({{ activeBaseSlots.length }})
+        </button>
+        <button 
+          class="time-tab-btn" 
+          :class="{ active: timeFilter === 'upcoming' }" 
+          @click="timeFilter = 'upcoming'"
+        >
+          À venir ({{ upcomingSlotsCount }})
+        </button>
+        <button 
+          class="time-tab-btn" 
+          :class="{ active: timeFilter === 'past' }" 
+          @click="timeFilter = 'past'"
+        >
+          Passés ({{ activeBaseSlots.length - upcomingSlotsCount }})
         </button>
       </div>
 
@@ -129,7 +171,7 @@
           :class="{ active: scopeFilter === 'mine' }" 
           @click="scopeFilter = 'mine'"
         >
-          👤 Mon planning ({{ userRelevantSlots.length }})
+          👤 {{ scopeFilterLabel }} ({{ userRelevantSlots.length }})
         </button>
         <button 
           class="filter-tab scope-btn" 
@@ -144,7 +186,7 @@
     <!-- ════════════════ 1. VUE HEBDOMADAIRE (CALENDRIER SEMAINE) ════════════════ -->
     <div v-if="viewMode === 'week'" class="weekly-calendar-section">
       <CalendarView 
-        :timeslots="displayedSlots" 
+        :timeslots="calendarSlots" 
         :target-date="calendarTargetDate"
         :default-view="'week'"
         :hide-view-switchers="true"
@@ -431,12 +473,17 @@ export default {
     currentUserPersona: {
       type: Object,
       default: null
+    },
+    isAdminPreview: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
     return {
       viewMode: 'week', // 'week' (Vue Hebdomadaire) or 'planning' (Vue Planning / Agenda)
       scopeFilter: 'mine', // 'mine' (Mon planning) or 'all' (Toutes les activités)
+      timeFilter: 'all', // 'all', 'upcoming', 'past'
       searchQuery: '',
       selectedSlot: null,
       calendarTargetDate: null,
@@ -446,20 +493,59 @@ export default {
   },
   computed: {
     displayUserName() {
-      if (this.currentUserPersona?.facName) return this.currentUserPersona.facName;
       if (this.currentUserPersona?.partName) return this.currentUserPersona.partName;
+      if (this.currentUserPersona?.facName) return this.currentUserPersona.facName;
+      if (this.currentUserPersona?.locName) return this.currentUserPersona.locName;
       if (this.user?.username) return this.user.username;
       return 'Utilisateur';
     },
+    userGreetingTitle() {
+      if (this.isAdminPreview) {
+        if (this.currentUserPersona?.location) return `Planning de la salle : ${this.displayUserName}`;
+        return `Planning de ${this.displayUserName}`;
+      }
+      return `Bonjour, ${this.displayUserName} ! 👋`;
+    },
     personaRoleLabel() {
-      if (this.currentUserPersona?.facilitator) return '👨‍⚕️ Équipe d\'Animation & Soins';
+      if (this.currentUserPersona?.facilitator) return '👨‍🏫 Équipe d\'Animation & Soins';
       if (this.currentUserPersona?.participant) return '🌸 Bénéficiaire Accueil de Jour';
+      if (this.currentUserPersona?.location) return '📍 Salle / Espace d\'activité';
       return '👤 Espace Personnel';
     },
     personaIcon() {
-      if (this.currentUserPersona?.facilitator) return '👨‍⚕️';
+      if (this.currentUserPersona?.facilitator) return '👨‍🏫';
       if (this.currentUserPersona?.participant) return '🌸';
+      if (this.currentUserPersona?.location) return '📍';
       return '👤';
+    },
+    scopeFilterLabel() {
+      if (this.currentUserPersona?.partName) return `Planning de ${this.currentUserPersona.partName}`;
+      if (this.currentUserPersona?.facName) return `Planning de ${this.currentUserPersona.facName}`;
+      if (this.currentUserPersona?.locName) return `Planning : ${this.currentUserPersona.locName}`;
+      return 'Mon planning';
+    },
+    weeklyAvailabilityList() {
+      const p = this.currentUserPersona?.participant || this.currentUserPersona?.facilitator;
+      if (!p || !p.weeklyAvailabilities || typeof p.weeklyAvailabilities !== 'object') return [];
+      const WEEKDAYS = [
+        { key: '1', name: 'Lundi' },
+        { key: '2', name: 'Mardi' },
+        { key: '3', name: 'Mercredi' },
+        { key: '4', name: 'Jeudi' },
+        { key: '5', name: 'Vendredi' },
+        { key: '6', name: 'Samedi' },
+        { key: '0', name: 'Dimanche' }
+      ];
+      const hasAny = Object.values(p.weeklyAvailabilities).some(periods => Array.isArray(periods) && periods.length > 0);
+      if (!hasAny) return [];
+      return WEEKDAYS.map(day => {
+        const periods = p.weeklyAvailabilities[day.key] || [];
+        return {
+          ...day,
+          periods: Array.isArray(periods) ? periods : [],
+          isAvailable: Array.isArray(periods) && periods.length > 0
+        };
+      });
     },
     activeBaseSlots() {
       if (this.scopeFilter === 'mine' && Array.isArray(this.userRelevantSlots) && this.userRelevantSlots.length > 0) {
@@ -476,7 +562,27 @@ export default {
     },
     filteredByTime() {
       const now = new Date();
-      return this.activeBaseSlots.filter(s => new Date(s.endDate || s.startDate) >= now);
+      if (this.timeFilter === 'upcoming') {
+        return this.activeBaseSlots.filter(s => new Date(s.endDate || s.startDate) >= now);
+      }
+      if (this.timeFilter === 'past') {
+        return this.activeBaseSlots.filter(s => new Date(s.endDate || s.startDate) < now);
+      }
+      return this.activeBaseSlots;
+    },
+    calendarSlots() {
+      if (this.searchQuery.trim()) {
+        const q = this.searchQuery.toLowerCase().trim();
+        return this.activeBaseSlots.filter(s => {
+          const actName = (s.activityTemplate?.name || '').toLowerCase();
+          const actDesc = (s.activityTemplate?.description || '').toLowerCase();
+          const locName = (s.location?.name || '').toLowerCase();
+          const facNames = (s.facilitators || []).map(f => `${f.firstName} ${f.lastName}`.toLowerCase()).join(' ');
+          const partNames = (s.participants || []).map(p => `${p.firstName} ${p.lastName}`.toLowerCase()).join(' ');
+          return actName.includes(q) || actDesc.includes(q) || locName.includes(q) || facNames.includes(q) || partNames.includes(q);
+        });
+      }
+      return this.activeBaseSlots;
     },
     displayedSlots() {
       let slots = this.filteredByTime;
@@ -593,11 +699,18 @@ export default {
     }
     this.countdownTimer = setInterval(() => this.updateCountdown(), 30000);
     this.updateCountdown();
+    window.addEventListener('keydown', this.handleKeyDown);
   },
   beforeUnmount() {
     if (this.countdownTimer) clearInterval(this.countdownTimer);
+    window.removeEventListener('keydown', this.handleKeyDown);
   },
   methods: {
+    handleKeyDown(e) {
+      if (e.key === 'Escape' && this.selectedSlot) {
+        this.closeDetailPanel();
+      }
+    },
     toDateKey(date) {
       if (!date) return '';
       const d = new Date(date);
@@ -1106,13 +1219,96 @@ export default {
   font-size: 1.1rem;
 }
 
+/* ════════════════ REFERENCE AVAILABILITY BAR ════════════════ */
+.weekly-avail-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(16, 28, 44, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.avail-title {
+  font-weight: 700;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.avail-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.avail-pill {
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.45rem;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.avail-pill.avail-yes {
+  background: rgba(13, 148, 136, 0.18);
+  color: #5eead4;
+  border: 1px solid rgba(13, 148, 136, 0.35);
+}
+
+.avail-pill.avail-no {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.day-abbr {
+  font-weight: 700;
+}
+
+/* ════════════════ TIME FILTER TABS (AGENDA) ════════════════ */
+.time-filter-tabs {
+  display: flex;
+  gap: 0.35rem;
+  background: rgba(15, 23, 42, 0.75);
+  padding: 0.3rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.time-tab-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.time-tab-btn.active {
+  background: rgba(13, 148, 136, 0.3);
+  color: #5eead4;
+  border: 1px solid rgba(13, 148, 136, 0.4);
+}
+
 .planning-search-box {
   position: relative;
   display: flex;
   align-items: center;
-  min-width: 280px;
+  min-width: 260px;
   flex: 1;
-  max-width: 420px;
+  max-width: 400px;
 }
 
 .search-icon {
@@ -1239,7 +1435,7 @@ export default {
 }
 
 .reset-filter-btn {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #0d9488, #059669);
   color: #ffffff;
   border: none;
   padding: 0.55rem 1.2rem;
@@ -1247,6 +1443,7 @@ export default {
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
 }
 
 .planning-days-timeline {
@@ -1279,14 +1476,14 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(56, 189, 248, 0.15));
-  border: 1px solid rgba(129, 140, 248, 0.4);
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.22), rgba(2, 132, 199, 0.15));
+  border: 1px solid rgba(45, 212, 191, 0.4);
   padding: 0.75rem 1.25rem;
   border-radius: 0.75rem;
   margin-bottom: 0.75rem;
-  color: #e0e7ff;
+  color: #e0f2fe;
   font-size: 0.92rem;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.2);
 }
 
 .countdown-sparkle {
@@ -1310,9 +1507,9 @@ export default {
 }
 
 .day-header-badge.badge-today {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #0d9488, #059669);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
 }
 
 .day-header-title {

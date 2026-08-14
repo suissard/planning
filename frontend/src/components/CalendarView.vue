@@ -62,10 +62,11 @@
         <!-- ════════════════ 1. MONTH VIEW ════════════════ -->
         <div v-if="viewMode === 'month'" class="month-view">
           <div class="month-grid-header">
-        <div v-for="dayName in weekDays" :key="dayName" class="month-header-cell">
-          {{ dayName }}
-        </div>
-      </div>
+            <div v-for="day in weekDaysDetailed" :key="day.short" class="month-header-cell">
+              <span class="day-full-name">{{ day.full }}</span>
+              <span class="day-short-name">{{ day.short }}</span>
+            </div>
+          </div>
       <div class="month-grid-body">
         <div 
           v-for="cell in monthDaysGrid" 
@@ -523,6 +524,18 @@ export default {
       return days;
     },
 
+    weekDaysDetailed() {
+      return [
+        { short: 'Lun', full: 'Lundi' },
+        { short: 'Mar', full: 'Mardi' },
+        { short: 'Mer', full: 'Mercredi' },
+        { short: 'Jeu', full: 'Jeudi' },
+        { short: 'Ven', full: 'Vendredi' },
+        { short: 'Sam', full: 'Samedi' },
+        { short: 'Dim', full: 'Dimanche' }
+      ];
+    },
+
     currentDaySlots() {
       const dateKey = this.toDateKey(this.currentDate);
       return this.getSlotsForDateKey(dateKey).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
@@ -874,41 +887,70 @@ export default {
 }
 
 /* ════════════════ MONTH VIEW STYLES ════════════════ */
+.month-view {
+  width: 100%;
+  overflow: hidden;
+}
+
 .month-grid-header {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 0.5rem 0.5rem 0 0;
+  width: 100%;
 }
 
 .month-header-cell {
   background: rgba(15, 23, 42, 0.9);
-  padding: 0.6rem;
+  padding: 0.65rem 0.25rem;
   text-align: center;
   font-weight: 700;
   font-size: 0.85rem;
   color: #5eead4;
   text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-full-name {
+  display: inline;
+}
+
+.day-short-name {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .day-full-name {
+    display: none;
+  }
+  .day-short-name {
+    display: inline;
+  }
 }
 
 .month-grid-body {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 0 0 0.5rem 0.5rem;
   overflow: hidden;
+  width: 100%;
 }
 
 .month-day-cell {
   background: rgba(30, 41, 59, 0.7);
   min-height: 105px;
+  min-width: 0;
   padding: 0.4rem;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
   cursor: pointer;
+  overflow: hidden;
   transition: background 0.15s ease;
 }
 
@@ -947,6 +989,8 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  min-width: 0;
+  width: 100%;
 }
 
 .month-slot-badge {
@@ -958,13 +1002,17 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   display: flex;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 0.3rem;
   color: #e2e8f0;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
   transition: transform 0.1s ease, filter 0.1s ease;
 }
 
 .month-slot-badge:hover {
-  transform: scale(1.03);
+  transform: scale(1.02);
   filter: brightness(1.15);
 }
 
@@ -972,9 +1020,29 @@ export default {
   opacity: 0.5;
 }
 
-.slot-time {
+.month-slot-badge .slot-time {
   font-weight: 700;
   color: #5eead4;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+}
+
+.month-slot-badge .slot-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.month-slot-badge .month-slot-location {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  opacity: 0.85;
 }
 
 .more-slots {

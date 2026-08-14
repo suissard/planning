@@ -48,12 +48,13 @@
       <div v-if="mode === 'participant'" class="extraction-mode-wrapper">
         <div class="selector-card no-print">
           <label>Sélectionner un Bénéficiaire :</label>
-          <select v-model="selectedParticipantId" class="form-input select-large">
-            <option value="" disabled>-- Choisir un bénéficiaire --</option>
-            <option v-for="p in participants" :key="p.documentId || p.id" :value="p.documentId || p.id">
-              {{ p.firstName }} {{ p.lastName }} ({{ p.email }})
-            </option>
-          </select>
+          <SearchableSelect
+            v-model="selectedParticipantId"
+            :options="participants"
+            type="participant"
+            placeholder="Rechercher par lettre, prénom, nom ou email..."
+            empty-message="Aucun bénéficiaire correspondant trouvé"
+          />
         </div>
 
         <div v-if="!selectedParticipant" class="empty-state">
@@ -130,12 +131,13 @@
       <div v-else class="extraction-mode-wrapper">
         <div class="selector-card no-print">
           <label>Sélectionner un Gestionnaire / Animateur :</label>
-          <select v-model="selectedFacilitatorId" class="form-input select-large">
-            <option value="" disabled>-- Choisir un professionnel --</option>
-            <option v-for="f in facilitators" :key="f.documentId || f.id" :value="f.documentId || f.id">
-              {{ f.firstName }} {{ f.lastName }} ({{ f.email }})
-            </option>
-          </select>
+          <SearchableSelect
+            v-model="selectedFacilitatorId"
+            :options="facilitators"
+            type="facilitator"
+            placeholder="Rechercher par lettre, prénom, nom ou email..."
+            empty-message="Aucun professionnel correspondant trouvé"
+          />
         </div>
 
         <div v-if="!selectedFacilitator" class="empty-state">
@@ -240,6 +242,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoomSessionStore } from '../stores/roomSessionStore';
+import SearchableSelect from './SearchableSelect.vue';
 import api from '../services/api';
 
 const props = defineProps({
@@ -518,7 +521,7 @@ function printExtraction() {
   background: rgba(15, 23, 42, 0.6);
   padding: 1.25rem 1.5rem;
   border-radius: 0.75rem;
-  border-left: 4px solid #6366f1;
+  border-left: 4px solid var(--primary, #0d9488);
 }
 
 .report-header.manager-theme {

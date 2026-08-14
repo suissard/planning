@@ -464,7 +464,7 @@ async function confirmDelete(session) {
 
 .progress-bar.normal { background: #10b981; }
 .progress-bar.warning { background: #f59e0b; }
-.progress-bar.full { background: #6366f1; }
+.progress-bar.full { background: #0d9488; }
 .progress-bar.exceeded { background: #ef4444; }
 
 .participants-section h4 {

@@ -80,6 +80,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/individual-schedules/:type',
+    name: 'individual-schedules-type',
+    component: MainApp,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/individual-schedules/:type/:id',
     name: 'individual-schedules-detail',
     component: MainApp,
