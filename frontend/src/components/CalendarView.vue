@@ -2,7 +2,7 @@
   <div class="calendar-container printable-calendar-view">
     <!-- CALENDAR TOOLBAR & CONTROLS (HIDDEN ON PRINT) -->
     <div class="calendar-toolbar no-print">
-      <div class="view-switchers">
+      <div class="view-switchers" v-if="!hideViewSwitchers">
         <button 
           class="view-btn" 
           :class="{ active: viewMode === 'month' }" 
@@ -31,9 +31,14 @@
         <button class="nav-arrow-btn" @click="navigateDate(-1)" title="Période précédente">◄</button>
         <button class="today-btn" @click="goToToday" title="Revenir au jour présent">Aujourd'hui</button>
         <button class="nav-arrow-btn" @click="navigateDate(1)" title="Période suivante">►</button>
-        <Transition :name="transitionName" mode="out-in">
-          <span :key="periodTitle" class="current-period-title">{{ periodTitle }}</span>
-        </Transition>
+        <div class="period-title-block">
+          <Transition :name="transitionName" mode="out-in">
+            <span :key="periodTitle" class="current-period-title">{{ periodTitle }}</span>
+          </Transition>
+          <span v-if="viewMode === 'week' && weekRelativeDaysLabel" class="period-relative-subtitle">
+            {{ weekRelativeDaysLabel }}
+          </span>
+        </div>
       </div>
 
       <!-- ACTIONS -->
@@ -46,6 +51,7 @@
 
     <!-- PRINT HEADER ONLY VISIBLE WHEN PRINTING -->
     <div class="print-only-header">
+      <div class="print-brand-badge">EHPAD LES ÉCRIVAINS — ACCUEIL DE JOUR • GUÉRANDE</div>
       <h2>📋 Planning & Récapitulatif — {{ periodTitle }}</h2>
       <p>Vue sélectionnée : <strong>{{ viewModeLabel }}</strong> | Imprimé le {{ currentFormattedDate }}</p>
     </div>
@@ -177,7 +183,7 @@
               <span class="location-badge" v-if="slot.location">📍 {{ slot.location.name }}</span>
             </div>
 
-            <div class="slot-tags-row" v-if="slot.activityTemplate?.tags?.length">
+            <div class="slot-tags-row" v-if="isAdminMode && slot.activityTemplate?.tags?.length">
               <span 
                 v-for="tag in slot.activityTemplate.tags" 
                 :key="tag" 
@@ -267,6 +273,10 @@ export default {
     defaultView: {
       type: String,
       default: 'month'
+    },
+    hideViewSwitchers: {
+      type: Boolean,
+      default: false
     }
   },
   emits: ['select-slot'],
@@ -300,6 +310,27 @@ export default {
               this.transitionName = 'slide-right';
             }
             this.currentDate = d;
+          }
+        }
+      }
+    },
+    defaultView(newVal) {
+      if (newVal) {
+        this.viewMode = newVal;
+      }
+    },
+    timeslots: {
+      immediate: true,
+      handler(slots) {
+        if (!this.targetDate && Array.isArray(slots) && slots.length > 0) {
+          const now = new Date();
+          const upcoming = slots
+            .filter(s => new Date(s.endDate || s.startDate) >= now)
+            .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+          if (upcoming.length > 0 && upcoming[0].startDate) {
+            this.currentDate = new Date(upcoming[0].startDate);
+          } else if (slots[0]?.startDate) {
+            this.currentDate = new Date(slots[0].startDate);
           }
         }
       }
@@ -354,6 +385,57 @@ export default {
       } else {
         return `Récapitulatif ${capitalizedMonth} ${year}`;
       }
+    },
+    weekRelativeDaysLabel() {
+      if (this.viewMode !== 'week') return '';
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      const start = this.getStartOfWeek(this.currentDate);
+      const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const endDay = new Date(startDay);
+      endDay.setDate(endDay.getDate() + 6);
+
+      // 1. Is today inside this week?
+      if (today >= startDay && today <= endDay) {
+        // Find if there is a slot in this week starting today or later
+        const upcomingSlotsThisWeek = this.timeslots.filter(s => {
+          if (!s.startDate) return false;
+          const sd = new Date(s.startDate);
+          return sd >= today && sd <= new Date(endDay.getTime() + 86400000);
+        }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+        if (upcomingSlotsThisWeek.length > 0) {
+          const firstD = new Date(upcomingSlotsThisWeek[0].startDate);
+          const firstDay = new Date(firstD.getFullYear(), firstD.getMonth(), firstD.getDate());
+          const diffDays = Math.round((firstDay - today) / (1000 * 60 * 60 * 24));
+          if (diffDays === 0) return "📍 Cette semaine (activité aujourd'hui)";
+          if (diffDays === 1) return "📍 Cette semaine (activité demain / dans 1 jour)";
+          return `📍 Cette semaine (activité dans ${diffDays} jours)`;
+        }
+        return "📍 Cette semaine (en cours)";
+      }
+
+      // 2. Is this week in the future?
+      if (startDay > today) {
+        // Find first slot in this week if any
+        const slotsThisWeek = this.timeslots.filter(s => {
+          if (!s.startDate) return false;
+          const sd = new Date(s.startDate);
+          return sd >= startDay && sd <= new Date(endDay.getTime() + 86400000);
+        }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+        const targetDateObj = slotsThisWeek.length > 0 ? new Date(slotsThisWeek[0].startDate) : startDay;
+        const targetDay = new Date(targetDateObj.getFullYear(), targetDateObj.getMonth(), targetDateObj.getDate());
+        const diffDays = Math.round((targetDay - today) / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) return "⏳ Débute dans 1 jour (demain)";
+        return `⏳ Débute dans ${diffDays} jours à partir d'aujourd'hui`;
+      }
+
+      // 3. Is this week in the past?
+      const diffDays = Math.round((today - endDay) / (1000 * 60 * 60 * 24));
+      return `📜 Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
     },
 
     // Month view grid calculation
@@ -679,9 +761,9 @@ export default {
 }
 
 .view-btn.active {
-  background: var(--primary-color, #6366f1);
+  background: var(--primary-color, #0d9488);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
 }
 
 .date-navigation {
@@ -703,7 +785,16 @@ export default {
 }
 
 .nav-arrow-btn:hover, .today-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(13, 148, 136, 0.2);
+  border-color: rgba(13, 148, 136, 0.4);
+}
+
+.period-title-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  margin-left: 0.5rem;
 }
 
 .current-period-title {
@@ -711,24 +802,36 @@ export default {
   font-size: 1.05rem;
   font-weight: 700;
   color: #f8fafc;
-  margin-left: 0.5rem;
+  line-height: 1.2;
+}
+
+.period-relative-subtitle {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #5eead4;
+  background: rgba(13, 148, 136, 0.15);
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  padding: 0.12rem 0.5rem;
+  border-radius: 0.35rem;
+  letter-spacing: 0.02em;
+  display: inline-block;
 }
 
 .print-btn {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #0d9488, #059669);
   color: white;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .print-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.4);
 }
 
 .print-only-header {
@@ -737,13 +840,13 @@ export default {
 
 /* ════════════════ TODAY PULSE ANIMATION ════════════════ */
 @keyframes today-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5); }
-  50% { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.5); }
+  50% { box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.2); }
 }
 
 .today-pulse {
   animation: today-glow 2.5s ease-in-out infinite;
-  background: #6366f1;
+  background: #0d9488;
   color: white;
   width: 26px;
   height: 26px;
@@ -785,7 +888,7 @@ export default {
   text-align: center;
   font-weight: 700;
   font-size: 0.85rem;
-  color: #a5b4fc;
+  color: #5eead4;
   text-transform: uppercase;
 }
 
@@ -819,8 +922,8 @@ export default {
 }
 
 .month-day-cell.is-today {
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px inset rgba(99, 102, 241, 0.5);
+  background: rgba(13, 148, 136, 0.15);
+  border: 1px inset rgba(13, 148, 136, 0.5);
 }
 
 .cell-day-number {
@@ -834,8 +937,8 @@ export default {
 
 .badge-count {
   font-size: 0.7rem;
-  background: rgba(99, 102, 241, 0.3);
-  color: #a5b4fc;
+  background: rgba(13, 148, 136, 0.3);
+  color: #5eead4;
   padding: 0.1rem 0.35rem;
   border-radius: 0.3rem;
 }
@@ -847,7 +950,7 @@ export default {
 }
 
 .month-slot-badge {
-  border-left: 3px solid #6366f1;
+  border-left: 3px solid #0d9488;
   border-radius: 0.25rem;
   padding: 0.2rem 0.35rem;
   font-size: 0.75rem;
@@ -871,7 +974,7 @@ export default {
 
 .slot-time {
   font-weight: 700;
-  color: #c7d2fe;
+  color: #5eead4;
 }
 
 .more-slots {
@@ -896,11 +999,11 @@ export default {
   text-align: center;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #a5b4fc;
+  color: #5eead4;
 }
 
 .week-header-cell.is-today {
-  background: rgba(99, 102, 241, 0.25);
+  background: rgba(13, 148, 136, 0.25);
   color: #ffffff;
 }
 
@@ -948,7 +1051,7 @@ export default {
 }
 
 .week-slot-card {
-  border-left: 3px solid #818cf8;
+  border-left: 3px solid #0d9488;
   border-radius: 0.25rem;
   padding: 0.25rem 0.4rem;
   cursor: pointer;
@@ -963,7 +1066,7 @@ export default {
 .week-slot-time {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #c7d2fe;
+  color: #5eead4;
 }
 
 .week-slot-title {
@@ -992,8 +1095,8 @@ export default {
 }
 
 .day-slots-count {
-  background: rgba(99, 102, 241, 0.2);
-  color: #a5b4fc;
+  background: rgba(13, 148, 136, 0.2);
+  color: #5eead4;
   padding: 0.3rem 0.75rem;
   border-radius: 2rem;
   font-size: 0.85rem;
@@ -1029,7 +1132,7 @@ export default {
 .time-start {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #818cf8;
+  color: #5eead4;
 }
 
 .time-end {
@@ -1039,7 +1142,7 @@ export default {
 
 .day-slot-detail-card {
   background: rgba(30, 41, 59, 0.8);
-  border-left: 4px solid var(--primary-color, #6366f1);
+  border-left: 4px solid var(--primary-color, #0d9488);
   border-radius: 0.6rem;
   padding: 0.85rem 1.1rem;
   cursor: pointer;
@@ -1111,13 +1214,13 @@ export default {
 }
 
 .fac-chip {
-  background: rgba(99, 102, 241, 0.2);
-  color: #c7d2fe;
+  background: rgba(13, 148, 136, 0.2);
+  color: #5eead4;
 }
 
 .part-chip {
-  background: rgba(236, 72, 153, 0.2);
-  color: #fbcfe8;
+  background: rgba(244, 63, 94, 0.18);
+  color: #fda4af;
 }
 
 .more-chip {

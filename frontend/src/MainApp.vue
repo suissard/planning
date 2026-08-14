@@ -4,9 +4,10 @@
     <div v-if="!isAuthenticated" class="auth-wrapper">
       <div class="auth-card">
         <div class="auth-brand">
-          <span class="brand-icon">⚡</span>
-          <h2>AetherScheduler</h2>
-          <p>Système de planification sous contraintes</p>
+          <span class="brand-icon">🌿</span>
+          <h2>EHPAD Les Écrivains</h2>
+          <p class="brand-subtitle">Accueil de Jour — Guérande</p>
+          <p class="brand-desc">Planning & Accompagnement Quotidien</p>
         </div>
 
         <div class="auth-tabs">
@@ -161,8 +162,11 @@
             <span v-else>✕</span>
           </button>
           <div class="header-logo" @click="clearFilter(); navigateTo('timeslots')">
-            <span class="logo-icon">⚡</span>
-            <h1>AetherScheduler</h1>
+            <span class="logo-icon">🌿</span>
+            <div class="header-logo-text">
+              <h1>EHPAD Les Écrivains</h1>
+              <span class="header-logo-sub">Accueil de Jour • Guérande</span>
+            </div>
           </div>
         </div>
         
@@ -199,15 +203,15 @@
             <span class="username">{{ user?.username }}</span>
           </div>
 
-          <div class="header-status">
+          <div class="header-status" v-if="appSettingsStore.isAdminMode">
             <span class="status-indicator" :class="isConnected ? 'online' : 'offline'"></span>
             <span class="status-text">{{ isConnected ? 'API en ligne' : 'API hors ligne' }}</span>
           </div>
         </div>
       </header>
 
-      <!-- Global Active Filter Banner -->
-      <div class="filter-banner" v-if="filterItemId || selectedTagFilter">
+      <!-- Global Active Filter Banner (Admin Mode only) -->
+      <div class="filter-banner" v-if="appSettingsStore.isAdminMode && (filterItemId || selectedTagFilter)">
         <span class="filter-icon">🔍</span>
         <div class="filter-desc">
           Filtres actifs : 
@@ -350,8 +354,8 @@
           <!-- User Mode Notification Banner (compact) -->
           <!-- Removed intrusive banner — mode is visible via sidebar/header toggle -->
 
-          <!-- Search & Info Bar (Hidden on Custom Views) -->
-          <div class="content-header" v-if="!error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
+          <!-- Search & Info Bar (Admin Mode only) -->
+          <div class="content-header" v-if="appSettingsStore.isAdminMode && !error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
             <div class="search-wrapper">
               <span class="search-icon">🔍</span>
               <input 
@@ -367,14 +371,14 @@
               <span class="count-badge">{{ filteredItems.length }} élément(s)</span>
 
               <!-- Add Button Based on Tab (Admin Mode only) -->
-              <button class="action-btn" v-if="appSettingsStore.isAdminMode && currentPage === 'activities'" @click="openActivityModal()" style="margin-left: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
+              <button class="action-btn" v-if="currentPage === 'activities'" @click="openActivityModal()" style="margin-left: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
                 ➕ Nouvelle Activité
               </button>
             </div>
           </div>
 
-          <!-- Tag Filters Bar -->
-          <div class="tag-filter-bar mb-3" v-if="!error && (currentPage === 'activities' || currentPage === 'timeslots')">
+          <!-- Tag Filters Bar (Admin Mode only) -->
+          <div class="tag-filter-bar mb-3" v-if="appSettingsStore.isAdminMode && !error && (currentPage === 'activities' || currentPage === 'timeslots')">
             <div class="tag-filter-header">
               <span class="tag-filter-icon">🏷️</span>
               <span class="tag-filter-label">Catégories & Étiquettes :</span>
@@ -401,8 +405,8 @@
             </div>
           </div>
 
-          <!-- Loading State -->
-          <div class="loading-state" v-if="loading && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
+          <!-- Loading State (Admin Mode) -->
+          <div class="loading-state" v-if="loading && appSettingsStore.isAdminMode && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
             <div class="spinner"></div>
             <p>Chargement des données depuis Strapi...</p>
           </div>
@@ -519,6 +523,8 @@
               :timeslots="timeslots"
               :user-relevant-slots="userRelevantSlots"
               :loading="loading"
+              :user="user"
+              :current-user-persona="currentUserPersona"
             />
 
             <!-- ADMIN MODE: Full planning with cards/calendar toggle -->
@@ -547,13 +553,6 @@
                 <div class="time-filter-tabs hero-filter-switch">
                   <button 
                     class="tab-btn filter-btn" 
-                    :class="{ active: timeFilterMode === 'all' }" 
-                    @click="setTimeFilterMode('all')"
-                  >
-                    ⏳ Tous les créneaux
-                  </button>
-                  <button 
-                    class="tab-btn filter-btn" 
                     :class="{ active: timeFilterMode === 'upcoming' }" 
                     @click="setTimeFilterMode('upcoming')"
                   >
@@ -561,10 +560,10 @@
                   </button>
                   <button 
                     class="tab-btn filter-btn" 
-                    :class="{ active: timeFilterMode === 'past' }" 
-                    @click="setTimeFilterMode('past')"
+                    :class="{ active: timeFilterMode === 'all' }" 
+                    @click="setTimeFilterMode('all')"
                   >
-                    📜 Antérieurs
+                    ⏳ Tous les créneaux
                   </button>
                 </div>
               </div>
@@ -1682,7 +1681,7 @@ export default {
       isSidebarOpen: false,
       timeslotViewMode: 'calendar',
       facilitatorViewMode: 'cards',
-      timeFilterMode: 'all',
+      timeFilterMode: 'upcoming',
       calendarTargetDate: null,
       pendingTimeslotId: null,
       // Auth State
@@ -2448,7 +2447,7 @@ export default {
 
     clearSearchAndFilter() {
       this.searchQuery = '';
-      this.timeFilterMode = 'all';
+      this.timeFilterMode = 'upcoming';
       this.selectedTagFilter = '';
       this.clearFilter();
     },
@@ -2478,7 +2477,7 @@ export default {
       this.emailForm.to = this.selectedSchedulePerson.email || '';
       this.emailForm.subject = this.selectedSchedulePersonType === 'location'
         ? `Planning d'utilisation de la salle : ${this.selectedSchedulePerson.name}`
-        : 'Votre planning - AetherScheduler';
+        : 'Votre planning — Accueil de Jour EHPAD Les Écrivains (Guérande)';
       this.emailForm.body = this.getIndividualScheduleText(
         this.selectedSchedulePerson, 
         this.selectedSchedulePersonType, 
@@ -2543,7 +2542,7 @@ export default {
         text += `\n`;
       } else {
         text += `Bonjour ${person.firstName} ${person.lastName},\n\n`;
-        text += `Voici votre planning d'activités sur AetherScheduler :\n`;
+        text += `Voici votre planning d'activités à l'Accueil de Jour - EHPAD Les Écrivains (Guérande) :\n`;
         if (this.scheduleStartDate && this.scheduleEndDate) {
           text += `Période : du ${this.formatDateFr(this.scheduleStartDate)} au ${this.formatDateFr(this.scheduleEndDate)}\n`;
         }
@@ -2603,7 +2602,7 @@ export default {
         });
       }
       
-      text += `Bonne journée,\nL'équipe AetherScheduler`;
+      text += `Bien chaleureusement,\nL'équipe de l'Accueil de Jour — EHPAD Les Écrivains (Guérande)`;
       return text;
     },
 
@@ -3200,24 +3199,32 @@ export default {
 }
 
 .auth-brand h2 {
-  font-size: 1.75rem;
+  font-size: 1.85rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #a5b4fc, #818cf8, #6366f1);
+  background: linear-gradient(135deg, #5eead4 0%, #14b8a6 50%, #0d9488 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
+  letter-spacing: -0.01em;
 }
 
-.auth-brand p {
-  font-size: 0.85rem;
+.auth-brand .brand-subtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #99f6e4;
+  margin-bottom: 0.2rem;
+}
+
+.auth-brand .brand-desc {
+  font-size: 0.82rem;
   color: var(--text-secondary);
 }
 
 .auth-tabs {
   display: flex;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 0.5rem;
-  padding: 0.25rem;
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 0.65rem;
+  padding: 0.3rem;
   border: 1px solid var(--border-color);
 }
 
@@ -3226,18 +3233,18 @@ export default {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 0.6rem;
+  padding: 0.65rem;
   font-size: 0.9rem;
   font-weight: 600;
-  border-radius: 0.375rem;
+  border-radius: 0.45rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .auth-tab-btn.active {
-  background: rgba(99, 102, 241, 0.15);
-  color: #a5b4fc;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(13, 148, 136, 0.22);
+  color: #5eead4;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .auth-error-banner {
@@ -3311,7 +3318,7 @@ export default {
 .username {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #a5b4fc;
+  color: #5eead4;
 }
 
 /* Premium User Sidebar Card */
@@ -3330,26 +3337,26 @@ export default {
 }
 
 .user-sidebar-card:hover {
-  background: rgba(99, 102, 241, 0.08);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(13, 148, 136, 0.1);
+  border-color: rgba(13, 148, 136, 0.35);
   transform: translateY(-1px);
 }
 
 .user-sidebar-card.active {
-  background: rgba(99, 102, 241, 0.12);
-  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(13, 148, 136, 0.16);
+  border-color: rgba(13, 148, 136, 0.5);
 }
 
 .user-avatar-badge {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #0d9488, #0284c7);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3);
 }
 
 .user-sidebar-info {
@@ -3520,20 +3527,36 @@ export default {
 .header-logo {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
   cursor: pointer;
 }
 
+.header-logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
 .logo-icon {
-  font-size: 1.75rem;
+  font-size: 1.85rem;
+  line-height: 1;
 }
 
 .header-logo h1 {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #a5b4fc, #818cf8, #6366f1);
+  line-height: 1.2;
+  background: linear-gradient(135deg, #f8fafc 0%, #5eead4 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  letter-spacing: -0.01em;
+}
+
+.header-logo-sub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .header-right {
@@ -3557,8 +3580,9 @@ export default {
 }
 
 .stat-pill.highlight {
-  border-color: rgba(99, 102, 241, 0.4);
-  color: #a5b4fc;
+  border-color: rgba(13, 148, 136, 0.45);
+  color: #5eead4;
+  background: rgba(13, 148, 136, 0.1);
 }
 
 .header-status {
@@ -3754,11 +3778,12 @@ export default {
 }
 
 .nav-item.active {
-  background: var(--primary-light);
-  color: #a5b4fc;
-  border-left: 3px solid #6366f1;
+  background: rgba(13, 148, 136, 0.16);
+  color: #5eead4;
+  border-left: 3px solid #14b8a6;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+  font-weight: 600;
 }
 
 .nav-footer {
@@ -3767,22 +3792,23 @@ export default {
 }
 
 .action-btn {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
   color: white;
   border: none;
   padding: 0.85rem 1.25rem;
-  border-radius: 0.5rem;
+  border-radius: 0.65rem;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.9rem;
   width: 100%;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .action-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.45);
+  background: linear-gradient(135deg, #0f766e 0%, #047857 100%);
 }
 
 .action-btn:active {
