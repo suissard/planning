@@ -263,6 +263,59 @@ export const useRoomSessionStore = defineStore('roomSession', {
       }
     },
 
+    async assignManager(sessionId, managerId, silent = false) {
+      return await this.updateSession(sessionId, { manager: managerId }, silent);
+    },
+
+    async unassignManager(sessionId, silent = false) {
+      return await this.updateSession(sessionId, { manager: null }, silent);
+    },
+
+    async addParticipantToSession(sessionId, participantId, silent = false) {
+      const session = this.sessions.find(s => (s.documentId === sessionId || s.id === sessionId));
+      const existingIds = session ? (session.participants || []).map(p => p.documentId || p.id) : [];
+      if (!existingIds.includes(participantId)) {
+        existingIds.push(participantId);
+      }
+      return await this.updateSession(sessionId, { participants: existingIds }, silent);
+    },
+
+    async removeParticipantFromSession(sessionId, participantId, silent = false) {
+      const session = this.sessions.find(s => (s.documentId === sessionId || s.id === sessionId));
+      const updatedIds = session 
+        ? (session.participants || []).filter(p => (p.documentId || p.id) !== participantId).map(p => p.documentId || p.id)
+        : [];
+      return await this.updateSession(sessionId, { participants: updatedIds }, silent);
+    },
+
+    async moveParticipantBetweenSessions(fromSessionId, toSessionId, participantId, silent = false) {
+      if (fromSessionId === toSessionId) return;
+      await this.removeParticipantFromSession(fromSessionId, participantId, true);
+      await this.addParticipantToSession(toSessionId, participantId, true);
+      await this.refreshCurrentView();
+      if (!silent) {
+        useGlobalStore().addSuccess('Bénéficiaire déplacé vers la nouvelle salle avec succès !', 'Déplacement réussi');
+      }
+    },
+
+    async openRoomForDate(locationId, dateStr, managerId = null, participantIds = [], silent = false) {
+      const existing = this.sessions.find(s => 
+        s.date === dateStr && (s.location?.documentId === locationId || s.location?.id === locationId)
+      );
+      if (existing) {
+        if (!silent) {
+          useGlobalStore().addWarning('Cette salle est déjà ouverte pour ce jour.', 'Salle déjà ouverte');
+        }
+        return existing;
+      }
+      return await this.createSession({
+        date: dateStr,
+        location: locationId,
+        manager: managerId,
+        participants: participantIds
+      }, silent);
+    },
+
     async batchCreateSessions(sessionsList) {
       if (!sessionsList || sessionsList.length === 0) return [];
       this.loading = true;
