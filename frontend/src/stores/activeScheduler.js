@@ -28,6 +28,10 @@ export const useActiveSchedulerStore = defineStore('activeScheduler', () => {
     return await activeStore.value.createSlot(form);
   }
 
+  async function updateSlot(documentId, form) {
+    return await activeStore.value.updateSlot(documentId, form);
+  }
+
   async function deleteSlot(documentId) {
     return await activeStore.value.deleteSlot(documentId);
   }
@@ -43,6 +47,7 @@ export const useActiveSchedulerStore = defineStore('activeScheduler', () => {
     isConnected,
     fetchData,
     createSlot,
+    updateSlot,
     deleteSlot,
     activeStore
   };

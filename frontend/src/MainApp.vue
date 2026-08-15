@@ -331,6 +331,15 @@
           <button 
             v-if="appSettingsStore.isAdminMode"
             class="nav-item" 
+            :class="{ active: currentPage === 'week-template' }"
+            @click="navigateTo('week-template')"
+          >
+            <span class="nav-icon">⚡</span>
+            Semaine Type
+          </button>
+          <button 
+            v-if="appSettingsStore.isAdminMode"
+            class="nav-item" 
             :class="{ active: currentPage === 'extractions' }"
             @click="navigateTo('extractions')"
           >
@@ -355,7 +364,7 @@
           <!-- Removed intrusive banner — mode is visible via sidebar/header toggle -->
 
           <!-- Search & Info Bar (Admin Mode only) -->
-          <div class="content-header" v-if="appSettingsStore.isAdminMode && !error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
+          <div class="content-header" v-if="appSettingsStore.isAdminMode && !error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions'">
             <div class="search-wrapper">
               <span class="search-icon">🔍</span>
               <input 
@@ -373,6 +382,12 @@
               <!-- Add Button Based on Tab (Admin Mode only) -->
               <button class="action-btn" v-if="currentPage === 'activities'" @click="openActivityModal()" style="margin-left: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
                 ➕ Nouvelle Activité
+              </button>
+              <button class="action-btn" v-else-if="currentPage === 'facilitators'" @click="openFacilitatorModal()" style="margin-left: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
+                ➕ Nouvel Animateur
+              </button>
+              <button class="action-btn" v-else-if="currentPage === 'participants'" @click="openParticipantModal()" style="margin-left: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
+                ➕ Nouveau Participant
               </button>
             </div>
           </div>
@@ -406,13 +421,13 @@
           </div>
 
           <!-- Loading State (Admin Mode) -->
-          <div class="loading-state" v-if="loading && appSettingsStore.isAdminMode && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
+          <div class="loading-state" v-if="loading && appSettingsStore.isAdminMode && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions'">
             <div class="spinner"></div>
             <p>Chargement des données depuis Strapi...</p>
           </div>
 
           <!-- Error State -->
-          <div class="error-state" v-else-if="error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'extractions'">
+          <div class="error-state" v-else-if="error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions'">
             <span class="error-icon">⚠️</span>
             <h3>Impossible de contacter l'API Strapi</h3>
             <p>{{ error }}</p>
@@ -428,6 +443,18 @@
               :locations="locations" 
               :facilitators="facilitators" 
               :participants="participants" 
+              :timeslots="timeslots"
+              @navigate-template="navigateTo('week-template')"
+            />
+
+            <!-- TAB: SEMAINE TYPE -->
+            <WeekTemplateView 
+              v-if="currentPage === 'week-template'" 
+              :locations="locations" 
+              :facilitators="facilitators" 
+              :participants="participants" 
+              @navigate="navigateTo"
+              @refresh="fetchData"
             />
 
             <!-- TAB: EXTRACTIONS -->
@@ -435,6 +462,10 @@
               v-if="currentPage === 'extractions'" 
               :facilitators="facilitators" 
               :participants="participants" 
+              :locations="locations"
+              :activities="activities"
+              :timeslots="timeslots"
+              @refresh-data="fetchData"
             />
 
             <!-- TAB: PROFILE (PROFIL UTILISATEUR ET EDITION) -->
@@ -730,11 +761,12 @@
                     </div>
                   </div>
                   <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-top: 0.4rem;">
-                    <span class="badge duration">{{ act.standardDuration }} min</span>
+                    <span class="badge duration">⏱️ {{ act.standardDuration }} min</span>
                     <span 
                       v-for="tag in (act.tags || [])" 
                       :key="tag" 
                       class="tag-badge clickable" 
+                      :style="getTagCategoryStyle(tag)"
                       :class="{ active: selectedTagFilter === tag }"
                       @click.stop="toggleTagFilter(tag)"
                       title="Filtrer par cette étiquette"
@@ -757,7 +789,7 @@
                   
                   <!-- Authorized Facilitators Chips -->
                   <div class="info-group mt-2">
-                    <span class="info-label">Animateurs Autorisés</span>
+                    <span class="info-label">👨‍🏫 Animateurs Autorisés</span>
                     <div class="chips-list mt-1">
                       <span 
                         v-for="fac in (act.authorizedFacilitators || []).slice(0, 3)" 
@@ -774,7 +806,7 @@
                       >
                         +{{ act.authorizedFacilitators.length - 3 }}
                       </span>
-                      <span v-if="!act.authorizedFacilitators || act.authorizedFacilitators.length === 0" class="no-data">Aucun</span>
+                      <span v-if="!act.authorizedFacilitators || act.authorizedFacilitators.length === 0" class="no-data">Aucun animateur configuré</span>
                     </div>
                   </div>
 
@@ -837,27 +869,50 @@
                   :id="'fac-' + fac.documentId"
                 >
                   <div class="card-header">
-                    <h3>👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}</h3>
-                    <span class="email-text">{{ fac.email }}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                      <div>
+                        <h3>👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}</h3>
+                        <span class="email-text">✉️ {{ fac.email }}</span>
+                      </div>
+                      <div v-if="appSettingsStore.isAdminMode" class="card-actions" style="display: flex; gap: 0.4rem;">
+                        <button class="icon-btn edit-btn" @click.stop="openFacilitatorModal(fac)" title="Modifier cet animateur">✏️</button>
+                        <button class="icon-btn delete-btn" @click.stop="deleteFacilitator(fac.documentId)" title="Supprimer">🗑️</button>
+                      </div>
+                    </div>
                   </div>
                   <div class="card-content">
                     <div class="info-group" v-if="fac.skills">
-                      <span class="info-label">Compétences</span>
-                      <span class="info-value text-italic">{{ fac.skills }}</span>
+                      <span class="info-label">Compétences & Spécialités</span>
+                      <span class="info-value text-italic" style="color: #5eead4;">⭐ {{ fac.skills }}</span>
                     </div>
+
                     <div class="info-group">
                       <span class="info-label">Disponibilités Hebdomadaires</span>
-                      <div class="availability-block">
-                        {{ formatWeeklyAvailabilities(fac.weeklyAvailabilities) }}
+                      <div class="mini-week-container mt-1">
+                        <div class="mini-week-bar">
+                          <span
+                            v-for="d in getDaysStatus(fac.weeklyAvailabilities)"
+                            :key="d.dayKey"
+                            class="mini-day-pill"
+                            :class="{ active: d.active }"
+                            :title="d.active ? `${d.name} : ${d.start} - ${d.end}` : `${d.name} : Non disponible`"
+                          >
+                            {{ d.label }}
+                          </span>
+                        </div>
+                        <span class="mini-week-summary">
+                          {{ getWeeklySummaryText(fac.weeklyAvailabilities) }}
+                        </span>
                       </div>
                     </div>
-                    <div class="info-group" v-if="fac.specificUnavailabilities && fac.specificUnavailabilities.length > 0">
-                      <span class="info-label">Indisponibilités Spécifiques</span>
-                      <ul class="closures-list">
-                        <li v-for="(unavail, i) in fac.specificUnavailabilities" :key="i">
-                          {{ formatDateRange(unavail.startDate, unavail.endDate) }}
-                        </li>
-                      </ul>
+
+                    <div class="info-group mt-2" v-if="fac.specificUnavailabilities && fac.specificUnavailabilities.length > 0">
+                      <span class="info-label">Indisponibilités & Congés</span>
+                      <div class="unavail-chips-list mt-1">
+                        <span v-for="(unavail, i) in fac.specificUnavailabilities" :key="i" class="unavail-chip">
+                          🚫 {{ formatUnavailabilityItem(unavail) }}
+                        </span>
+                      </div>
                     </div>
 
                     <!-- Related Time Slots Chips -->
@@ -905,23 +960,45 @@
                 :id="'part-' + part.documentId"
               >
                 <div class="card-header">
-                  <h3>👥 {{ part.firstName }} {{ part.lastName }}</h3>
-                  <span class="email-text">{{ part.email }}</span>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                    <div>
+                      <h3>👥 {{ part.firstName }} {{ part.lastName }}</h3>
+                      <span class="email-text">✉️ {{ part.email }}</span>
+                    </div>
+                    <div v-if="appSettingsStore.isAdminMode" class="card-actions" style="display: flex; gap: 0.4rem;">
+                      <button class="icon-btn edit-btn" @click.stop="openParticipantModal(part)" title="Modifier ce participant">✏️</button>
+                      <button class="icon-btn delete-btn" @click.stop="deleteParticipant(part.documentId)" title="Supprimer">🗑️</button>
+                    </div>
+                  </div>
                 </div>
                 <div class="card-content">
                   <div class="info-group">
                     <span class="info-label">Disponibilités Hebdomadaires</span>
-                    <div class="availability-block">
-                      {{ formatWeeklyAvailabilities(part.weeklyAvailabilities) }}
+                    <div class="mini-week-container mt-1">
+                      <div class="mini-week-bar">
+                        <span
+                          v-for="d in getDaysStatus(part.weeklyAvailabilities)"
+                          :key="d.dayKey"
+                          class="mini-day-pill"
+                          :class="{ active: d.active }"
+                          :title="d.active ? `${d.name} : ${d.start} - ${d.end}` : `${d.name} : Non disponible`"
+                        >
+                          {{ d.label }}
+                        </span>
+                      </div>
+                      <span class="mini-week-summary">
+                        {{ getWeeklySummaryText(part.weeklyAvailabilities) }}
+                      </span>
                     </div>
                   </div>
-                  <div class="info-group" v-if="part.specificUnavailabilities && part.specificUnavailabilities.length > 0">
-                    <span class="info-label">Indisponibilités Spécifiques</span>
-                    <ul class="closures-list">
-                      <li v-for="(unavail, i) in part.specificUnavailabilities" :key="i">
-                        {{ formatDateRange(unavail.startDate, unavail.endDate) }}
-                      </li>
-                    </ul>
+
+                  <div class="info-group mt-2" v-if="part.specificUnavailabilities && part.specificUnavailabilities.length > 0">
+                    <span class="info-label">Indisponibilités & Absences</span>
+                    <div class="unavail-chips-list mt-1">
+                      <span v-for="(unavail, i) in part.specificUnavailabilities" :key="i" class="unavail-chip">
+                        🚫 {{ formatUnavailabilityItem(unavail) }}
+                      </span>
+                    </div>
                   </div>
 
                   <!-- Related Time Slots Chips -->
@@ -1104,24 +1181,34 @@
 
               <!-- Tags selection & custom tag input -->
               <div class="form-group mt-3">
-                <label>🏷️ Étiquettes & Catégories</label>
+                <div class="field-header-row" style="display: flex; justify-content: space-between; align-items: center;">
+                  <label style="margin-bottom: 0;">🏷️ Étiquettes & Catégories</label>
+                  <span class="selection-count-badge" v-if="activityForm.tags && activityForm.tags.length">
+                    {{ activityForm.tags.length }} étiquette(s)
+                  </span>
+                </div>
                 
                 <div class="selected-tags-box mt-1" v-if="activityForm.tags && activityForm.tags.length">
-                  <span v-for="tag in activityForm.tags" :key="tag" class="tag-badge removable">
+                  <span 
+                    v-for="tag in activityForm.tags" 
+                    :key="tag" 
+                    class="tag-badge removable"
+                    :style="getTagCategoryStyle(tag)"
+                  >
                     🏷️ {{ tag }}
                     <button type="button" class="remove-tag-btn" @click="removeFormTag(tag)">✕</button>
                   </span>
                 </div>
 
                 <div class="preset-tags-list mt-2">
-                  <span class="preset-label">Suggestions :</span>
-                  <div class="preset-pills-row">
+                  <span class="preset-label" style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Suggestions :</span>
+                  <div class="preset-pills-row mt-1">
                     <button 
                       type="button" 
                       v-for="tag in presetTags" 
                       :key="tag" 
-                      class="preset-tag-btn" 
-                      :class="{ selected: activityForm.tags && activityForm.tags.includes(tag) }"
+                      class="preset-pill-btn" 
+                      :class="{ active: activityForm.tags && activityForm.tags.includes(tag) }"
                       @click="toggleFormTag(tag)"
                     >
                       {{ activityForm.tags && activityForm.tags.includes(tag) ? '✓ ' + tag : '+ ' + tag }}
@@ -1133,7 +1220,7 @@
                   <input 
                     type="text" 
                     v-model="activityForm.newTagInput" 
-                    placeholder="Nouvelle étiquette..." 
+                    placeholder="Nouvelle étiquette personnalisée..." 
                     class="form-input" 
                     @keydown.enter.prevent="addCustomTagToForm"
                   />
@@ -1143,45 +1230,132 @@
                 </div>
               </div>
 
-              <div class="form-group mt-2">
-                <div class="field-header-row">
-                  <label>👨‍🏫 Animateurs Autorisés</label>
+              <!-- Authorized Facilitators Section (Single list with chips and integrated search/create) -->
+              <div class="form-group mt-3">
+                <div class="field-header-row" style="display: flex; justify-content: space-between; align-items: center;">
+                  <label style="margin-bottom: 0;">👨‍🏫 Animateurs Autorisés</label>
                   <span class="selection-count-badge" v-if="activityForm.authorizedFacilitators.length">
                     {{ activityForm.authorizedFacilitators.length }} sélectionné(s)
                   </span>
                 </div>
 
-                <!-- Search box for authorized animators -->
-                <div class="modal-search-box mt-1">
-                  <span class="modal-search-icon">🔍</span>
-                  <input
-                    type="text"
-                    v-model="modalActivityFacSearch"
-                    placeholder="Filtrer les animateurs par lettre, nom, compétence..."
-                    class="form-input modal-filter-input"
-                  />
-                  <button
-                    v-if="modalActivityFacSearch"
-                    type="button"
-                    class="clear-filter-btn"
-                    @click="modalActivityFacSearch = ''"
-                    title="Effacer le filtre"
+                <!-- Selected Facilitators Chips List -->
+                <div v-if="activityForm.authorizedFacilitators.length > 0" class="selected-facs-box mt-2">
+                  <span
+                    v-for="facId in activityForm.authorizedFacilitators"
+                    :key="'sel-' + facId"
+                    class="selected-fac-chip"
                   >
-                    ✕
-                  </button>
+                    👨‍🏫 {{ getFacilitatorName(facId) }}
+                    <button type="button" class="remove-fac-btn" @click="removeActivityFacilitator(facId)" title="Retirer cet animateur">✕</button>
+                  </span>
+                </div>
+                <div v-else class="fac-chips-empty-hint mt-2">
+                  <span>ℹ️ Aucun animateur autorisé pour le moment. Utilisez le champ ci-dessous pour rechercher ou en créer un.</span>
                 </div>
 
-                <div class="multi-select-container mt-1">
-                  <label v-for="fac in modalFilteredActivityFacilitators" :key="fac.documentId" class="multi-select-option">
-                    <input type="checkbox" :value="fac.documentId" v-model="activityForm.authorizedFacilitators" />
-                    <span>
-                      <strong>{{ fac.firstName }} {{ fac.lastName }}</strong>
-                      <span v-if="fac.skills" class="skills-pill">{{ fac.skills }}</span>
-                      <span class="email-text" style="margin-left: 0.5rem; font-size: 0.75rem;">{{ fac.email }}</span>
-                    </span>
-                  </label>
-                  <div v-if="modalFilteredActivityFacilitators.length === 0" class="no-filter-results">
-                    Aucun animateur ne correspond à "{{ modalActivityFacSearch }}"
+                <!-- Autocomplete Input & Suggestions Dropdown -->
+                <div class="fac-autocomplete-container mt-2">
+                  <div class="modal-search-box" style="margin: 0;">
+                    <span class="modal-search-icon">🔍</span>
+                    <input
+                      type="text"
+                      v-model="modalActivityFacSearch"
+                      @focus="showFacDropdown = true"
+                      @input="showFacDropdown = true"
+                      placeholder="Taper un nom d'animateur à ajouter ou créer..."
+                      class="form-input modal-filter-input"
+                    />
+                    <button
+                      v-if="modalActivityFacSearch"
+                      type="button"
+                      class="clear-filter-btn"
+                      @click="modalActivityFacSearch = ''"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <!-- Dropdown with suggestions + create option -->
+                  <div
+                    v-if="showFacDropdown"
+                    class="fac-dropdown-menu"
+                  >
+                    <div class="fac-dropdown-list" v-if="modalAvailableActivityFacilitators.length > 0">
+                      <div
+                        v-for="fac in modalAvailableActivityFacilitators"
+                        :key="fac.documentId"
+                        class="fac-dropdown-item"
+                        @mousedown.prevent="selectActivityFacilitator(fac)"
+                      >
+                        <div class="fac-dropdown-item-left">
+                          <strong>👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}</strong>
+                          <span v-if="fac.skills" class="skills-pill">{{ fac.skills }}</span>
+                        </div>
+                        <div class="fac-dropdown-item-right">
+                          <span>{{ fac.email }}</span>
+                          <span style="color: #5eead4; font-weight: 600; font-size: 0.85rem;">+ Ajouter</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      v-else-if="modalActivityFacSearch"
+                      class="fac-dropdown-empty-msg"
+                    >
+                      Aucun animateur existant ne correspond à « {{ modalActivityFacSearch }} »
+                    </div>
+
+                    <!-- Option to create a new facilitator -->
+                    <button
+                      type="button"
+                      class="fac-dropdown-create-btn"
+                      @mousedown.prevent="initQuickFacilitatorFromSearch"
+                    >
+                      <span>⚡</span>
+                      <span>
+                        <span v-if="modalActivityFacSearch">
+                          Créer <strong>« {{ modalActivityFacSearch }} »</strong> comme nouvel animateur
+                        </span>
+                        <span v-else>
+                          Créer un nouvel animateur rapidement
+                        </span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Quick Facilitator Creator Panel (In-Modal Drawer) -->
+                <div v-if="showQuickFacilitatorPanel" class="quick-create-panel mt-2">
+                  <div class="quick-create-header">
+                    <span class="quick-create-title">⚡ Créer un nouvel animateur</span>
+                    <button type="button" class="icon-btn" @click="closeQuickFacilitatorPanel" style="padding: 0.1rem 0.4rem; font-size: 0.8rem;">✕</button>
+                  </div>
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label style="font-size: 0.78rem;">Prénom *</label>
+                      <input type="text" v-model="quickFacilitatorForm.firstName" class="form-input" placeholder="Ex: Sophie" />
+                    </div>
+                    <div class="form-group">
+                      <label style="font-size: 0.78rem;">Nom *</label>
+                      <input type="text" v-model="quickFacilitatorForm.lastName" class="form-input" placeholder="Ex: Martin" />
+                    </div>
+                  </div>
+                  <div class="form-grid mt-1">
+                    <div class="form-group">
+                      <label style="font-size: 0.78rem;">Email *</label>
+                      <input type="email" v-model="quickFacilitatorForm.email" class="form-input" placeholder="Ex: sophie.martin@ehpad.fr" />
+                    </div>
+                    <div class="form-group">
+                      <label style="font-size: 0.78rem;">Compétences</label>
+                      <input type="text" v-model="quickFacilitatorForm.skills" class="form-input" placeholder="Ex: Gym douce, Relaxation" />
+                    </div>
+                  </div>
+                  <div class="d-flex justify-end ga-2 mt-2" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="cancel-btn" @click="closeQuickFacilitatorPanel" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Annuler</button>
+                    <button type="button" class="submit-btn" :disabled="quickFacilitatorLoading" @click="submitQuickFacilitator" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;">
+                      {{ quickFacilitatorLoading ? 'Création...' : '⚡ Créer & Associer' }}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1189,7 +1363,216 @@
               <div class="modal-footer">
                 <button type="button" class="cancel-btn" @click="closeActivityModal">Annuler</button>
                 <button type="submit" class="submit-btn" :disabled="activityModalLoading">
-                  {{ activityModalLoading ? 'Enregistrement...' : 'Enregistrer' }}
+                  {{ activityModalLoading ? 'Enregistrement...' : 'Enregistrer l\'activité' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- FACILITATOR MODAL (CARDS VIEW & ADMIN) -->
+      <div class="modal-backdrop" v-if="showFacilitatorModal" @click.self="closeFacilitatorModal">
+        <div class="modal-card" style="max-width: 680px;">
+          <div class="modal-header">
+            <h3>{{ editingFacilitatorId ? '✏️ Modifier l\'Animateur' : '👨‍🏫 Nouvel Animateur' }}</h3>
+            <button class="close-modal-btn" @click="closeFacilitatorModal">✕</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="validation-error-box" v-if="facilitatorModalError">
+              <span class="error-box-icon">🚫</span>
+              <div class="error-box-content">
+                <h4>Erreur</h4>
+                <p>{{ facilitatorModalError }}</p>
+              </div>
+              <button class="clear-error-btn" @click="facilitatorModalError = ''">✕</button>
+            </div>
+
+            <form @submit.prevent="submitFacilitatorForm">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="facFirstName">Prénom *</label>
+                  <input type="text" id="facFirstName" v-model="facilitatorForm.firstName" required class="form-input" placeholder="Ex: Jean" />
+                </div>
+                <div class="form-group">
+                  <label for="facLastName">Nom *</label>
+                  <input type="text" id="facLastName" v-model="facilitatorForm.lastName" required class="form-input" placeholder="Ex: Dupont" />
+                </div>
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="facEmail">Adresse Email *</label>
+                <input type="email" id="facEmail" v-model="facilitatorForm.email" required class="form-input" placeholder="Ex: jean.dupont@ehpad.fr" />
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="facSkills">Compétences & Spécialités</label>
+                <input type="text" id="facSkills" v-model="facilitatorForm.skills" class="form-input" placeholder="Ex: Psychomotricité, Gym douce, Relaxation, Musique..." />
+              </div>
+
+              <!-- Weekly Availabilities Section -->
+              <div class="form-group mt-3">
+                <div class="field-header-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                  <label style="margin-bottom: 0;">📅 Disponibilités Hebdomadaires</label>
+                  <div class="preset-pills-row">
+                    <button type="button" class="preset-pill-btn" @click="applyFacilitatorWeeklyPreset('standard')">💼 Lun-Ven (08:30-17:30)</button>
+                    <button type="button" class="preset-pill-btn" @click="applyFacilitatorWeeklyPreset('full')">⭐ 7j/7 (08:00-19:30)</button>
+                    <button type="button" class="preset-pill-btn" @click="applyFacilitatorWeeklyPreset('clear')">🧹 Tout décocher</button>
+                  </div>
+                </div>
+
+                <div class="weekly-scheduler-card mt-2">
+                  <div v-for="day in weekDayDefinitions" :key="'fac-day-' + day.value" class="weekly-day-row">
+                    <div class="weekly-day-left">
+                      <input type="checkbox" :id="'fac-chk-' + day.value" v-model="facilitatorWeeklyChecks[day.value]" style="cursor: pointer;" />
+                      <label :for="'fac-chk-' + day.value" style="margin-bottom: 0; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
+                        {{ day.text }}
+                      </label>
+                    </div>
+
+                    <div v-if="facilitatorWeeklyChecks[day.value]" class="weekly-day-times">
+                      <input type="time" v-model="facilitatorWeeklyHours[day.value][0].start" />
+                      <span style="font-size: 0.75rem; color: var(--text-secondary);">à</span>
+                      <input type="time" v-model="facilitatorWeeklyHours[day.value][0].end" />
+                    </div>
+                    <span v-else style="font-size: 0.78rem; color: var(--text-muted); font-style: italic;">
+                      Non disponible
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Specific Unavailabilities Section -->
+              <div class="form-group mt-3">
+                <div class="field-header-row" style="display: flex; justify-content: space-between; align-items: center;">
+                  <label style="margin-bottom: 0;">🚫 Indisponibilités Spécifiques & Congés</label>
+                  <button type="button" class="action-btn" style="padding: 0.2rem 0.6rem; font-size: 0.78rem;" @click="addFacilitatorUnavailability">
+                    ➕ Ajouter une période
+                  </button>
+                </div>
+
+                <div v-if="facilitatorForm.specificUnavailabilities.length === 0" style="padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--text-secondary); text-align: center; margin-top: 0.4rem;">
+                  ✅ Aucune indisponibilité spécifique (disponible selon planning hebdo).
+                </div>
+
+                <div v-else class="mt-2">
+                  <div v-for="(unavail, index) in facilitatorForm.specificUnavailabilities" :key="'fac-u-' + index" class="unavail-item-row">
+                    <input type="datetime-local" v-model="unavail.startDate" class="form-input" style="font-size: 0.78rem; padding: 0.3rem 0.5rem; min-width: 170px;" />
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">au</span>
+                    <input type="datetime-local" v-model="unavail.endDate" class="form-input" style="font-size: 0.78rem; padding: 0.3rem 0.5rem; min-width: 170px;" />
+                    <input type="text" v-model="unavail.reason" placeholder="Motif (ex: Congés, Formation)" class="form-input" style="font-size: 0.78rem; padding: 0.3rem 0.5rem; flex: 1; min-width: 140px;" />
+                    <button type="button" class="icon-btn delete-btn" @click="removeFacilitatorUnavailability(index)" title="Supprimer">🗑️</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="cancel-btn" @click="closeFacilitatorModal">Annuler</button>
+                <button type="submit" class="submit-btn" :disabled="facilitatorModalLoading">
+                  {{ facilitatorModalLoading ? 'Enregistrement...' : 'Enregistrer l\'animateur' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- PARTICIPANT MODAL -->
+      <div class="modal-backdrop" v-if="showParticipantModal" @click.self="closeParticipantModal">
+        <div class="modal-card" style="max-width: 680px;">
+          <div class="modal-header">
+            <h3>{{ editingParticipantId ? '✏️ Modifier le Participant' : '👥 Nouveau Participant' }}</h3>
+            <button class="close-modal-btn" @click="closeParticipantModal">✕</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="validation-error-box" v-if="participantModalError">
+              <span class="error-box-icon">🚫</span>
+              <div class="error-box-content">
+                <h4>Erreur</h4>
+                <p>{{ participantModalError }}</p>
+              </div>
+              <button class="clear-error-btn" @click="participantModalError = ''">✕</button>
+            </div>
+
+            <form @submit.prevent="submitParticipantForm">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="partFirstName">Prénom *</label>
+                  <input type="text" id="partFirstName" v-model="participantForm.firstName" required class="form-input" placeholder="Ex: Jeanne" />
+                </div>
+                <div class="form-group">
+                  <label for="partLastName">Nom *</label>
+                  <input type="text" id="partLastName" v-model="participantForm.lastName" required class="form-input" placeholder="Ex: Dupont" />
+                </div>
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="partEmail">Adresse Email *</label>
+                <input type="email" id="partEmail" v-model="participantForm.email" required class="form-input" placeholder="Ex: jeanne.dupont@senior.dev" />
+              </div>
+
+              <!-- Weekly Availabilities Section -->
+              <div class="form-group mt-3">
+                <div class="field-header-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                  <label style="margin-bottom: 0;">📅 Disponibilités Hebdomadaires</label>
+                  <div class="preset-pills-row">
+                    <button type="button" class="preset-pill-btn" @click="applyParticipantWeeklyPreset('standard')">💼 Lun-Ven (08:30-17:30)</button>
+                    <button type="button" class="preset-pill-btn" @click="applyParticipantWeeklyPreset('full')">⭐ 7j/7 (08:00-19:30)</button>
+                    <button type="button" class="preset-pill-btn" @click="applyParticipantWeeklyPreset('clear')">🧹 Tout décocher</button>
+                  </div>
+                </div>
+
+                <div class="weekly-scheduler-card mt-2">
+                  <div v-for="day in weekDayDefinitions" :key="'part-day-' + day.value" class="weekly-day-row">
+                    <div class="weekly-day-left">
+                      <input type="checkbox" :id="'part-chk-' + day.value" v-model="participantWeeklyChecks[day.value]" style="cursor: pointer;" />
+                      <label :for="'part-chk-' + day.value" style="margin-bottom: 0; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
+                        {{ day.text }}
+                      </label>
+                    </div>
+
+                    <div v-if="participantWeeklyChecks[day.value]" class="weekly-day-times">
+                      <input type="time" v-model="participantWeeklyHours[day.value][0].start" />
+                      <span style="font-size: 0.75rem; color: var(--text-secondary);">à</span>
+                      <input type="time" v-model="participantWeeklyHours[day.value][0].end" />
+                    </div>
+                    <span v-else style="font-size: 0.78rem; color: var(--text-muted); font-style: italic;">
+                      Non disponible
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Specific Unavailabilities Section -->
+              <div class="form-group mt-3">
+                <div class="field-header-row" style="display: flex; justify-content: space-between; align-items: center;">
+                  <label style="margin-bottom: 0;">🚫 Indisponibilités & Absences Spécifiques</label>
+                  <button type="button" class="action-btn" style="padding: 0.2rem 0.6rem; font-size: 0.78rem;" @click="addParticipantUnavailability">
+                    ➕ Ajouter une période
+                  </button>
+                </div>
+
+                <div v-if="participantForm.specificUnavailabilities.length === 0" style="padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--text-secondary); text-align: center; margin-top: 0.4rem;">
+                  ✅ Aucune indisponibilité spécifique (disponible selon planning hebdo).
+                </div>
+
+                <div v-else class="mt-2">
+                  <div v-for="(unavail, index) in participantForm.specificUnavailabilities" :key="'part-u-' + index" class="unavail-item-row">
+                    <input type="datetime-local" v-model="unavail.startDate" class="form-input" style="font-size: 0.78rem; padding: 0.3rem 0.5rem; min-width: 170px;" />
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">au</span>
+                    <input type="datetime-local" v-model="unavail.endDate" class="form-input" style="font-size: 0.78rem; padding: 0.3rem 0.5rem; min-width: 170px;" />
+                    <input type="text" v-model="unavail.reason" placeholder="Motif (ex: Vacances en famille, Soins)" class="form-input" style="font-size: 0.78rem; padding: 0.3rem 0.5rem; flex: 1; min-width: 140px;" />
+                    <button type="button" class="icon-btn delete-btn" @click="removeParticipantUnavailability(index)" title="Supprimer">🗑️</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="cancel-btn" @click="closeParticipantModal">Annuler</button>
+                <button type="submit" class="submit-btn" :disabled="participantModalLoading">
+                  {{ participantModalLoading ? 'Enregistrement...' : 'Enregistrer le participant' }}
                 </button>
               </div>
             </form>
@@ -1488,9 +1871,13 @@ import { useAuthStore } from './stores/auth';
 import { useAppSettingsStore } from './stores/appSettings';
 import { useActiveSchedulerStore } from './stores/activeScheduler';
 import { useActivityStore } from './stores/activityStore';
+import { useFacilitatorStore } from './stores/admin/facilitatorStore';
+import { useParticipantStore } from './stores/participantStore';
+import { useGlobalStore } from './stores/global';
 import LocationsList from './views/locations/LocationsList.vue';
 import FacilitatorsList from './views/admin/FacilitatorsList.vue';
 import RoomSessionsView from './components/RoomSessionsView.vue';
+import WeekTemplateView from './components/WeekTemplateView.vue';
 import ExtractionsView from './components/ExtractionsView.vue';
 import CalendarView from './components/CalendarView.vue';
 import ClientPlanningView from './views/ClientPlanningView.vue';
@@ -1513,6 +1900,7 @@ export default {
     LocationsList,
     FacilitatorsList,
     RoomSessionsView,
+    WeekTemplateView,
     ExtractionsView,
     CalendarView,
     ClientPlanningView,
@@ -1522,6 +1910,10 @@ export default {
     const authStore = useAuthStore();
     const appSettingsStore = useAppSettingsStore();
     const schedulerStore = useActiveSchedulerStore();
+    const activityStore = useActivityStore();
+    const facilitatorStore = useFacilitatorStore();
+    const participantStore = useParticipantStore();
+    const globalStore = useGlobalStore();
     const router = useRouter();
 
     const handleMockDataToggle = () => {
@@ -1552,10 +1944,11 @@ export default {
       isConnected 
     } = storeToRefs(schedulerStore);
 
-    const activityStore = useActivityStore();
-
     return {
+      globalStore,
       activityStore,
+      facilitatorStore,
+      participantStore,
       appSettingsStore,
       handleMockDataToggle,
       authStore,
@@ -1593,7 +1986,7 @@ export default {
         username: '',
         email: '',
         password: '',
-        confirmPassword: '' // Added for typos double check
+        confirmPassword: ''
       },
 
       // User Profile Page State
@@ -1619,12 +2012,23 @@ export default {
       selectedTagFilter: '',
       presetTags: ['Cognitif', 'Moteur', 'Bien-être', 'Social', 'Créatif', 'Repas', 'Sensorielles', 'Relaxation', 'Extérieur', 'Musique', 'Cuisine', 'Convivialité', 'Culture', 'Art', 'Nature', 'Activité physique'],
 
+      weekDayDefinitions: [
+        { text: 'Lundi', value: '1', label: 'Lu' },
+        { text: 'Mardi', value: '2', label: 'Ma' },
+        { text: 'Mercredi', value: '3', label: 'Me' },
+        { text: 'Jeudi', value: '4', label: 'Je' },
+        { text: 'Vendredi', value: '5', label: 'Ve' },
+        { text: 'Samedi', value: '6', label: 'Sa' },
+        { text: 'Dimanche', value: '0', label: 'Di' }
+      ],
+
       // Activity Modal State
       showActivityModal: false,
       activityModalLoading: false,
       activityModalError: '',
       editingActivityId: null,
       modalActivityFacSearch: '',
+      showFacDropdown: false,
       activityForm: {
         name: '',
         standardDuration: 60,
@@ -1633,6 +2037,63 @@ export default {
         authorizedFacilitators: [],
         tags: [],
         newTagInput: ''
+      },
+
+      // Quick Facilitator Panel inside Activity Modal
+      showQuickFacilitatorPanel: false,
+      quickFacilitatorLoading: false,
+      quickFacilitatorForm: {
+        firstName: '',
+        lastName: '',
+        email: '',
+        skills: ''
+      },
+
+      // Facilitator Modal State
+      showFacilitatorModal: false,
+      facilitatorModalLoading: false,
+      facilitatorModalError: '',
+      editingFacilitatorId: null,
+      facilitatorForm: {
+        firstName: '',
+        lastName: '',
+        email: '',
+        skills: '',
+        weeklyAvailabilities: {},
+        specificUnavailabilities: []
+      },
+      facilitatorWeeklyChecks: { '1': true, '2': true, '3': true, '4': true, '5': true, '6': false, '0': false },
+      facilitatorWeeklyHours: {
+        '1': [{ start: '08:30', end: '17:30' }],
+        '2': [{ start: '08:30', end: '17:30' }],
+        '3': [{ start: '08:30', end: '17:30' }],
+        '4': [{ start: '08:30', end: '17:30' }],
+        '5': [{ start: '08:30', end: '17:30' }],
+        '6': [{ start: '08:30', end: '17:30' }],
+        '0': [{ start: '08:30', end: '17:30' }]
+      },
+
+      // Participant Modal State
+      showParticipantModal: false,
+      participantModalLoading: false,
+      participantModalError: '',
+      editingParticipantId: null,
+      participantForm: {
+        firstName: '',
+        lastName: '',
+        email: '',
+        weeklyAvailabilities: {},
+        specificUnavailabilities: []
+      },
+      participantWeeklyChecks: { '1': true, '2': true, '3': true, '4': true, '5': true, '6': false, '0': false },
+      participantWeeklyHours: {
+        '1': [{ start: '08:00', end: '19:30' }],
+        '2': [{ start: '08:00', end: '19:30' }],
+        '3': [{ start: '08:00', end: '19:30' }],
+        '4': [{ start: '08:00', end: '19:30' }],
+        '5': [{ start: '08:00', end: '19:30' }],
+        '6': [{ start: '08:00', end: '19:30' }],
+        '0': [{ start: '08:00', end: '19:30' }]
       },
 
       // Modal / Creation
@@ -1865,7 +2326,8 @@ export default {
       );
 
       if (!fac && !part) {
-        fac = this.facilitators.find(f => f.email === 'claire.dubois@ehpad-accueil.fr') || this.facilitators[0] || null;
+        fac = null;
+        part = null;
       }
 
       return {
@@ -1885,6 +2347,7 @@ export default {
     },
     userRelevantSlots() {
       const persona = this.currentUserPersona;
+      if (!persona) return [];
       let slots = this.timeslots;
 
       if (persona) {
@@ -2050,6 +2513,18 @@ export default {
       }
       return baseList;
     },
+    modalAvailableActivityFacilitators() {
+      const selected = this.activityForm.authorizedFacilitators || [];
+      const unselected = this.facilitators.filter(f => !selected.includes(f.documentId) && !selected.includes(f.id));
+      if (!this.modalActivityFacSearch.trim()) return unselected;
+      const q = this.modalActivityFacSearch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return unselected.filter(f => {
+        const name = `${f.firstName || ''} ${f.lastName || ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const email = (f.email || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const skills = (f.skills || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return name.includes(q) || email.includes(q) || skills.includes(q);
+      });
+    },
     modalFilteredActivityFacilitators() {
       if (!this.modalActivityFacSearch.trim()) return this.facilitators;
       const q = this.modalActivityFacSearch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -2214,6 +2689,8 @@ export default {
           this.selectedSchedulePersonType = 'participant';
           this.selectedSchedulePersonId = null;
         }
+      } else if (path.startsWith('/week-template')) {
+        this.currentPage = 'week-template';
       } else if (path.startsWith('/room-sessions')) {
         this.currentPage = 'room-sessions';
       } else if (path.startsWith('/extractions')) {
@@ -2746,12 +3223,21 @@ export default {
       }
     },
 
-    showToast(msg) {
+    showToast(msg, title = 'Succès') {
+      if (this.globalStore) {
+        this.globalStore.addSuccess(msg, title);
+      }
       this.successMessage = msg;
       if (this.successTimeout) clearTimeout(this.successTimeout);
       this.successTimeout = setTimeout(() => {
         this.successMessage = '';
       }, 3500);
+    },
+
+    showError(msg, title = 'Erreur', status = null) {
+      if (this.globalStore) {
+        this.globalStore.addError(msg, title, status);
+      }
     },
 
     // Activities
@@ -2782,10 +3268,99 @@ export default {
       }
     },
 
+    getFacilitatorName(id) {
+      const fac = this.facilitators.find(f => f.documentId === id || f.id === id);
+      return fac ? `${fac.firstName} ${fac.lastName}` : id;
+    },
+
+    selectActivityFacilitator(fac) {
+      const id = fac.documentId || fac.id;
+      if (id && !this.activityForm.authorizedFacilitators.includes(id)) {
+        this.activityForm.authorizedFacilitators.push(id);
+      }
+      this.modalActivityFacSearch = '';
+      this.showFacDropdown = false;
+    },
+
+    removeActivityFacilitator(id) {
+      if (Array.isArray(this.activityForm.authorizedFacilitators)) {
+        this.activityForm.authorizedFacilitators = this.activityForm.authorizedFacilitators.filter(facId => facId !== id);
+      }
+    },
+
+    toggleActivityFacilitator(id) {
+      this.removeActivityFacilitator(id);
+    },
+
+    initQuickFacilitatorFromSearch() {
+      const query = (this.modalActivityFacSearch || '').trim();
+      let firstName = '';
+      let lastName = '';
+      if (query) {
+        const parts = query.split(/\s+/);
+        firstName = parts[0] || '';
+        lastName = parts.slice(1).join(' ') || '';
+      }
+      this.quickFacilitatorForm = {
+        firstName,
+        lastName,
+        email: firstName ? `${firstName.toLowerCase()}.${lastName ? lastName.toLowerCase() : 'fac'}@ehpad.fr` : '',
+        skills: ''
+      };
+      this.showQuickFacilitatorPanel = true;
+      this.showFacDropdown = false;
+    },
+
+    openQuickFacilitatorPanel() {
+      this.initQuickFacilitatorFromSearch();
+    },
+
+    closeQuickFacilitatorPanel() {
+      this.showQuickFacilitatorPanel = false;
+    },
+
+    async submitQuickFacilitator() {
+      if (!this.quickFacilitatorForm.firstName || !this.quickFacilitatorForm.lastName || !this.quickFacilitatorForm.email) {
+        alert('Veuillez remplir au moins le prénom, le nom et l\'email de l\'animateur.');
+        return;
+      }
+      this.quickFacilitatorLoading = true;
+      try {
+        const payload = {
+          firstName: this.quickFacilitatorForm.firstName.trim(),
+          lastName: this.quickFacilitatorForm.lastName.trim(),
+          email: this.quickFacilitatorForm.email.trim(),
+          skills: this.quickFacilitatorForm.skills.trim(),
+          weeklyAvailabilities: {
+            '1': [{ start: '08:30', end: '17:30' }],
+            '2': [{ start: '08:30', end: '17:30' }],
+            '3': [{ start: '08:30', end: '17:30' }],
+            '4': [{ start: '08:30', end: '17:30' }],
+            '5': [{ start: '08:30', end: '17:30' }]
+          },
+          specificUnavailabilities: []
+        };
+        const created = await this.facilitatorStore.createFacilitator(payload);
+        const newId = created.documentId || created.id;
+        if (newId && !this.activityForm.authorizedFacilitators.includes(newId)) {
+          this.activityForm.authorizedFacilitators.push(newId);
+        }
+        this.closeQuickFacilitatorPanel();
+        this.modalActivityFacSearch = '';
+        this.showToast(`Animateur ${payload.firstName} ${payload.lastName} créé et associé !`);
+      } catch (err) {
+        alert('Erreur lors de la création de l\'animateur : ' + err.message);
+      } finally {
+        this.quickFacilitatorLoading = false;
+      }
+    },
+
     openActivityModal(act = null) {
       this.activityModalError = '';
       this.activityModalLoading = false;
       this.modalActivityFacSearch = '';
+      this.showFacDropdown = false;
+      this.showQuickFacilitatorPanel = false;
       if (act) {
         this.editingActivityId = act.documentId;
         this.activityForm = {
@@ -2811,10 +3386,14 @@ export default {
       }
       this.showActivityModal = true;
     },
+
     closeActivityModal() {
       this.showActivityModal = false;
       this.modalActivityFacSearch = '';
+      this.showFacDropdown = false;
+      this.showQuickFacilitatorPanel = false;
     },
+
     async submitActivityForm() {
       this.activityModalLoading = true;
       this.activityModalError = '';
@@ -2834,6 +3413,7 @@ export default {
         this.activityModalLoading = false;
       }
     },
+
     async deleteActivity(documentId) {
       if (!confirm('Voulez-vous vraiment supprimer cette activité ?')) return;
       try {
@@ -2842,6 +3422,389 @@ export default {
       } catch (err) {
         alert("Erreur lors de la suppression : " + err.message);
       }
+    },
+
+    // Facilitators Management
+    formatIsoForInput(isoString) {
+      if (!isoString) return '';
+      try {
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } catch (e) {
+        return '';
+      }
+    },
+
+    openFacilitatorModal(fac = null) {
+      this.facilitatorModalError = '';
+      this.facilitatorModalLoading = false;
+
+      // Reset checks & hours
+      this.weekDayDefinitions.forEach(day => {
+        this.facilitatorWeeklyChecks[day.value] = false;
+        this.facilitatorWeeklyHours[day.value] = [{ start: '08:30', end: '17:30' }];
+      });
+
+      if (fac) {
+        this.editingFacilitatorId = fac.documentId;
+        const rawUnavails = fac.specificUnavailabilities ? [...fac.specificUnavailabilities] : [];
+        this.facilitatorForm = {
+          firstName: fac.firstName || '',
+          lastName: fac.lastName || '',
+          email: fac.email || '',
+          skills: fac.skills || '',
+          weeklyAvailabilities: fac.weeklyAvailabilities ? JSON.parse(JSON.stringify(fac.weeklyAvailabilities)) : {},
+          specificUnavailabilities: rawUnavails.map(u => ({
+            startDate: this.formatIsoForInput(u.startDate),
+            endDate: this.formatIsoForInput(u.endDate),
+            reason: u.reason || ''
+          }))
+        };
+
+        if (fac.weeklyAvailabilities) {
+          Object.keys(fac.weeklyAvailabilities).forEach(day => {
+            this.facilitatorWeeklyChecks[day] = true;
+            if (fac.weeklyAvailabilities[day] && fac.weeklyAvailabilities[day].length > 0) {
+              this.facilitatorWeeklyHours[day] = JSON.parse(JSON.stringify(fac.weeklyAvailabilities[day]));
+            }
+          });
+        }
+      } else {
+        this.editingFacilitatorId = null;
+        this.facilitatorForm = {
+          firstName: '',
+          lastName: '',
+          email: '',
+          skills: '',
+          weeklyAvailabilities: {},
+          specificUnavailabilities: []
+        };
+        // Default Mon-Fri
+        ['1', '2', '3', '4', '5'].forEach(d => {
+          this.facilitatorWeeklyChecks[d] = true;
+        });
+      }
+      this.showFacilitatorModal = true;
+    },
+
+    closeFacilitatorModal() {
+      this.showFacilitatorModal = false;
+    },
+
+    applyFacilitatorWeeklyPreset(mode) {
+      this.weekDayDefinitions.forEach(day => {
+        if (mode === 'standard') {
+          const isWeekday = ['1', '2', '3', '4', '5'].includes(day.value);
+          this.facilitatorWeeklyChecks[day.value] = isWeekday;
+          this.facilitatorWeeklyHours[day.value] = [{ start: '08:30', end: '17:30' }];
+        } else if (mode === 'full') {
+          this.facilitatorWeeklyChecks[day.value] = true;
+          this.facilitatorWeeklyHours[day.value] = [{ start: '08:00', end: '19:30' }];
+        } else if (mode === 'clear') {
+          this.facilitatorWeeklyChecks[day.value] = false;
+        }
+      });
+    },
+
+    addFacilitatorUnavailability() {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const startStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T08:00`;
+      const endStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T18:00`;
+      this.facilitatorForm.specificUnavailabilities.push({ startDate: startStr, endDate: endStr, reason: 'Congés' });
+    },
+
+    removeFacilitatorUnavailability(index) {
+      this.facilitatorForm.specificUnavailabilities.splice(index, 1);
+    },
+
+    async submitFacilitatorForm() {
+      if (!this.facilitatorForm.firstName || !this.facilitatorForm.lastName || !this.facilitatorForm.email) {
+        this.facilitatorModalError = 'Veuillez remplir au moins le prénom, le nom et l\'adresse email.';
+        return;
+      }
+      this.facilitatorModalLoading = true;
+      this.facilitatorModalError = '';
+
+      const formattedWeekly = {};
+      Object.keys(this.facilitatorWeeklyChecks).forEach(day => {
+        if (this.facilitatorWeeklyChecks[day]) {
+          formattedWeekly[day] = this.facilitatorWeeklyHours[day];
+        }
+      });
+
+      const formattedUnavails = (this.facilitatorForm.specificUnavailabilities || [])
+        .filter(u => u.startDate && u.endDate)
+        .map(u => ({
+          startDate: new Date(u.startDate).toISOString(),
+          endDate: new Date(u.endDate).toISOString(),
+          reason: u.reason || ''
+        }));
+
+      const payload = {
+        firstName: this.facilitatorForm.firstName.trim(),
+        lastName: this.facilitatorForm.lastName.trim(),
+        email: this.facilitatorForm.email.trim(),
+        skills: this.facilitatorForm.skills.trim(),
+        weeklyAvailabilities: formattedWeekly,
+        specificUnavailabilities: formattedUnavails
+      };
+
+      try {
+        if (this.editingFacilitatorId) {
+          await this.facilitatorStore.updateFacilitator(this.editingFacilitatorId, payload);
+          this.showToast('Animateur mis à jour avec succès !');
+        } else {
+          await this.facilitatorStore.createFacilitator(payload);
+          this.showToast('Animateur créé avec succès !');
+        }
+        this.closeFacilitatorModal();
+      } catch (err) {
+        this.facilitatorModalError = err.message || 'Erreur lors de la sauvegarde de l\'animateur.';
+      } finally {
+        this.facilitatorModalLoading = false;
+      }
+    },
+
+    async deleteFacilitator(documentId) {
+      const fac = this.facilitators.find(f => f.documentId === documentId);
+      const name = fac ? `${fac.firstName} ${fac.lastName}` : 'cet animateur';
+      if (!confirm(`Êtes-vous sûr de vouloir supprimer ${name} ?`)) return;
+      try {
+        await this.facilitatorStore.deleteFacilitator(documentId);
+        this.showToast('Animateur supprimé avec succès.');
+      } catch (err) {
+        alert('Erreur lors de la suppression : ' + err.message);
+      }
+    },
+
+    // Participants Management
+    openParticipantModal(part = null) {
+      this.participantModalError = '';
+      this.participantModalLoading = false;
+
+      // Reset checks & hours
+      this.weekDayDefinitions.forEach(day => {
+        this.participantWeeklyChecks[day.value] = false;
+        this.participantWeeklyHours[day.value] = [{ start: '08:00', end: '19:30' }];
+      });
+
+      if (part) {
+        this.editingParticipantId = part.documentId;
+        const rawUnavails = part.specificUnavailabilities ? [...part.specificUnavailabilities] : [];
+        this.participantForm = {
+          firstName: part.firstName || '',
+          lastName: part.lastName || '',
+          email: part.email || '',
+          weeklyAvailabilities: part.weeklyAvailabilities ? JSON.parse(JSON.stringify(part.weeklyAvailabilities)) : {},
+          specificUnavailabilities: rawUnavails.map(u => ({
+            startDate: this.formatIsoForInput(u.startDate),
+            endDate: this.formatIsoForInput(u.endDate),
+            reason: u.reason || ''
+          }))
+        };
+
+        if (part.weeklyAvailabilities) {
+          Object.keys(part.weeklyAvailabilities).forEach(day => {
+            this.participantWeeklyChecks[day] = true;
+            if (part.weeklyAvailabilities[day] && part.weeklyAvailabilities[day].length > 0) {
+              this.participantWeeklyHours[day] = JSON.parse(JSON.stringify(part.weeklyAvailabilities[day]));
+            }
+          });
+        }
+      } else {
+        this.editingParticipantId = null;
+        this.participantForm = {
+          firstName: '',
+          lastName: '',
+          email: '',
+          weeklyAvailabilities: {},
+          specificUnavailabilities: []
+        };
+        // Default Mon-Fri
+        ['1', '2', '3', '4', '5'].forEach(d => {
+          this.participantWeeklyChecks[d] = true;
+        });
+      }
+      this.showParticipantModal = true;
+    },
+
+    closeParticipantModal() {
+      this.showParticipantModal = false;
+    },
+
+    applyParticipantWeeklyPreset(mode) {
+      this.weekDayDefinitions.forEach(day => {
+        if (mode === 'standard') {
+          const isWeekday = ['1', '2', '3', '4', '5'].includes(day.value);
+          this.participantWeeklyChecks[day.value] = isWeekday;
+          this.participantWeeklyHours[day.value] = [{ start: '08:30', end: '17:30' }];
+        } else if (mode === 'full') {
+          this.participantWeeklyChecks[day.value] = true;
+          this.participantWeeklyHours[day.value] = [{ start: '08:00', end: '19:30' }];
+        } else if (mode === 'clear') {
+          this.participantWeeklyChecks[day.value] = false;
+        }
+      });
+    },
+
+    addParticipantUnavailability() {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const startStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T08:00`;
+      const endStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T18:00`;
+      this.participantForm.specificUnavailabilities.push({ startDate: startStr, endDate: endStr, reason: 'Absence / Soins' });
+    },
+
+    removeParticipantUnavailability(index) {
+      this.participantForm.specificUnavailabilities.splice(index, 1);
+    },
+
+    async submitParticipantForm() {
+      if (!this.participantForm.firstName || !this.participantForm.lastName || !this.participantForm.email) {
+        this.participantModalError = 'Veuillez remplir au moins le prénom, le nom et l\'adresse email.';
+        return;
+      }
+      this.participantModalLoading = true;
+      this.participantModalError = '';
+
+      const formattedWeekly = {};
+      Object.keys(this.participantWeeklyChecks).forEach(day => {
+        if (this.participantWeeklyChecks[day]) {
+          formattedWeekly[day] = this.participantWeeklyHours[day];
+        }
+      });
+
+      const formattedUnavails = (this.participantForm.specificUnavailabilities || [])
+        .filter(u => u.startDate && u.endDate)
+        .map(u => ({
+          startDate: new Date(u.startDate).toISOString(),
+          endDate: new Date(u.endDate).toISOString(),
+          reason: u.reason || ''
+        }));
+
+      const payload = {
+        firstName: this.participantForm.firstName.trim(),
+        lastName: this.participantForm.lastName.trim(),
+        email: this.participantForm.email.trim(),
+        weeklyAvailabilities: formattedWeekly,
+        specificUnavailabilities: formattedUnavails
+      };
+
+      try {
+        if (this.editingParticipantId) {
+          await this.participantStore.updateParticipant(this.editingParticipantId, payload);
+          this.showToast('Participant mis à jour avec succès !');
+        } else {
+          await this.participantStore.createParticipant(payload);
+          this.showToast('Participant créé avec succès !');
+        }
+        this.closeParticipantModal();
+      } catch (err) {
+        this.participantModalError = err.message || 'Erreur lors de la sauvegarde du participant.';
+      } finally {
+        this.participantModalLoading = false;
+      }
+    },
+
+    async deleteParticipant(documentId) {
+      const part = this.participants.find(p => p.documentId === documentId);
+      const name = part ? `${part.firstName} ${part.lastName}` : 'ce participant';
+      if (!confirm(`Êtes-vous sûr de vouloir supprimer ${name} ?`)) return;
+      try {
+        await this.participantStore.deleteParticipant(documentId);
+        this.showToast('Participant supprimé avec succès.');
+      } catch (err) {
+        alert('Erreur lors de la suppression : ' + err.message);
+      }
+    },
+
+    // Availability & Tag Presentation Helpers
+    getDaysStatus(availabilities) {
+      const days = [
+        { dayKey: '1', label: 'Lu', name: 'Lundi' },
+        { dayKey: '2', label: 'Ma', name: 'Mardi' },
+        { dayKey: '3', label: 'Me', name: 'Mercredi' },
+        { dayKey: '4', label: 'Je', name: 'Jeudi' },
+        { dayKey: '5', label: 'Ve', name: 'Vendredi' },
+        { dayKey: '6', label: 'Sa', name: 'Samedi' },
+        { dayKey: '0', label: 'Di', name: 'Dimanche' }
+      ];
+      if (!availabilities || typeof availabilities !== 'object') {
+        return days.map(d => ({ ...d, active: false, start: '', end: '' }));
+      }
+      return days.map(d => {
+        const slots = availabilities[d.dayKey] || availabilities[d.name.toLowerCase()] || [];
+        const isArr = Array.isArray(slots) && slots.length > 0;
+        return {
+          ...d,
+          active: isArr,
+          start: isArr && slots[0]?.start ? slots[0].start : '',
+          end: isArr && slots[0]?.end ? slots[0].end : ''
+        };
+      });
+    },
+
+    getWeeklySummaryText(availabilities) {
+      if (!availabilities || typeof availabilities !== 'object' || Object.keys(availabilities).length === 0) {
+        return 'Aucune disponibilité définie';
+      }
+      const days = this.getDaysStatus(availabilities);
+      const activeDays = days.filter(d => d.active);
+      if (activeDays.length === 0) return 'Non disponible';
+      if (activeDays.length === 7) {
+        const first = activeDays[0];
+        const hours = first.start && first.end ? ` • ${first.start} - ${first.end}` : '';
+        return `7 jours / 7 (Tous les jours)${hours}`;
+      }
+      // Check if Mon-Fri
+      const monFriActive = days.slice(0, 5).every(d => d.active) && !days[5].active && !days[6].active;
+      if (monFriActive) {
+        const first = activeDays[0];
+        const hours = first.start && first.end ? ` • ${first.start} - ${first.end}` : '';
+        return `Lun - Ven (5 jours ouvrés)${hours}`;
+      }
+      const labels = activeDays.map(d => d.label).join(', ');
+      return `${activeDays.length} jour(s)/semaine (${labels})`;
+    },
+
+    formatUnavailabilityItem(unavail) {
+      if (!unavail) return '';
+      const start = this.formatDate(unavail.startDate);
+      const end = this.formatDate(unavail.endDate);
+      const reason = unavail.reason ? ` (${unavail.reason})` : '';
+      if (!start && !end) return unavail.reason || 'Indisponibilité';
+      if (start === end) return `Le ${start}${reason}`;
+      return `Du ${start} au ${end}${reason}`;
+    },
+
+    getTagCategoryStyle(tag) {
+      if (!tag) return {};
+      const t = tag.toLowerCase();
+      if (t.includes('cognitif') || t.includes('mémoire') || t.includes('culture')) {
+        return { background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.45)' };
+      }
+      if (t.includes('moteur') || t.includes('gym') || t.includes('physique') || t.includes('marche') || t.includes('sport')) {
+        return { background: 'rgba(16, 185, 129, 0.2)', color: '#6ee7b7', border: '1px solid rgba(16, 185, 129, 0.45)' };
+      }
+      if (t.includes('bien-être') || t.includes('détente') || t.includes('snoezelen') || t.includes('relax')) {
+        return { background: 'rgba(6, 182, 212, 0.2)', color: '#67e8f9', border: '1px solid rgba(6, 182, 212, 0.45)' };
+      }
+      if (t.includes('créatif') || t.includes('art') || t.includes('musique') || t.includes('chant')) {
+        return { background: 'rgba(236, 72, 153, 0.2)', color: '#f472b6', border: '1px solid rgba(236, 72, 153, 0.45)' };
+      }
+      if (t.includes('cuisine') || t.includes('repas') || t.includes('goûter') || t.includes('café')) {
+        return { background: 'rgba(249, 115, 22, 0.2)', color: '#fdba74', border: '1px solid rgba(249, 115, 22, 0.45)' };
+      }
+      if (t.includes('nature') || t.includes('jardin') || t.includes('extérieur')) {
+        return { background: 'rgba(132, 204, 22, 0.2)', color: '#bef264', border: '1px solid rgba(132, 204, 22, 0.45)' };
+      }
+      if (t.includes('social') || t.includes('convivialité') || t.includes('jeux')) {
+        return { background: 'rgba(139, 92, 246, 0.2)', color: '#c4b5fd', border: '1px solid rgba(139, 92, 246, 0.45)' };
+      }
+      return { background: 'rgba(13, 148, 136, 0.2)', color: '#5eead4', border: '1px solid rgba(13, 148, 136, 0.45)' };
     },
 
     // Formatters

@@ -1,10 +1,18 @@
 import { defineStore } from 'pinia';
 import api from '../services/api';
 import { useActiveSchedulerStore } from './activeScheduler';
+import { useAppSettingsStore } from './appSettings';
+import { useMockSchedulerStore } from './mockScheduler';
 
 export const useActivityStore = defineStore('activity', {
   actions: {
     async createActivity(activityData) {
+      const appSettings = useAppSettingsStore();
+      if (appSettings.useMockData) {
+        const mockStore = useMockSchedulerStore();
+        return await mockStore.createActivity(activityData);
+      }
+
       try {
         const payload = {
           data: {
@@ -31,6 +39,12 @@ export const useActivityStore = defineStore('activity', {
     },
 
     async updateActivity(documentId, activityData) {
+      const appSettings = useAppSettingsStore();
+      if (appSettings.useMockData) {
+        const mockStore = useMockSchedulerStore();
+        return await mockStore.updateActivity(documentId, activityData);
+      }
+
       try {
         const payload = {
           data: {
@@ -57,6 +71,12 @@ export const useActivityStore = defineStore('activity', {
     },
 
     async deleteActivity(documentId) {
+      const appSettings = useAppSettingsStore();
+      if (appSettings.useMockData) {
+        const mockStore = useMockSchedulerStore();
+        return await mockStore.deleteActivity(documentId);
+      }
+
       try {
         await api.delete(`/activity-templates/${documentId}`);
 

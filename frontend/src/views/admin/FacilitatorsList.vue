@@ -20,7 +20,7 @@
           style="min-width: 220px;"
         ></v-text-field>
 
-        <v-btn v-if="isAdminMode" color="primary" prepend-icon="mdi-plus" @click="openDialog()" class="text-none">
+        <v-btn v-if="isAdminMode" color="primary" prepend-icon="mdi-plus" @click="openDialog()" class="text-none font-weight-bold">
           Nouvel Animateur
         </v-btn>
       </div>
@@ -34,16 +34,22 @@
       class="elevation-1 border rounded-lg"
     >
       <template v-slot:item.name="{ item }">
-        <div class="d-flex align-center ga-2 font-weight-medium">
-          <v-avatar size="28" color="indigo-lighten-4" class="text-indigo-darken-3 font-weight-bold">
+        <div class="d-flex align-center ga-2 font-weight-medium py-2">
+          <v-avatar size="32" color="teal-darken-3" class="text-teal-lighten-4 font-weight-bold">
             {{ item.firstName ? item.firstName.charAt(0) : '👨‍🏫' }}
           </v-avatar>
-          <span>{{ item.firstName }} {{ item.lastName }}</span>
+          <div>
+            <div class="font-weight-bold">{{ item.firstName }} {{ item.lastName }}</div>
+            <div class="text-caption text-medium-emphasis">{{ item.email }}</div>
+          </div>
         </div>
       </template>
 
-      <template v-slot:item.email="{ item }">
-        <span class="text-medium-emphasis">✉️ {{ item.email }}</span>
+      <template v-slot:item.skills="{ item }">
+        <span v-if="item.skills" class="text-caption font-italic text-teal-lighten-3">
+          {{ item.skills }}
+        </span>
+        <span v-else class="text-caption text-medium-emphasis">Non renseigné</span>
       </template>
 
       <template v-slot:item.weeklyAvailabilities="{ item }">
@@ -65,7 +71,7 @@
         <div v-if="isAdminMode" class="d-flex ga-1">
           <v-btn
             icon="mdi-pencil"
-            size="x-small"
+            size="small"
             color="primary"
             variant="text"
             title="Modifier"
@@ -73,7 +79,7 @@
           ></v-btn>
           <v-btn
             icon="mdi-delete"
-            size="x-small"
+            size="small"
             color="error"
             variant="text"
             title="Supprimer"
@@ -83,24 +89,22 @@
       </template>
     </v-data-table>
 
-    <v-dialog v-model="dialog" max-width="750px" persistent>
-      <v-card class="pa-2 border rounded-xl">
-        <v-card-title class="d-flex align-center justify-space-between py-3 px-4">
+    <v-dialog v-model="dialog" max-width="780px" persistent>
+      <v-card class="pa-3 border rounded-xl" max-height="90vh" style="display: flex; flex-direction: column; overflow: hidden;">
+        <v-card-title class="d-flex align-center justify-space-between py-3 px-4 border-b">
           <span class="text-h6 font-weight-bold d-flex align-center ga-2">
             <span>👨‍🏫</span> {{ formTitle }}
           </span>
           <v-btn icon="mdi-close" variant="text" size="small" @click="closeDialog"></v-btn>
         </v-card-title>
 
-        <v-divider class="mb-4"></v-divider>
-
-        <v-card-text>
+        <v-card-text style="overflow-y: auto; flex: 1; padding: 1.25rem;">
           <v-container class="pa-0">
             <v-row>
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model="editedItem.firstName"
-                  label="Prénom"
+                  label="Prénom *"
                   prepend-inner-icon="mdi-account"
                   variant="outlined"
                   density="comfortable"
@@ -112,7 +116,7 @@
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model="editedItem.lastName"
-                  label="Nom"
+                  label="Nom *"
                   prepend-inner-icon="mdi-account"
                   variant="outlined"
                   density="comfortable"
@@ -124,7 +128,7 @@
               <v-col cols="12">
                 <v-text-field
                   v-model="editedItem.email"
-                  label="Adresse Email"
+                  label="Adresse Email *"
                   type="email"
                   prepend-inner-icon="mdi-email"
                   variant="outlined"
@@ -138,6 +142,7 @@
                 <v-textarea
                   v-model="editedItem.skills"
                   label="Compétences & Spécialités"
+                  placeholder="Ex: Psychomotricité, Gym douce, Relaxation, Animation mémoire..."
                   prepend-inner-icon="mdi-star"
                   variant="outlined"
                   density="comfortable"
@@ -147,9 +152,26 @@
 
               <!-- Weekly Availabilities -->
               <v-col cols="12">
-                <h4 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center ga-2">
-                  <span>📅</span> Disponibilités Hebdomadaires
-                </h4>
+                <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
+                  <h4 class="text-subtitle-1 font-weight-bold d-flex align-center ga-2">
+                    <span>📅</span> Disponibilités Hebdomadaires
+                  </h4>
+                </div>
+
+                <!-- Quick Presets -->
+                <div class="d-flex align-center flex-wrap ga-2 mb-3 pa-2 rounded-lg" style="background: rgba(255, 255, 255, 0.03); border: 1px dashed rgba(255, 255, 255, 0.1);">
+                  <span class="text-caption font-weight-bold text-medium-emphasis">⚡ Raccourcis :</span>
+                  <v-chip size="small" variant="outlined" color="primary" class="clickable" @click="applyStandardWeek">
+                    💼 Lun-Ven (08:30 - 17:30)
+                  </v-chip>
+                  <v-chip size="small" variant="outlined" color="success" class="clickable" @click="applyFullWeek">
+                    ⭐ 7j/7 (08:00 - 19:30)
+                  </v-chip>
+                  <v-chip size="small" variant="outlined" color="grey" class="clickable" @click="clearAllDays">
+                    🧹 Tout décocher
+                  </v-chip>
+                </div>
+
                 <v-card variant="outlined" class="pa-3 rounded-lg border-opacity-25">
                   <div v-for="day in daysOfWeek" :key="day.value" class="mb-2 pb-2 border-b-sm">
                     <div class="d-flex align-center justify-space-between flex-wrap ga-2">
@@ -170,7 +192,7 @@
                           density="compact"
                           variant="outlined"
                           hide-details
-                          style="width: 120px;"
+                          style="width: 110px;"
                         ></v-text-field>
                         <span class="text-caption">à</span>
                         <v-text-field
@@ -180,9 +202,12 @@
                           density="compact"
                           variant="outlined"
                           hide-details
-                          style="width: 120px;"
+                          style="width: 110px;"
                         ></v-text-field>
                       </div>
+                      <span v-else class="text-caption text-medium-emphasis font-italic">
+                        Non disponible
+                      </span>
                     </div>
                   </div>
                 </v-card>
@@ -190,44 +215,62 @@
 
               <!-- Specific Unavailabilities -->
               <v-col cols="12" class="mt-2">
-                <div class="d-flex align-center justify-space-between mb-3">
+                <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
                   <h4 class="text-subtitle-1 font-weight-bold d-flex align-center ga-2">
-                    <span>🚫</span> Indisponibilités Spécifiques
+                    <span>🚫</span> Indisponibilités Spécifiques & Congés
                   </h4>
-                  <v-btn color="secondary" size="small" prepend-icon="mdi-plus" variant="tonal" @click="addUnavailability">
-                    Ajouter
+                  <v-btn color="secondary" size="small" prepend-icon="mdi-plus" variant="tonal" @click="addUnavailability" class="text-none">
+                    Ajouter une période
                   </v-btn>
                 </div>
 
-                <div v-if="!editedItem.specificUnavailabilities || editedItem.specificUnavailabilities.length === 0" class="text-caption text-medium-emphasis italic">
-                  Aucune indisponibilité spécifique enregistrée.
+                <div v-if="!editedItem.specificUnavailabilities || editedItem.specificUnavailabilities.length === 0" class="pa-3 text-center rounded-lg text-caption text-medium-emphasis" style="background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.05);">
+                  ✅ Aucune indisponibilité spécifique enregistrée (animateur disponible selon son planning hebdomadaire).
                 </div>
 
                 <div
                   v-for="(unavail, index) in editedItem.specificUnavailabilities"
                   :key="index"
-                  class="d-flex align-center ga-2 mb-2"
+                  class="pa-3 rounded-lg border d-flex flex-wrap align-center justify-space-between ga-2 mb-2"
+                  style="background: rgba(15, 23, 42, 0.5);"
                 >
-                  <v-text-field
-                    v-model="unavail.startDate"
-                    label="Date de début"
-                    type="datetime-local"
-                    density="compact"
-                    variant="outlined"
-                    hide-details
-                  ></v-text-field>
+                  <div class="d-flex align-center flex-wrap ga-2 flex-grow-1">
+                    <v-text-field
+                      v-model="unavail.startDate"
+                      label="Début"
+                      type="datetime-local"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                      style="min-width: 180px;"
+                    ></v-text-field>
 
-                  <v-text-field
-                    v-model="unavail.endDate"
-                    label="Date de fin"
-                    type="datetime-local"
-                    density="compact"
-                    variant="outlined"
-                    hide-details
-                  ></v-text-field>
+                    <span class="text-caption text-medium-emphasis">au</span>
+
+                    <v-text-field
+                      v-model="unavail.endDate"
+                      label="Fin"
+                      type="datetime-local"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                      style="min-width: 180px;"
+                    ></v-text-field>
+
+                    <v-text-field
+                      v-model="unavail.reason"
+                      label="Motif (ex: Congés, Formation)"
+                      placeholder="Ex: Congés payés"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                      class="flex-grow-1"
+                      style="min-width: 160px;"
+                    ></v-text-field>
+                  </div>
 
                   <v-btn
-                    icon="mdi-delete"
+                    icon="mdi-trash-can-outline"
                     size="small"
                     color="error"
                     variant="text"
@@ -240,13 +283,14 @@
           </v-container>
         </v-card-text>
 
-        <v-card-actions class="px-4 pb-4">
-          <v-spacer></v-spacer>
+        <v-divider></v-divider>
+
+        <v-card-actions class="px-4 py-3 justify-end ga-2">
           <v-btn color="grey-lighten-1" variant="text" @click="closeDialog" class="text-none">
             Annuler
           </v-btn>
-          <v-btn color="primary" variant="flat" @click="saveItem" :loading="saving" class="text-none px-5">
-            Sauvegarder
+          <v-btn color="primary" variant="flat" @click="saveItem" :loading="saving" class="text-none px-5 font-weight-bold">
+            💾 Enregistrer l'animateur
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -285,8 +329,8 @@ export default {
 
     const headers = computed(() => {
       const base = [
-        { title: 'Animateur', key: 'name' },
-        { title: 'Email', key: 'email' },
+        { title: 'Animateur', key: 'name', value: item => `${item.lastName || ''} ${item.firstName || ''}`.trim() },
+        { title: 'Compétences', key: 'skills' },
         { title: 'Disponibilités Hebdo.', key: 'weeklyAvailabilities' },
       ];
       if (isAdminMode.value) {
@@ -311,7 +355,7 @@ export default {
     const availabilityChecks = ref({});
 
     const formTitle = computed(() => {
-      return isEditing.value ? 'Modifier Animateur' : 'Nouveau Animateur';
+      return isEditing.value ? 'Modifier Animateur' : 'Nouvel Animateur';
     });
 
     onMounted(() => {
@@ -323,16 +367,33 @@ export default {
       availabilityChecks.value = {};
       daysOfWeek.forEach(day => {
         availabilityChecks.value[day.value] = false;
-        editedAvailabilities.value[day.value] = [{ start: '09:00', end: '17:00' }];
+        editedAvailabilities.value[day.value] = [{ start: '08:30', end: '17:30' }];
       });
+    };
+
+    const formatIsoForInput = (isoString) => {
+      if (!isoString) return '';
+      try {
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } catch (e) {
+        return '';
+      }
     };
 
     const openDialog = (item = null) => {
       initAvailabilities();
       if (item) {
+        const rawUnavails = item.specificUnavailabilities ? [...item.specificUnavailabilities] : [];
         editedItem.value = {
           ...item,
-          specificUnavailabilities: item.specificUnavailabilities ? [...item.specificUnavailabilities] : []
+          specificUnavailabilities: rawUnavails.map(u => ({
+            startDate: formatIsoForInput(u.startDate),
+            endDate: formatIsoForInput(u.endDate),
+            reason: u.reason || ''
+          }))
         };
         isEditing.value = true;
 
@@ -346,6 +407,10 @@ export default {
         }
       } else {
         editedItem.value = { ...defaultItem, specificUnavailabilities: [] };
+        // Default check Mon-Fri
+        ['1', '2', '3', '4', '5'].forEach(d => {
+          availabilityChecks.value[d] = true;
+        });
         isEditing.value = false;
       }
       dialog.value = true;
@@ -361,15 +426,40 @@ export default {
 
     const toggleDay = (dayValue) => {
       if (availabilityChecks.value[dayValue] && !editedAvailabilities.value[dayValue]) {
-        editedAvailabilities.value[dayValue] = [{ start: '09:00', end: '17:00' }];
+        editedAvailabilities.value[dayValue] = [{ start: '08:30', end: '17:30' }];
       }
+    };
+
+    const applyStandardWeek = () => {
+      daysOfWeek.forEach(day => {
+        const isWeekday = ['1', '2', '3', '4', '5'].includes(day.value);
+        availabilityChecks.value[day.value] = isWeekday;
+        editedAvailabilities.value[day.value] = [{ start: '08:30', end: '17:30' }];
+      });
+    };
+
+    const applyFullWeek = () => {
+      daysOfWeek.forEach(day => {
+        availabilityChecks.value[day.value] = true;
+        editedAvailabilities.value[day.value] = [{ start: '08:00', end: '19:30' }];
+      });
+    };
+
+    const clearAllDays = () => {
+      daysOfWeek.forEach(day => {
+        availabilityChecks.value[day.value] = false;
+      });
     };
 
     const addUnavailability = () => {
       if (!editedItem.value.specificUnavailabilities) {
         editedItem.value.specificUnavailabilities = [];
       }
-      editedItem.value.specificUnavailabilities.push({ startDate: '', endDate: '' });
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const startStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T08:00`;
+      const endStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T18:00`;
+      editedItem.value.specificUnavailabilities.push({ startDate: startStr, endDate: endStr, reason: 'Congés' });
     };
 
     const removeUnavailability = (index) => {
@@ -391,13 +481,21 @@ export default {
         }
       });
 
+      const formattedUnavails = (editedItem.value.specificUnavailabilities || [])
+        .filter(u => u.startDate && u.endDate)
+        .map(u => ({
+          startDate: new Date(u.startDate).toISOString(),
+          endDate: new Date(u.endDate).toISOString(),
+          reason: u.reason || ''
+        }));
+
       const payload = {
         firstName: editedItem.value.firstName,
         lastName: editedItem.value.lastName,
         email: editedItem.value.email,
         skills: editedItem.value.skills,
         weeklyAvailabilities: formattedWeeklyAvailabilities,
-        specificUnavailabilities: editedItem.value.specificUnavailabilities.filter(u => u.startDate && u.endDate)
+        specificUnavailabilities: formattedUnavails
       };
 
       try {
@@ -438,6 +536,9 @@ export default {
       editedAvailabilities,
       availabilityChecks,
       toggleDay,
+      applyStandardWeek,
+      applyFullWeek,
+      clearAllDays,
       addUnavailability,
       removeUnavailability
     };
@@ -448,5 +549,13 @@ export default {
 <style scoped>
 .facilitators-view-container {
   padding: 0.5rem;
+}
+.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.clickable:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
 }
 </style>

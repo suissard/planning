@@ -1,0 +1,338 @@
+[
+  {
+    "dayOfWeek": 1,
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Accueil principal et activités collectives du Lundi"
+  },
+  {
+    "dayOfWeek": 1,
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Maintien de l'autonomie et gymnastique adaptée"
+  },
+  {
+    "dayOfWeek": 1,
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Stimulation cognitive"
+  },
+  {
+    "dayOfWeek": 1,
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Relaxation sensorielle"
+  },
+  {
+    "dayOfWeek": 1,
+    "_location": "Cuisine Thérapeutique",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Ateliers culinaires"
+  },
+  {
+    "dayOfWeek": 1,
+    "_location": "Jardin Thérapeutique & Potager Sensoriel",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Activités plein air"
+  },
+  {
+    "dayOfWeek": 2,
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Accueil et jeux de société"
+  },
+  {
+    "dayOfWeek": 2,
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Psychomotricité du Mardi"
+  },
+  {
+    "dayOfWeek": 2,
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Atelier réminiscence"
+  },
+  {
+    "dayOfWeek": 2,
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Détente et aromathérapie"
+  },
+  {
+    "dayOfWeek": 2,
+    "_location": "Cuisine Thérapeutique",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Pâtisserie et mémoire gustative"
+  },
+  {
+    "dayOfWeek": 2,
+    "_location": "Jardin Thérapeutique & Potager Sensoriel",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Entretien du potager"
+  },
+  {
+    "dayOfWeek": 3,
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Convivialité et chant"
+  },
+  {
+    "dayOfWeek": 3,
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Renforcement musculaire"
+  },
+  {
+    "dayOfWeek": 3,
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Lecture et revue de presse"
+  },
+  {
+    "dayOfWeek": 3,
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Stimulation multisensorielle"
+  },
+  {
+    "dayOfWeek": 3,
+    "_location": "Cuisine Thérapeutique",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Préparation du goûter"
+  },
+  {
+    "dayOfWeek": 3,
+    "_location": "Jardin Thérapeutique & Potager Sensoriel",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Balade sensorielle"
+  },
+  {
+    "dayOfWeek": 4,
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Activités manuelles et créatives"
+  },
+  {
+    "dayOfWeek": 4,
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Équilibre et parcours moteur"
+  },
+  {
+    "dayOfWeek": 4,
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Calcul et jeux de lettres"
+  },
+  {
+    "dayOfWeek": 4,
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Bain sonore et lumière douce"
+  },
+  {
+    "dayOfWeek": 4,
+    "_location": "Cuisine Thérapeutique",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Dégustation thématique"
+  },
+  {
+    "dayOfWeek": 4,
+    "_location": "Jardin Thérapeutique & Potager Sensoriel",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Hortithérapie"
+  },
+  {
+    "dayOfWeek": 5,
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Bilan de la semaine et spectacle"
+  },
+  {
+    "dayOfWeek": 5,
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Gym sur chaise et étirements"
+  },
+  {
+    "dayOfWeek": 5,
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Quiz culturel et musique"
+  },
+  {
+    "dayOfWeek": 5,
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Séance apaisante de fin de semaine"
+  },
+  {
+    "dayOfWeek": 5,
+    "_location": "Cuisine Thérapeutique",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermeture le vendredi après-midi"
+  },
+  {
+    "dayOfWeek": 5,
+    "_location": "Jardin Thérapeutique & Potager Sensoriel",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": true,
+    "notes": "Récolte et observation"
+  },
+  {
+    "dayOfWeek": 6,
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Permanence week-end si besoin"
+  },
+  {
+    "dayOfWeek": 6,
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le week-end"
+  },
+  {
+    "dayOfWeek": 6,
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le week-end"
+  },
+  {
+    "dayOfWeek": 6,
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le week-end"
+  },
+  {
+    "dayOfWeek": 6,
+    "_location": "Cuisine Thérapeutique",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le week-end"
+  },
+  {
+    "dayOfWeek": 6,
+    "_location": "Jardin Thérapeutique & Potager Sensoriel",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le week-end"
+  },
+  {
+    "dayOfWeek": 7,
+    "_location": "Grand Salon & Convivialité",
+    "_manager": "marc.lefevre@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le dimanche"
+  },
+  {
+    "dayOfWeek": 7,
+    "_location": "Salle de Gym Douce & Psychomotricité",
+    "_manager": "claire.dubois@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le dimanche"
+  },
+  {
+    "dayOfWeek": 7,
+    "_location": "Atelier Mémoire & Stimulation Cognitive",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le dimanche"
+  },
+  {
+    "dayOfWeek": 7,
+    "_location": "Espace Snoezelen & Relaxation Sensorielle",
+    "_manager": "sophie.martin@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le dimanche"
+  },
+  {
+    "dayOfWeek": 7,
+    "_location": "Cuisine Thérapeutique",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le dimanche"
+  },
+  {
+    "dayOfWeek": 7,
+    "_location": "Jardin Thérapeutique & Potager Sensoriel",
+    "_manager": "pierre.moreau@ehpad-accueil.fr",
+    "_participants": [],
+    "isActive": false,
+    "notes": "Fermé le dimanche"
+  }
+]

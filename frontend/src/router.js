@@ -98,6 +98,16 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/week-template',
+    name: 'week-template',
+    component: MainApp,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/room-sessions/template',
+    redirect: '/week-template'
+  },
+  {
     path: '/extractions',
     name: 'extractions',
     component: MainApp,

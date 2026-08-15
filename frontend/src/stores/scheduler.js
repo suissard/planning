@@ -26,7 +26,7 @@ export const useSchedulerStore = defineStore('scheduler', {
         ] = await Promise.all([
           api.get('/locations?pagination[pageSize]=5000'),
           api.get('/activity-templates?populate=*&pagination[pageSize]=5000'),
-          api.get('/facilitators?populate=*&pagination[pageSize]=5000'),
+          api.get('/facilitators?sort=lastName:asc,firstName:asc&populate=*&pagination[pageSize]=5000'),
           api.get('/participants?populate=*&pagination[pageSize]=5000'),
           api.get('/time-slots?populate[location]=true&populate[activityTemplate]=true&populate[facilitators]=true&populate[participants]=true&pagination[pageSize]=5000')
         ]);
@@ -70,6 +70,28 @@ export const useSchedulerStore = defineStore('scheduler', {
       } catch (err) {
         console.error(err);
         const errMsg = err.response?.data?.error?.message || err.message || 'Erreur lors de la planification.';
+        throw new Error(errMsg);
+      }
+    },
+
+    async updateSlot(documentId, form) {
+      const payload = {
+        data: {}
+      };
+      if (form.startDate) payload.data.startDate = new Date(form.startDate).toISOString();
+      if (form.endDate) payload.data.endDate = new Date(form.endDate).toISOString();
+      if (form.location !== undefined) payload.data.location = form.location;
+      if (form.activityTemplate !== undefined) payload.data.activityTemplate = form.activityTemplate;
+      if (form.facilitators !== undefined) payload.data.facilitators = form.facilitators;
+      if (form.participants !== undefined) payload.data.participants = form.participants;
+
+      try {
+        const res = await api.put(`/time-slots/${documentId}`, payload);
+        await this.fetchData();
+        return res.data?.data;
+      } catch (err) {
+        console.error(err);
+        const errMsg = err.response?.data?.error?.message || err.message || 'Erreur lors de la modification.';
         throw new Error(errMsg);
       }
     },

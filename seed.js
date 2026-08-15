@@ -200,6 +200,47 @@ async function seedRoomSessions(locationsMap, facilitatorsMap, participantsMap) 
   return createdMap;
 }
 
+async function seedRoomSessionTemplates(locationsMap, facilitatorsMap, participantsMap) {
+  let templates = [];
+  try {
+    templates = loadJSON('room-session-templates.json');
+  } catch (e) {
+    return;
+  }
+
+  let count = 0;
+  for (const t of templates) {
+    const { _location, _manager, _participants, dayOfWeek, isActive, notes } = t;
+    const locationId = locationsMap[_location];
+    const managerId = facilitatorsMap[_manager]?.documentId || null;
+    const participantIds = (_participants || [])
+      .map((email) => participantsMap[email])
+      .filter(Boolean);
+
+    if (!locationId) continue;
+
+    try {
+      await apiRequest('/api/room-session-templates', {
+        method: 'POST',
+        body: {
+          data: {
+            dayOfWeek,
+            location: locationId,
+            manager: managerId,
+            participants: participantIds,
+            isActive: isActive !== false,
+            notes: notes || ''
+          }
+        }
+      });
+      count++;
+    } catch (e) {
+      // ignore if route not ready
+    }
+  }
+  log('⚡', `${C.green}${count} modèles de semaine type créés${C.reset}`);
+}
+
 async function seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, participantsMap, roomSessionsMap) {
   const slots = loadJSON('time-slots.json');
   let count = 0;
@@ -274,6 +315,7 @@ async function main() {
   log('🧹', `${C.yellow}Nettoyage des collections existantes...${C.reset}`);
   await cleanCollection('time-slots', 'créneaux');
   await cleanCollection('room-sessions', 'sessions de salle');
+  await cleanCollection('room-session-templates', 'modèles semaine type');
   await cleanCollection('activity-templates', 'activités');
   await cleanCollection('participants', 'participants');
   await cleanCollection('facilitators', 'animateurs');
@@ -288,6 +330,7 @@ async function main() {
   const participantsMap = await seedParticipants();
   const activitiesMap = await seedActivityTemplates(facilitatorsMap);
   const roomSessionsMap = await seedRoomSessions(locationsMap, facilitatorsMap, participantsMap);
+  await seedRoomSessionTemplates(locationsMap, facilitatorsMap, participantsMap);
   await seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, participantsMap, roomSessionsMap);
 
   console.log('');

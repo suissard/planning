@@ -1,0 +1,43 @@
+{
+  "kind": "collectionType",
+  "collectionName": "room_session_templates",
+  "info": {
+    "singularName": "room-session-template",
+    "pluralName": "room-session-templates",
+    "displayName": "RoomSessionTemplate",
+    "description": "Standard recurring week template configuration for room openings"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "dayOfWeek": {
+      "type": "integer",
+      "required": true,
+      "min": 1,
+      "max": 7
+    },
+    "location": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::location.location"
+    },
+    "manager": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::facilitator.facilitator"
+    },
+    "participants": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::participant.participant"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

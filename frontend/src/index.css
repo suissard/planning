@@ -491,6 +491,397 @@ body {
   border-color: #5eead4;
 }
 
+.tag-badge.removable {
+  padding-right: 0.35rem;
+}
+
+.remove-tag-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 0.2rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.remove-tag-btn:hover {
+  opacity: 1;
+}
+
+/* Category Tags */
+.tag-cat-cognitif {
+  background: rgba(99, 102, 241, 0.18) !important;
+  color: #a5b4fc !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+}
+.tag-cat-moteur {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+.tag-cat-bienetre {
+  background: rgba(6, 182, 212, 0.18) !important;
+  color: #67e8f9 !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+}
+.tag-cat-creatif {
+  background: rgba(236, 72, 153, 0.18) !important;
+  color: #f472b6 !important;
+  border-color: rgba(236, 72, 153, 0.4) !important;
+}
+.tag-cat-cuisine {
+  background: rgba(249, 115, 22, 0.18) !important;
+  color: #fdba74 !important;
+  border-color: rgba(249, 115, 22, 0.4) !important;
+}
+.tag-cat-nature {
+  background: rgba(132, 204, 22, 0.18) !important;
+  color: #bef264 !important;
+  border-color: rgba(132, 204, 22, 0.4) !important;
+}
+.tag-cat-social {
+  background: rgba(139, 92, 246, 0.18) !important;
+  color: #c4b5fd !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+}
+
+/* ════════════════ MINI-WEEK AVAILABILITY BAR ════════════════ */
+.mini-week-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.mini-week-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.mini-day-pill {
+  width: 28px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.mini-day-pill.active {
+  background: rgba(13, 148, 136, 0.25);
+  color: #5eead4;
+  border-color: rgba(13, 148, 136, 0.55);
+  box-shadow: 0 0 8px rgba(13, 148, 136, 0.2);
+}
+
+.mini-day-pill.active:hover {
+  transform: translateY(-1px);
+  background: rgba(13, 148, 136, 0.4);
+}
+
+.mini-week-summary {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Unavailabilities Chips */
+.unavail-chips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.unavail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+
+/* ════════════════ QUICK FACILITATOR CREATOR ════════════════ */
+.quick-create-panel {
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(13, 148, 136, 0.45);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  animation: panel-slide-down 0.25s ease;
+}
+
+@keyframes panel-slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.quick-create-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quick-create-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #5eead4;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.selected-facs-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+}
+
+.selected-fac-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(13, 148, 136, 0.25);
+  border: 1px solid rgba(13, 148, 136, 0.45);
+  color: #5eead4;
+  padding: 0.2rem 0.5rem;
+  border-radius: 2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.selected-fac-chip .remove-fac-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 0.15rem;
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.selected-fac-chip .remove-fac-btn:hover {
+  opacity: 1;
+}
+
+.fac-chips-empty-hint {
+  padding: 0.55rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Autocomplete Container */
+.fac-autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.fac-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  background: rgba(15, 23, 42, 0.97);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(13, 148, 136, 0.45);
+  border-radius: var(--radius-md);
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  animation: panel-slide-down 0.2s ease;
+}
+
+.fac-dropdown-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.fac-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.15s ease;
+  font-size: 0.84rem;
+}
+
+.fac-dropdown-item:hover,
+.fac-dropdown-item.focused {
+  background: rgba(13, 148, 136, 0.22);
+  color: #5eead4;
+}
+
+.fac-dropdown-item-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.fac-dropdown-item-right {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.fac-dropdown-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: none;
+  background: rgba(13, 148, 136, 0.18);
+  color: #5eead4;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-align: left;
+  border-top: 1px solid rgba(13, 148, 136, 0.35);
+  transition: all 0.15s ease;
+}
+
+.fac-dropdown-create-btn:hover {
+  background: rgba(13, 148, 136, 0.35);
+  color: #ffffff;
+}
+
+.fac-dropdown-empty-msg {
+  padding: 0.65rem 0.85rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Presets bar */
+.preset-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.preset-pill-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.65rem;
+  border-radius: 2rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.preset-pill-btn:hover {
+  background: rgba(13, 148, 136, 0.18);
+  border-color: rgba(13, 148, 136, 0.4);
+  color: #5eead4;
+  transform: translateY(-1px);
+}
+
+.preset-pill-btn.active {
+  background: rgba(13, 148, 136, 0.3);
+  border-color: #5eead4;
+  color: #ffffff;
+}
+
+/* Weekly Scheduler in Modals */
+.weekly-scheduler-card {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+}
+
+.weekly-day-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.weekly-day-row:last-child {
+  border-bottom: none;
+}
+
+.weekly-day-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.weekly-day-times {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.weekly-day-times input[type="time"] {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  width: 95px;
+}
+
+/* Unavailability list item */
+.unavail-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+}
+
 /* ════════════════ GLOBAL PRINT OVERRIDES ════════════════ */
 @media print {
   @page {

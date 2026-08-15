@@ -61,22 +61,29 @@
             class="option-item"
             :class="{
               'is-selected': isSelected(item),
-              'is-highlighted': index === highlightedIndex
+              'is-highlighted': index === highlightedIndex,
+              'is-unavailable': item.isAvailable === false
             }"
             @mouseenter="highlightedIndex = index"
             @click.stop="selectItem(item)"
           >
             <!-- Avatar / Icon -->
-            <div class="option-avatar">
-              {{ getItemIcon(item) }}
+            <div class="option-avatar" :class="{ 'avatar-unavail': item.isAvailable === false }">
+              {{ item.isAvailable === false ? '🔴' : getItemIcon(item) }}
             </div>
 
             <!-- Item Main Information -->
             <div class="option-content">
               <div class="option-name">
-                <span v-html="highlightMatches(getItemLabel(item))"></span>
+                <span :class="{ 'name-unavail': item.isAvailable === false }" v-html="highlightMatches(getItemLabel(item))"></span>
                 <span v-if="item.skills" class="option-badge skills-badge">{{ item.skills }}</span>
                 <span v-if="item.capacity" class="option-badge capacity-badge">{{ item.capacity }} pers.</span>
+                <span v-if="item.isAvailable === false" class="option-badge unavail-badge">
+                  ⚠️ Indisponible ({{ item.unavailabilityReason }})
+                </span>
+                <span v-else-if="item.isAvailable === true && type === 'facilitator'" class="option-badge avail-badge">
+                  ✓ Dispo
+                </span>
               </div>
               <div v-if="item.email || item.description" class="option-sub">
                 <span v-if="item.email" class="option-email" v-html="highlightMatches(item.email)"></span>
@@ -567,6 +574,39 @@ export default {
   background: rgba(168, 85, 247, 0.15);
   color: #c084fc;
   border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.unavail-badge {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  font-weight: 600;
+}
+
+.avail-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-weight: 600;
+}
+
+.option-item.is-unavailable {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.option-item.is-unavailable:hover,
+.option-item.is-unavailable.is-highlighted {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.name-unavail {
+  color: #fca5a5 !important;
+}
+
+.avatar-unavail {
+  background: rgba(239, 68, 68, 0.15) !important;
 }
 
 .option-sub {

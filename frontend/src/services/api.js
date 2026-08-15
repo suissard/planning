@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useGlobalStore } from '../stores/global';
+import { getIntelligibleErrorMessage, getIntelligibleSuccessMessage } from '../utils/apiNotificationHelper';
 
 const STRAPI_URL = import.meta.env.VITE_STRAPI_URL || 'http://localhost:1337';
 
@@ -37,29 +38,27 @@ api.interceptors.response.use(
   (response) => {
     const globalStore = useGlobalStore();
     globalStore.setLoading(false);
+
+    // Check for intelligible success message on mutation operations (POST, PUT, PATCH, DELETE)
+    // (GET requests are ignored on success)
+    if (!response.config?.skipGlobalNotification) {
+      const successInfo = getIntelligibleSuccessMessage(response);
+      if (successInfo) {
+        globalStore.addSuccess(successInfo.message, successInfo.title);
+      }
+    }
+
     return response;
   },
   (error) => {
     const globalStore = useGlobalStore();
     globalStore.setLoading(false);
 
-    // Extract error message
-    let errorMessage = 'Une erreur est survenue';
-    if (error.response) {
-      errorMessage = error.response.data?.error?.message || error.message;
-
-      // Optional: Add global handling for specific status codes like 401 Unauthorized
-      if (error.response.status === 401) {
-          // You might want to handle logout here via auth store if needed
-          errorMessage = 'Session expirée ou non autorisée';
-      }
-    } else if (error.request) {
-      errorMessage = 'Erreur réseau - Impossible de joindre le serveur';
+    // Format human-intelligible error based on HTTP status code & API response
+    if (!error.config?.skipGlobalNotification) {
+      const errorInfo = getIntelligibleErrorMessage(error);
+      globalStore.addError(errorInfo.message, errorInfo.title, errorInfo.status);
     }
-
-    // Don't show global error for specific endpoints where local handling is preferred (e.g. login)
-    // Here we show it for all as a starting point.
-    // globalStore.addError(errorMessage);
 
     return Promise.reject(error);
   }

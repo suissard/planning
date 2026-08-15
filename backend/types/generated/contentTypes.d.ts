@@ -634,6 +634,55 @@ export interface ApiParticipantParticipant extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiRoomSessionTemplateRoomSessionTemplate
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'room_session_templates';
+  info: {
+    description: 'Standard recurring week template configuration for room openings';
+    displayName: 'RoomSessionTemplate';
+    pluralName: 'room-session-templates';
+    singularName: 'room-session-template';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    dayOfWeek: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 7;
+          min: 1;
+        },
+        number
+      >;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::room-session-template.room-session-template'
+    > &
+      Schema.Attribute.Private;
+    location: Schema.Attribute.Relation<'manyToOne', 'api::location.location'>;
+    manager: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::facilitator.facilitator'
+    >;
+    notes: Schema.Attribute.String;
+    participants: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::participant.participant'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiRoomSessionRoomSession extends Struct.CollectionTypeSchema {
   collectionName: 'room_sessions';
   info: {
@@ -1238,6 +1287,7 @@ declare module '@strapi/strapi' {
       'api::facilitator.facilitator': ApiFacilitatorFacilitator;
       'api::location.location': ApiLocationLocation;
       'api::participant.participant': ApiParticipantParticipant;
+      'api::room-session-template.room-session-template': ApiRoomSessionTemplateRoomSessionTemplate;
       'api::room-session.room-session': ApiRoomSessionRoomSession;
       'api::time-slot.time-slot': ApiTimeSlotTimeSlot;
       'plugin::content-releases.release': PluginContentReleasesRelease;

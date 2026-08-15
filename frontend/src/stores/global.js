@@ -9,28 +9,73 @@ export const useGlobalStore = defineStore('global', {
     setLoading(status) {
       this.loading = status;
     },
-    addNotification(notification) {
-      const id = Date.now();
-      this.notifications.push({ id, ...notification });
+    /**
+     * Adds a rich notification to the global toast queue
+     * @param {Object} notif
+     * @param {'success'|'error'|'warning'|'info'} [notif.type='info']
+     * @param {string} [notif.title]
+     * @param {string} notif.message
+     * @param {number|null} [notif.status=null] HTTP status code
+     * @param {number} [notif.timeout=5000] Duration before auto-close
+     * @param {boolean} [notif.autoClose=true]
+     */
+    addNotification(notif) {
+      const id = Date.now() + Math.random().toString(36).substring(2, 7);
+      const newNotification = {
+        id,
+        type: notif.type || 'info',
+        title: notif.title || (notif.type === 'error' ? 'Erreur' : notif.type === 'success' ? 'Succès' : 'Information'),
+        message: notif.message || '',
+        status: notif.status || null,
+        autoClose: notif.autoClose !== false,
+        timeout: notif.timeout || (notif.type === 'error' ? 6500 : 4500),
+        createdAt: new Date()
+      };
 
-      // Auto-remove notification after 5 seconds if not explicitly disabled
-      if (notification.autoClose !== false) {
+      this.notifications.push(newNotification);
+
+      if (newNotification.autoClose) {
         setTimeout(() => {
           this.removeNotification(id);
-        }, notification.timeout || 5000);
+        }, newNotification.timeout);
       }
+
+      return id;
     },
     removeNotification(id) {
       this.notifications = this.notifications.filter(n => n.id !== id);
     },
-    addError(message) {
-      this.addNotification({ type: 'error', message });
+    clearAll() {
+      this.notifications = [];
     },
-    addSuccess(message) {
-      this.addNotification({ type: 'success', message });
+    addError(message, title = 'Erreur', status = null) {
+      return this.addNotification({
+        type: 'error',
+        title,
+        message: typeof message === 'string' ? message : (message?.message || 'Une erreur est survenue'),
+        status: status || message?.status || null
+      });
     },
-    addInfo(message) {
-      this.addNotification({ type: 'info', message });
+    addSuccess(message, title = 'Succès') {
+      return this.addNotification({
+        type: 'success',
+        title,
+        message
+      });
+    },
+    addWarning(message, title = 'Attention') {
+      return this.addNotification({
+        type: 'warning',
+        title,
+        message
+      });
+    },
+    addInfo(message, title = 'Information') {
+      return this.addNotification({
+        type: 'info',
+        title,
+        message
+      });
     }
   }
 });

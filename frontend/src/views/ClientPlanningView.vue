@@ -21,13 +21,6 @@
           </p>
         </div>
       </div>
-
-      <!-- Quick Action Controls -->
-      <div class="user-bar-actions">
-        <button class="action-btn print-quick-btn" @click="printPlanning" title="Imprimer le planning">
-          🖨️ Imprimer le planning
-        </button>
-      </div>
     </div>
 
     <!-- ════════════════ NEXT ACTIVITY HERO CARD ════════════════ -->
@@ -108,44 +101,19 @@
       <div class="view-mode-tabs">
         <button 
           class="view-mode-tab-btn" 
+          :class="{ active: viewMode === 'day' }" 
+          @click="viewMode = 'day'"
+        >
+          <span class="tab-btn-icon">☀️</span>
+          <span class="tab-btn-text">Vue Journée</span>
+        </button>
+        <button 
+          class="view-mode-tab-btn" 
           :class="{ active: viewMode === 'week' }" 
           @click="viewMode = 'week'"
         >
           <span class="tab-btn-icon">📅</span>
-          <span class="tab-btn-text">Vue Hebdomadaire</span>
-        </button>
-        <button 
-          class="view-mode-tab-btn" 
-          :class="{ active: viewMode === 'planning' }" 
-          @click="viewMode = 'planning'"
-        >
-          <span class="tab-btn-icon">📋</span>
-          <span class="tab-btn-text">Vue Planning (Agenda)</span>
-        </button>
-      </div>
-
-      <!-- Time Filter tabs for agenda -->
-      <div class="time-filter-tabs" v-if="viewMode === 'planning'">
-        <button 
-          class="time-tab-btn" 
-          :class="{ active: timeFilter === 'all' }" 
-          @click="timeFilter = 'all'"
-        >
-          Tous ({{ activeBaseSlots.length }})
-        </button>
-        <button 
-          class="time-tab-btn" 
-          :class="{ active: timeFilter === 'upcoming' }" 
-          @click="timeFilter = 'upcoming'"
-        >
-          À venir ({{ upcomingSlotsCount }})
-        </button>
-        <button 
-          class="time-tab-btn" 
-          :class="{ active: timeFilter === 'past' }" 
-          @click="timeFilter = 'past'"
-        >
-          Passés ({{ activeBaseSlots.length - upcomingSlotsCount }})
+          <span class="tab-btn-text">Vue Semaine</span>
         </button>
       </div>
 
@@ -159,6 +127,17 @@
           class="search-input"
         />
         <button v-if="searchQuery" class="clear-search-btn" @click="searchQuery = ''">✕</button>
+      </div>
+
+      <!-- Action Controls (En haut à droite du composant) -->
+      <div class="planning-actions">
+        <button 
+          class="action-btn print-btn" 
+          @click="printPlanning" 
+          :title="`Imprimer ${viewMode === 'day' ? 'la journée' : 'la semaine'}`"
+        >
+          🖨️ {{ viewMode === 'day' ? 'Imprimer la journée' : 'Imprimer la semaine' }}
+        </button>
       </div>
     </div>
 
@@ -183,8 +162,203 @@
       </div>
     </div>
 
-    <!-- ════════════════ 1. VUE HEBDOMADAIRE (CALENDRIER SEMAINE) ════════════════ -->
-    <div v-if="viewMode === 'week'" class="weekly-calendar-section">
+    <!-- ════════════════ 1. VUE JOURNÉE (AFFICHAGE PAR DÉFAUT ÉPURÉ & NAVIGATION JOUR PAR JOUR) ════════════════ -->
+    <div v-if="viewMode === 'day'" class="day-view-section printable-day-area">
+      <!-- Day Navigation & Pagination Card -->
+      <div class="day-navigator-card no-print">
+        <!-- Main Day Navigation Bar -->
+        <div class="day-nav-main-bar">
+          <button class="nav-day-btn prev-btn" @click="goToPreviousDay" title="Afficher la journée précédente">
+            <span class="btn-arrow">←</span>
+            <span class="btn-label">Jour précédent</span>
+          </button>
+
+          <div class="day-center-info">
+            <div class="day-badge-row">
+              <span class="day-relative-pill" :class="{ 'is-today': isSelectedDayToday }">
+                {{ selectedDayRelativeLabel }}
+              </span>
+              <button 
+                v-if="!isSelectedDayToday" 
+                class="jump-today-btn" 
+                @click="goToToday" 
+                title="Revenir à la date d'aujourd'hui"
+              >
+                Revenir à Aujourd'hui
+              </button>
+            </div>
+
+            <div class="day-date-heading-row">
+              <h2 class="day-formatted-heading">{{ selectedDayFormattedFull }}</h2>
+              
+              <!-- Quick Date Picker Button -->
+              <label class="date-picker-button-label" title="Choisir une date précise dans le calendrier">
+                <span class="date-picker-icon">📅</span>
+                <span class="date-picker-text">Changer</span>
+                <input 
+                  type="date" 
+                  v-model="selectedDayDateStr" 
+                  class="hidden-native-date-input"
+                />
+              </label>
+            </div>
+
+            <div class="day-stat-summary">
+              <span v-if="selectedDaySlots.length > 0" class="stat-has-activities">
+                🎯 <strong>{{ selectedDaySlots.length }}</strong> activité{{ selectedDaySlots.length > 1 ? 's' : '' }} • Durée cumulée : <strong>{{ selectedDayTotalDurationFormatted }}</strong>
+              </span>
+              <span v-else class="stat-empty">
+                🍃 Aucune activité programmée sur cette journée
+              </span>
+            </div>
+          </div>
+
+          <button class="nav-day-btn next-btn" @click="goToNextDay" title="Afficher la journée suivante">
+            <span class="btn-label">Jour suivant</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+
+        <!-- Day Carousel Strip (Mini Calendar Pager) -->
+        <div class="day-strip-container">
+          <div class="day-strip-scroll">
+            <button 
+              v-for="d in dayStripList" 
+              :key="d.dateKey" 
+              class="day-strip-pill"
+              :class="{ 
+                'is-active': d.dateKey === selectedDayDateStr,
+                'is-today': d.isToday,
+                'has-events': d.slotCount > 0
+              }"
+              @click="goToDay(d.dateKey)"
+              :title="`Aller au ${d.dayName} ${d.dayNumber} ${d.monthName}`"
+            >
+              <span class="pill-weekday">{{ d.dayName }}</span>
+              <span class="pill-daynum">{{ d.dayNumber }}</span>
+              <span class="pill-month">{{ d.monthName }}</span>
+              <span v-if="d.slotCount > 0" class="pill-badge" :title="`${d.slotCount} activité(s)`">
+                {{ d.slotCount }}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Printable A4 Header -->
+      <div class="print-only-header">
+        <div class="print-brand-badge">EHPAD LES ÉCRIVAINS — ACCUEIL DE JOUR • GUÉRANDE</div>
+        <h2>📋 Planning de la journée du {{ selectedDayFormattedFull }}</h2>
+        <p class="print-sub-info">
+          <strong>Bénéficiaire / Résident :</strong> {{ displayUserName }} • 
+          <strong>Rôle / Statut :</strong> {{ personaRoleLabel }} • 
+          <strong>Édité le :</strong> {{ currentFormattedDate }}
+        </p>
+      </div>
+
+      <!-- Day Empty State -->
+      <div v-if="selectedDaySlots.length === 0" class="empty-day-state">
+        <div class="empty-day-card">
+          <span class="empty-day-icon">☀️</span>
+          <h3>Aucune activité prévue pour le {{ selectedDayFormattedFull }}</h3>
+          <p v-if="searchQuery">
+            Aucun créneau ne correspond à votre recherche "<strong>{{ searchQuery }}</strong>".
+          </p>
+          <p v-else>
+            Cette journée est libre dans votre planning.
+          </p>
+
+          <div class="empty-day-actions no-print">
+            <button 
+              v-if="nextDayWithActivities" 
+              class="action-btn jump-next-active-btn" 
+              @click="goToDay(nextDayWithActivities.dateKey)"
+            >
+              Passer au prochain jour avec activités ({{ nextDayWithActivities.formattedDate }}) ⏩
+            </button>
+            <button 
+              v-else-if="!isSelectedDayToday" 
+              class="action-btn today-jump-btn" 
+              @click="goToToday"
+            >
+              Revenir à Aujourd'hui
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single Day Slot Cards List -->
+      <div v-else class="day-slots-list">
+        <div 
+          v-for="slot in selectedDaySlots" 
+          :key="slot.documentId || slot.id" 
+          class="planning-slot-card day-slot-card"
+          :class="{ 
+            'is-past-card': isSlotPast(slot),
+            'is-current-card': isSlotCurrent(slot)
+          }"
+          :style="getSlotCardAccentStyle(slot)"
+          @click="openDetailPanel(slot)"
+        >
+          <!-- Left Time Box -->
+          <div class="slot-time-box">
+            <div class="time-main">
+              <span class="time-start">{{ formatTimeOnly(slot.startDate) }}</span>
+              <span class="time-sep">↓</span>
+              <span class="time-end">{{ formatTimeOnly(slot.endDate) }}</span>
+            </div>
+            <div class="time-duration">
+              ⏱️ {{ getDurationMinutes(slot) }} min
+            </div>
+            <div class="slot-status-indicator" :class="getSlotStatusClass(slot)">
+              {{ getSlotStatusLabel(slot) }}
+            </div>
+          </div>
+
+          <!-- Main Slot Content -->
+          <div class="slot-content-box">
+            <div class="slot-content-header">
+              <h4 class="slot-activity-title">
+                {{ slot.activityTemplate?.name || 'Activité sans nom' }}
+              </h4>
+            </div>
+
+            <p class="slot-desc-text" v-if="slot.activityTemplate?.description">
+              {{ slot.activityTemplate.description }}
+            </p>
+
+            <!-- Metadata Row: Location & Facilitators -->
+            <div class="slot-meta-row">
+              <div class="meta-item location-item" v-if="slot.location">
+                <span class="meta-icon">📍</span>
+                <span class="meta-text location-name">{{ slot.location.name }}</span>
+                <span class="location-cap" v-if="slot.location.capacity">({{ slot.location.capacity }} pl.)</span>
+              </div>
+
+              <div class="meta-item fac-item" v-if="slot.facilitators?.length">
+                <span class="meta-icon">👨‍🏫</span>
+                <span class="meta-text">
+                  {{ slot.facilitators.map(f => `${f.firstName} ${f.lastName}`).join(', ') }}
+                </span>
+              </div>
+
+              <div class="meta-item part-item" v-if="slot.participants?.length">
+                <span class="meta-icon">👥</span>
+                <span class="meta-text">{{ slot.participants.length }} participant(s)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Action Arrow -->
+          <div class="slot-card-arrow no-print">
+            <span class="arrow-btn" title="Voir les détails">→</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════ 2. VUE HEBDOMADAIRE (CALENDRIER SEMAINE) ════════════════ -->
+    <div v-else-if="viewMode === 'week'" class="weekly-calendar-section">
       <CalendarView 
         :timeslots="calendarSlots" 
         :target-date="calendarTargetDate"
@@ -192,139 +366,6 @@
         :hide-view-switchers="true"
         @select-slot="openDetailPanel"
       />
-    </div>
-
-    <!-- ════════════════ 2. VUE PLANNING (AGENDA CHRONOLOGIQUE PAR JOUR) ════════════════ -->
-    <div v-else-if="viewMode === 'planning'" class="planning-agenda-section">
-      <!-- Print Title Header -->
-      <div class="print-only-header">
-        <div class="print-brand-badge">EHPAD LES ÉCRIVAINS — ACCUEIL DE JOUR • GUÉRANDE</div>
-        <h2>📋 Planning des Activités — {{ displayUserName }}</h2>
-        <p>Document d'accueil & d'accompagnement • Imprimé le {{ currentFormattedDate }}</p>
-      </div>
-
-      <!-- Empty State -->
-      <div v-if="groupedPlanningSlotsByDay.length === 0" class="empty-planning-state">
-        <div class="empty-state-card">
-          <span class="empty-icon">📁</span>
-          <h3>Aucune activité trouvée</h3>
-          <p v-if="searchQuery || timeFilter !== 'all'">
-            Aucun créneau ne correspond à vos filtres actuels.
-          </p>
-          <p v-else>
-            Aucun créneau n'est planifié dans votre planning.
-          </p>
-          <button 
-            v-if="searchQuery || timeFilter !== 'all'" 
-            class="action-btn reset-filter-btn" 
-            @click="resetFilters"
-          >
-            Réinitialiser les filtres
-          </button>
-        </div>
-      </div>
-
-      <!-- Day Groups Timeline -->
-      <div v-else class="planning-days-timeline">
-        <div 
-          v-for="(dayGroup, index) in groupedPlanningSlotsByDay" 
-          :key="dayGroup.dateKey" 
-          class="planning-day-group"
-          :class="{ 'is-today-group': dayGroup.isToday, 'is-past-group': dayGroup.isPast }"
-        >
-          <!-- Countdown banner above first proposed activity date -->
-          <div v-if="index === 0 && dayGroup.daysFromTodayLabel" class="first-activity-countdown-banner">
-            <span class="countdown-sparkle">⏳</span>
-            <span class="countdown-text">
-              La première activité a lieu <strong>{{ dayGroup.daysFromTodayLabel }}</strong> ({{ dayGroup.formattedDate }})
-            </span>
-          </div>
-
-          <!-- Day Header -->
-          <div class="day-group-header">
-            <div class="day-header-left">
-              <span class="day-header-badge" :class="{ 'badge-today': dayGroup.isToday }">
-                {{ dayGroup.relativeLabel }}
-              </span>
-              <h3 class="day-header-title">{{ dayGroup.formattedDate }}</h3>
-            </div>
-            <div class="day-header-right">
-              <span class="day-slots-counter">
-                {{ dayGroup.slots.length }} activité{{ dayGroup.slots.length > 1 ? 's' : '' }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Slots Cards for this day -->
-          <div class="day-slots-grid">
-            <div 
-              v-for="slot in dayGroup.slots" 
-              :key="slot.documentId || slot.id" 
-              class="planning-slot-card"
-              :class="{ 
-                'is-past-card': isSlotPast(slot),
-                'is-current-card': isSlotCurrent(slot)
-              }"
-              :style="getSlotCardAccentStyle(slot)"
-              @click="openDetailPanel(slot)"
-            >
-              <!-- Left Time Box -->
-              <div class="slot-time-box">
-                <div class="time-main">
-                  <span class="time-start">{{ formatTimeOnly(slot.startDate) }}</span>
-                  <span class="time-sep">↓</span>
-                  <span class="time-end">{{ formatTimeOnly(slot.endDate) }}</span>
-                </div>
-                <div class="time-duration">
-                  ⏱️ {{ getDurationMinutes(slot) }} min
-                </div>
-                <div class="slot-status-indicator" :class="getSlotStatusClass(slot)">
-                  {{ getSlotStatusLabel(slot) }}
-                </div>
-              </div>
-
-              <!-- Main Slot Content -->
-              <div class="slot-content-box">
-                <div class="slot-content-header">
-                  <h4 class="slot-activity-title">
-                    {{ slot.activityTemplate?.name || 'Activité sans nom' }}
-                  </h4>
-                </div>
-
-                <p class="slot-desc-text" v-if="slot.activityTemplate?.description">
-                  {{ truncateText(slot.activityTemplate.description, 160) }}
-                </p>
-
-                <!-- Metadata Row: Location & Facilitators -->
-                <div class="slot-meta-row">
-                  <div class="meta-item location-item" v-if="slot.location">
-                    <span class="meta-icon">📍</span>
-                    <span class="meta-text location-name">{{ slot.location.name }}</span>
-                    <span class="location-cap" v-if="slot.location.capacity">({{ slot.location.capacity }} pl.)</span>
-                  </div>
-
-                  <div class="meta-item fac-item" v-if="slot.facilitators?.length">
-                    <span class="meta-icon">👨‍🏫</span>
-                    <span class="meta-text">
-                      {{ slot.facilitators.map(f => `${f.firstName} ${f.lastName}`).join(', ') }}
-                    </span>
-                  </div>
-
-                  <div class="meta-item part-item" v-if="slot.participants?.length">
-                    <span class="meta-icon">👥</span>
-                    <span class="meta-text">{{ slot.participants.length }} participant(s)</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right Action Arrow -->
-              <div class="slot-card-arrow">
-                <span class="arrow-btn" title="Voir les détails">→</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ════════════════ DETAIL SIDE PANEL (DRAWER) ════════════════ -->
@@ -481,9 +522,9 @@ export default {
   },
   data() {
     return {
-      viewMode: 'week', // 'week' (Vue Hebdomadaire) or 'planning' (Vue Planning / Agenda)
+      viewMode: 'day', // 'day' (Vue Journée par défaut) or 'week' (Vue Hebdomadaire)
+      selectedDayDateStr: '',
       scopeFilter: 'mine', // 'mine' (Mon planning) or 'all' (Toutes les activités)
-      timeFilter: 'all', // 'all', 'upcoming', 'past'
       searchQuery: '',
       selectedSlot: null,
       calendarTargetDate: null,
@@ -548,27 +589,14 @@ export default {
       });
     },
     activeBaseSlots() {
-      if (this.scopeFilter === 'mine' && Array.isArray(this.userRelevantSlots) && this.userRelevantSlots.length > 0) {
-        return this.userRelevantSlots;
-      }
-      if (this.scopeFilter === 'mine' && (!this.userRelevantSlots || this.userRelevantSlots.length === 0)) {
-        return this.timeslots || [];
+      if (this.scopeFilter === 'mine') {
+        return this.userRelevantSlots || [];
       }
       return this.timeslots || [];
     },
     upcomingSlotsCount() {
       const now = new Date();
       return this.activeBaseSlots.filter(s => new Date(s.endDate || s.startDate) >= now).length;
-    },
-    filteredByTime() {
-      const now = new Date();
-      if (this.timeFilter === 'upcoming') {
-        return this.activeBaseSlots.filter(s => new Date(s.endDate || s.startDate) >= now);
-      }
-      if (this.timeFilter === 'past') {
-        return this.activeBaseSlots.filter(s => new Date(s.endDate || s.startDate) < now);
-      }
-      return this.activeBaseSlots;
     },
     calendarSlots() {
       if (this.searchQuery.trim()) {
@@ -585,7 +613,7 @@ export default {
       return this.activeBaseSlots;
     },
     displayedSlots() {
-      let slots = this.filteredByTime;
+      let slots = this.activeBaseSlots;
 
       if (this.searchQuery.trim()) {
         const q = this.searchQuery.toLowerCase().trim();
@@ -608,69 +636,119 @@ export default {
         .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
       return upcoming[0] || null;
     },
-    groupedPlanningSlotsByDay() {
-      const groups = {};
-      const todayStr = this.toDateKey(new Date());
-
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = this.toDateKey(tomorrow);
-
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = this.toDateKey(yesterday);
-
-      this.displayedSlots.forEach(slot => {
-        if (!slot.startDate) return;
-        const d = new Date(slot.startDate);
-        const dateKey = this.toDateKey(d);
-
-        if (!groups[dateKey]) {
-          let relativeLabel = '';
-          if (dateKey === todayStr) relativeLabel = "Aujourd'hui";
-          else if (dateKey === tomorrowStr) relativeLabel = 'Demain';
-          else if (dateKey === yesterdayStr) relativeLabel = 'Hier';
-          else {
-            const dayName = d.toLocaleDateString('fr-FR', { weekday: 'long' });
-            relativeLabel = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-          }
-
-          const fullDateStr = d.toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-          });
-          const formattedDate = fullDateStr.charAt(0).toUpperCase() + fullDateStr.slice(1);
-
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const targetDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-          const diffDays = Math.round((targetDay - today) / (1000 * 60 * 60 * 24));
-
-          let daysFromTodayLabel = '';
-          if (diffDays === 0) daysFromTodayLabel = "aujourd'hui";
-          else if (diffDays === 1) daysFromTodayLabel = "demain (dans 1 jour)";
-          else if (diffDays > 1) daysFromTodayLabel = `dans ${diffDays} jours à partir d'aujourd'hui`;
-          else daysFromTodayLabel = `il y a ${Math.abs(diffDays)} jours`;
-
-          groups[dateKey] = {
-            dateKey,
-            date: d,
-            relativeLabel,
-            formattedDate,
-            daysFromTodayLabel,
-            diffDays,
-            isToday: dateKey === todayStr,
-            isPast: dateKey < todayStr,
-            slots: []
-          };
-        }
-
-        groups[dateKey].slots.push(slot);
+    selectedDayDate() {
+      if (!this.selectedDayDateStr) return new Date();
+      const [y, m, d] = this.selectedDayDateStr.split('-').map(Number);
+      return new Date(y, m - 1, d, 12, 0, 0); // Use noon to prevent DST offsets
+    },
+    selectedDayFormattedFull() {
+      const d = this.selectedDayDate;
+      const full = d.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
       });
+      return full.charAt(0).toUpperCase() + full.slice(1);
+    },
+    selectedDayFormattedShort() {
+      const d = this.selectedDayDate;
+      return d.toLocaleDateString('fr-FR', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short'
+      });
+    },
+    isSelectedDayToday() {
+      return this.selectedDayDateStr === this.toDateKey(new Date());
+    },
+    selectedDayRelativeLabel() {
+      const todayStr = this.toDateKey(new Date());
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      if (this.selectedDayDateStr === todayStr) return "Aujourd'hui";
+      if (this.selectedDayDateStr === this.toDateKey(tomorrow)) return "Demain";
+      if (this.selectedDayDateStr === this.toDateKey(yesterday)) return "Hier";
 
-      return Object.values(groups).sort((a, b) => a.date - b.date);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const target = new Date(this.selectedDayDate.getFullYear(), this.selectedDayDate.getMonth(), this.selectedDayDate.getDate());
+      const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
+      if (diffDays > 1) return `Dans ${diffDays} jours`;
+      if (diffDays < -1) return `Il y a ${Math.abs(diffDays)} jours`;
+      const dayName = this.selectedDayDate.toLocaleDateString('fr-FR', { weekday: 'long' });
+      return dayName.charAt(0).toUpperCase() + dayName.slice(1);
+    },
+    selectedDaySlots() {
+      const dayKey = this.selectedDayDateStr;
+      return this.displayedSlots.filter(slot => {
+        if (!slot.startDate) return false;
+        return this.toDateKey(slot.startDate) === dayKey;
+      }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    },
+    selectedDayTotalDurationFormatted() {
+      let totalMins = 0;
+      this.selectedDaySlots.forEach(slot => {
+        if (slot.startDate && slot.endDate) {
+          const diff = (new Date(slot.endDate) - new Date(slot.startDate)) / 60000;
+          if (diff > 0) totalMins += diff;
+        }
+      });
+      if (totalMins === 0) return '0 min';
+      const hours = Math.floor(totalMins / 60);
+      const mins = Math.round(totalMins % 60);
+      if (hours > 0 && mins > 0) return `${hours}h${mins > 9 ? mins : '0' + mins}`;
+      if (hours > 0) return `${hours}h`;
+      return `${mins} min`;
+    },
+    dayStripList() {
+      const list = [];
+      const current = new Date(this.selectedDayDate);
+      // Window of 7 days around the selected day (-3 to +3)
+      for (let i = -3; i <= 3; i++) {
+        const d = new Date(current);
+        d.setDate(d.getDate() + i);
+        const dateKey = this.toDateKey(d);
+        const dayName = d.toLocaleDateString('fr-FR', { weekday: 'short' });
+        const dayNumber = d.getDate();
+        const monthName = d.toLocaleDateString('fr-FR', { month: 'short' });
+        const isToday = dateKey === this.toDateKey(new Date());
+
+        const slotCount = this.activeBaseSlots.filter(s => {
+          if (!s.startDate) return false;
+          return this.toDateKey(s.startDate) === dateKey;
+        }).length;
+
+        list.push({
+          dateKey,
+          dayName: dayName.charAt(0).toUpperCase() + dayName.slice(1),
+          dayNumber,
+          monthName,
+          isToday,
+          slotCount
+        });
+      }
+      return list;
+    },
+    nextDayWithActivities() {
+      const currentKey = this.selectedDayDateStr;
+      const futureSlots = this.activeBaseSlots.filter(s => {
+        if (!s.startDate) return false;
+        return this.toDateKey(s.startDate) > currentKey;
+      }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+      if (futureSlots.length === 0) return null;
+      const nextDateKey = this.toDateKey(futureSlots[0].startDate);
+      const nextDate = new Date(futureSlots[0].startDate);
+      const fullDateStr = nextDate.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+      });
+      return {
+        dateKey: nextDateKey,
+        formattedDate: fullDateStr.charAt(0).toUpperCase() + fullDateStr.slice(1)
+      };
     },
     currentFormattedDate() {
       return new Date().toLocaleDateString('fr-FR', {
@@ -689,6 +767,27 @@ export default {
         this.updateCountdown();
         if (slot?.startDate) {
           this.calendarTargetDate = new Date(slot.startDate);
+          if (!this.selectedDayDateStr) {
+            this.selectedDayDateStr = this.toDateKey(slot.startDate);
+          }
+        }
+      }
+    },
+    activeBaseSlots: {
+      immediate: true,
+      handler(slots) {
+        if (!this.selectedDayDateStr) {
+          const todayKey = this.toDateKey(new Date());
+          const todayHasSlots = (slots || []).some(s => s.startDate && this.toDateKey(s.startDate) === todayKey);
+          if (todayHasSlots) {
+            this.selectedDayDateStr = todayKey;
+          } else if (this.nextSlot?.startDate) {
+            this.selectedDayDateStr = this.toDateKey(this.nextSlot.startDate);
+          } else if (slots && slots.length > 0 && slots[0].startDate) {
+            this.selectedDayDateStr = this.toDateKey(slots[0].startDate);
+          } else {
+            this.selectedDayDateStr = todayKey;
+          }
         }
       }
     }
@@ -696,6 +795,11 @@ export default {
   mounted() {
     if (this.nextSlot?.startDate) {
       this.calendarTargetDate = new Date(this.nextSlot.startDate);
+      if (!this.selectedDayDateStr) {
+        this.selectedDayDateStr = this.toDateKey(this.nextSlot.startDate);
+      }
+    } else if (!this.selectedDayDateStr) {
+      this.selectedDayDateStr = this.toDateKey(new Date());
     }
     this.countdownTimer = setInterval(() => this.updateCountdown(), 30000);
     this.updateCountdown();
@@ -706,6 +810,24 @@ export default {
     window.removeEventListener('keydown', this.handleKeyDown);
   },
   methods: {
+    goToPreviousDay() {
+      const d = new Date(this.selectedDayDate);
+      d.setDate(d.getDate() - 1);
+      this.selectedDayDateStr = this.toDateKey(d);
+    },
+    goToNextDay() {
+      const d = new Date(this.selectedDayDate);
+      d.setDate(d.getDate() + 1);
+      this.selectedDayDateStr = this.toDateKey(d);
+    },
+    goToToday() {
+      this.selectedDayDateStr = this.toDateKey(new Date());
+    },
+    goToDay(dateKey) {
+      if (dateKey) {
+        this.selectedDayDateStr = dateKey;
+      }
+    },
     handleKeyDown(e) {
       if (e.key === 'Escape' && this.selectedSlot) {
         this.closeDetailPanel();
@@ -947,26 +1069,31 @@ export default {
   border: 1px solid rgba(13, 148, 136, 0.35);
 }
 
-.print-quick-btn {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 0.6rem 1.2rem;
-  border-radius: 0.6rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
+.planning-actions {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  transition: all 0.2s ease;
 }
 
-.print-quick-btn:hover {
-  background: rgba(13, 148, 136, 0.25);
-  border-color: rgba(13, 148, 136, 0.45);
-  color: #ffffff;
+.print-btn {
+  background: linear-gradient(135deg, #0d9488, #059669);
+  color: white;
+  border: none;
+  padding: 0.55rem 1.15rem;
+  border-radius: 0.55rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.print-btn:hover {
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.4);
 }
 
 /* ════════════════ HERO NEXT ACTIVITY ════════════════ */
@@ -1269,39 +1396,6 @@ export default {
   font-weight: 700;
 }
 
-/* ════════════════ TIME FILTER TABS (AGENDA) ════════════════ */
-.time-filter-tabs {
-  display: flex;
-  gap: 0.35rem;
-  background: rgba(15, 23, 42, 0.75);
-  padding: 0.3rem;
-  border-radius: 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.time-tab-btn {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  padding: 0.4rem 0.85rem;
-  border-radius: 0.45rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.time-tab-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.time-tab-btn.active {
-  background: rgba(13, 148, 136, 0.3);
-  color: #5eead4;
-  border: 1px solid rgba(13, 148, 136, 0.4);
-}
-
 .planning-search-box {
   position: relative;
   display: flex;
@@ -1390,145 +1484,6 @@ export default {
   color: #ffffff;
   border: 1px solid rgba(129, 140, 248, 0.5);
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-}
-
-/* ════════════════ VUE PLANNING (AGENDA CHRONOLOGIQUE) ════════════════ */
-.planning-agenda-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.empty-planning-state {
-  display: flex;
-  justify-content: center;
-  padding: 3rem 1rem;
-}
-
-.empty-state-card {
-  text-align: center;
-  background: rgba(17, 24, 39, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
-  padding: 2.5rem;
-  max-width: 460px;
-  width: 100%;
-}
-
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 0.5rem;
-  display: block;
-}
-
-.empty-state-card h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 0.5rem;
-}
-
-.empty-state-card p {
-  color: #94a3b8;
-  font-size: 0.9rem;
-  margin-bottom: 1.25rem;
-}
-
-.reset-filter-btn {
-  background: linear-gradient(135deg, #0d9488, #059669);
-  color: #ffffff;
-  border: none;
-  padding: 0.55rem 1.2rem;
-  border-radius: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
-}
-
-.planning-days-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-}
-
-.planning-day-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.day-group-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.day-header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.first-activity-countdown-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  background: linear-gradient(135deg, rgba(13, 148, 136, 0.22), rgba(2, 132, 199, 0.15));
-  border: 1px solid rgba(45, 212, 191, 0.4);
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.75rem;
-  margin-bottom: 0.75rem;
-  color: #e0f2fe;
-  font-size: 0.92rem;
-  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.2);
-}
-
-.countdown-sparkle {
-  font-size: 1.25rem;
-}
-
-.countdown-text strong {
-  color: #38bdf8;
-  font-weight: 800;
-}
-
-.day-header-badge {
-  background: rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.2rem 0.6rem;
-  border-radius: 0.4rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.day-header-badge.badge-today {
-  background: linear-gradient(135deg, #0d9488, #059669);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
-}
-
-.day-header-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #f8fafc;
-  margin: 0;
-}
-
-.day-slots-counter {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.day-slots-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
 }
 
 .planning-slot-card {
@@ -1974,13 +1929,381 @@ export default {
   opacity: 0;
 }
 
+/* ════════════════ DAY VIEW SECTION ════════════════ */
+.day-view-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.day-navigator-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.85));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.15rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+}
+
+.day-nav-main-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.nav-day-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary, #f8fafc);
+  padding: 0.65rem 1.1rem;
+  border-radius: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.nav-day-btn:hover {
+  background: rgba(13, 148, 136, 0.2);
+  border-color: rgba(13, 148, 136, 0.4);
+  color: #5eead4;
+  transform: translateY(-1px);
+}
+
+.nav-day-btn .btn-arrow {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.day-center-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 260px;
+}
+
+.day-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.day-relative-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.65rem;
+  border-radius: 2rem;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.day-relative-pill.is-today {
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.3), rgba(5, 150, 105, 0.25));
+  color: #2dd4bf;
+  border-color: rgba(45, 212, 191, 0.45);
+  box-shadow: 0 0 12px rgba(13, 148, 136, 0.25);
+}
+
+.jump-today-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.jump-today-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.day-date-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.day-formatted-heading {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-primary, #ffffff);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.date-picker-button-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.15s;
+}
+
+.date-picker-button-label:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.hidden-native-date-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.day-stat-summary {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.stat-has-activities strong {
+  color: #38bdf8;
+}
+
+.stat-empty {
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Day Strip Carousel / Pager */
+.day-strip-container {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1rem;
+}
+
+.day-strip-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.1rem;
+  scrollbar-width: thin;
+}
+
+.day-strip-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.day-strip-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+.day-strip-pill {
+  flex: 1;
+  min-width: 72px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.day-strip-pill:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.day-strip-pill.is-active {
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
+  border-color: #2dd4bf;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.4);
+  transform: translateY(-2px);
+}
+
+.day-strip-pill.is-today:not(.is-active) {
+  border-color: rgba(45, 212, 191, 0.5);
+  background: rgba(13, 148, 136, 0.12);
+}
+
+.pill-weekday {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+
+.pill-daynum {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.pill-month {
+  font-size: 0.65rem;
+  opacity: 0.75;
+}
+
+.pill-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  border-radius: 1rem;
+  padding: 0.1rem 0.35rem;
+  margin-top: 0.2rem;
+}
+
+.day-strip-pill.is-active .pill-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* Day Empty State */
+.empty-day-state {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.empty-day-card {
+  max-width: 560px;
+  width: 100%;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.empty-day-icon {
+  font-size: 3rem;
+  opacity: 0.8;
+}
+
+.empty-day-card h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.empty-day-card p {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.empty-day-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.jump-next-active-btn {
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+
+.jump-next-active-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.45);
+}
+
+.today-jump-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+  padding: 0.65rem 1.1rem;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.today-jump-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Day slots list */
+.day-slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.day-slot-card {
+  cursor: pointer;
+}
+
 /* ════════════════ PRINT STYLES ════════════════ */
 .print-only-header {
   display: none;
 }
 
 @media print {
-  .no-print {
+  @page {
+    margin: 1.2cm 1cm;
+    size: A4 portrait;
+  }
+
+  .no-print,
+  .user-welcome-bar,
+  .next-activity-hero,
+  .weekly-avail-bar,
+  .planning-main-switcher,
+  .planning-filter-bar,
+  .detail-panel-overlay,
+  .slot-card-arrow,
+  .day-navigator-card,
+  .day-bottom-print-bar {
     display: none !important;
   }
 
@@ -2001,48 +2324,62 @@ export default {
 
   .print-only-header h2 {
     color: #000;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     margin-bottom: 0.25rem;
+    font-weight: 800;
   }
 
-  .print-only-header p {
+  .print-sub-info {
     color: #444;
     font-size: 0.85rem;
+    margin: 0;
   }
 
-  .client-planning-wrapper {
-    background: #fff !important;
-    color: #000 !important;
+  .client-planning-wrapper,
+  .day-view-section {
+    background: #ffffff !important;
+    color: #000000 !important;
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .planning-slot-card {
-    background: #fff !important;
-    border: 1px solid #ccc !important;
-    color: #000 !important;
+    background: #ffffff !important;
+    border: 1px solid #999999 !important;
+    color: #000000 !important;
     break-inside: avoid;
+    page-break-inside: avoid;
     box-shadow: none !important;
+    margin-bottom: 0.75rem !important;
+    display: flex !important;
+    flex-direction: row !important;
   }
 
   .slot-activity-title,
   .day-header-title,
   .time-start,
   .time-end {
-    color: #000 !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
 
   .slot-time-box {
-    background: #f4f4f5 !important;
-    border-right: 1px solid #ddd !important;
+    background: #f1f5f9 !important;
+    border-right: 1px solid #cbd5e1 !important;
+    color: #000000 !important;
+    min-width: 110px !important;
   }
 
   .slot-desc-text,
   .meta-item {
-    color: #333 !important;
+    color: #334155 !important;
   }
 
   .day-header-badge {
     background: #e2e8f0 !important;
-    color: #000 !important;
+    color: #000000 !important;
   }
 }
 
@@ -2053,11 +2390,11 @@ export default {
     align-items: flex-start;
   }
 
-  .user-bar-actions {
+  .planning-actions {
     width: 100%;
   }
 
-  .print-quick-btn {
+  .print-btn {
     width: 100%;
     justify-content: center;
   }
@@ -2089,6 +2426,18 @@ export default {
 
   .view-mode-tab-btn {
     flex: 1;
+    justify-content: center;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .day-nav-main-bar {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .nav-day-btn {
+    width: 100%;
     justify-content: center;
   }
 

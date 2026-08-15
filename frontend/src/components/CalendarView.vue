@@ -42,7 +42,7 @@
       </div>
 
       <!-- ACTIONS -->
-      <div class="calendar-actions">
+      <div class="calendar-actions" v-if="!hideViewSwitchers">
         <button class="action-btn print-btn" @click="printCalendar">
           🖨️ Imprimer la vue
         </button>
@@ -592,8 +592,8 @@ export default {
     checkMobile() {
       const wasMobile = this.isMobile;
       this.isMobile = window.innerWidth < 768;
-      // Auto-switch to day view on mobile if currently in week view
-      if (this.isMobile && !wasMobile && this.viewMode === 'week') {
+      // Auto-switch to day view on mobile if currently in week view, unless view switchers are hidden
+      if (this.isMobile && !wasMobile && this.viewMode === 'week' && !this.hideViewSwitchers) {
         this.viewMode = 'day';
       }
     },
@@ -602,8 +602,8 @@ export default {
       return new Date(slot.endDate || slot.startDate) < new Date();
     },
     setViewMode(mode) {
-      // On mobile, redirect week to day
-      if (this.isMobile && mode === 'week') {
+      // On mobile, redirect week to day only if view switchers are enabled
+      if (this.isMobile && mode === 'week' && !this.hideViewSwitchers) {
         this.viewMode = 'day';
         return;
       }
@@ -1053,9 +1053,36 @@ export default {
 }
 
 /* ════════════════ WEEK VIEW STYLES ════════════════ */
+.week-view {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
+}
+
+/* Custom scrollbar for week view */
+.week-view::-webkit-scrollbar {
+  height: 8px;
+}
+
+.week-view::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 4px;
+}
+
+.week-view::-webkit-scrollbar-thumb {
+  background: rgba(13, 148, 136, 0.4);
+  border-radius: 4px;
+}
+
+.week-view::-webkit-scrollbar-thumb:hover {
+  background: rgba(13, 148, 136, 0.7);
+}
+
 .week-grid-header {
   display: grid;
-  grid-template-columns: 70px repeat(7, 1fr);
+  grid-template-columns: 70px repeat(7, minmax(110px, 1fr));
+  min-width: 840px;
   gap: 1px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 0.5rem 0.5rem 0 0;
@@ -1088,6 +1115,7 @@ export default {
 .week-grid-body {
   display: flex;
   flex-direction: column;
+  min-width: 840px;
   gap: 1px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 0 0 0.5rem 0.5rem;
@@ -1095,7 +1123,7 @@ export default {
 
 .week-hour-row {
   display: grid;
-  grid-template-columns: 70px repeat(7, 1fr);
+  grid-template-columns: 70px repeat(7, minmax(110px, 1fr));
   gap: 1px;
   min-height: 50px;
 }
@@ -1116,6 +1144,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  min-width: 0;
 }
 
 .week-slot-card {
@@ -1124,6 +1153,9 @@ export default {
   padding: 0.25rem 0.4rem;
   cursor: pointer;
   transition: transform 0.1s ease, filter 0.1s ease;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .week-slot-card:hover {
@@ -1135,17 +1167,22 @@ export default {
   font-size: 0.7rem;
   font-weight: 700;
   color: #5eead4;
+  white-space: nowrap;
 }
 
 .week-slot-title {
   font-size: 0.75rem;
   font-weight: 600;
   color: #ffffff;
+  word-break: break-word;
+  line-height: 1.25;
 }
 
 .week-slot-location {
   font-size: 0.7rem;
   color: #cbd5e1;
+  word-break: break-word;
+  line-height: 1.2;
 }
 
 /* ════════════════ DAY VIEW STYLES ════════════════ */
@@ -1498,10 +1535,13 @@ export default {
     display: flex !important;
     flex-direction: column !important;
     height: calc(98vh - 1cm) !important;
+    overflow-x: visible !important;
   }
 
   .week-grid-header {
     background: #e2e8f0 !important;
+    min-width: 0 !important;
+    grid-template-columns: 55px repeat(7, 1fr) !important;
   }
 
   .time-col-header, .week-header-cell {
@@ -1516,6 +1556,7 @@ export default {
     display: flex !important;
     flex-direction: column !important;
     gap: 1px !important;
+    min-width: 0 !important;
   }
 
   .week-hour-row {
