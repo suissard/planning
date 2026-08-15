@@ -266,86 +266,122 @@
 
           <div class="nav-divider"></div>
 
-          <button 
-            class="nav-item" 
-            :class="{ active: currentPage === 'timeslots' }"
-            @click="navigateTo('timeslots')"
-          >
-            <span class="nav-icon">📅</span>
-            {{ appSettingsStore.isAdminMode ? 'Planning' : 'Mon Planning' }}
-          </button>
-          <button 
-            v-if="appSettingsStore.isAdminMode"
-            class="nav-item" 
-            :class="{ active: currentPage === 'locations' }"
-            @click="navigateTo('locations')"
-          >
-            <span class="nav-icon">📍</span>
-            Lieux
-          </button>
-          <button 
-            v-if="appSettingsStore.isAdminMode"
-            class="nav-item" 
-            :class="{ active: currentPage === 'activities' }"
-            @click="navigateTo('activities')"
-          >
-            <span class="nav-icon">🎯</span>
-            Activités
-          </button>
-          <button 
-            v-if="appSettingsStore.isAdminMode"
-            class="nav-item" 
-            :class="{ active: currentPage === 'facilitators' }"
-            @click="navigateTo('facilitators')"
-          >
-            <span class="nav-icon">👨‍🏫</span>
-            Animateurs
-          </button>
-          <button 
-            v-if="appSettingsStore.isAdminMode"
-            class="nav-item" 
-            :class="{ active: currentPage === 'participants' }"
-            @click="navigateTo('participants')"
-          >
-            <span class="nav-icon">👥</span>
-            Participants
-          </button>
-          <button 
-            v-if="appSettingsStore.isAdminMode"
-            class="nav-item" 
-            :class="{ active: currentPage === 'individual-schedules' }"
-            @click="navigateTo('individual-schedules')"
-          >
-            <span class="nav-icon">👤📅</span>
-            Plannings Individuels
-          </button>
-          <button 
-            v-if="appSettingsStore.isAdminMode"
-            class="nav-item" 
-            :class="{ active: currentPage === 'room-sessions' }"
-            @click="navigateTo('room-sessions')"
-          >
-            <span class="nav-icon">🚪</span>
-            Ouverture Salles
-          </button>
-          <button 
-            v-if="appSettingsStore.isAdminMode"
-            class="nav-item" 
-            :class="{ active: currentPage === 'week-template' }"
-            @click="navigateTo('week-template')"
-          >
-            <span class="nav-icon">⚡</span>
-            Semaine Type
-          </button>
-          <button 
-            v-if="appSettingsStore.isAdminMode"
-            class="nav-item" 
-            :class="{ active: currentPage === 'extractions' }"
-            @click="navigateTo('extractions')"
-          >
-            <span class="nav-icon">📊</span>
-            Extractions & Fiches
-          </button>
+          <!-- USER MODE NAVIGATION -->
+          <template v-if="!appSettingsStore.isAdminMode">
+            <button 
+              class="nav-item" 
+              :class="{ active: currentPage === 'timeslots' }"
+              @click="navigateTo('timeslots')"
+            >
+              <span class="nav-icon">📅</span>
+              <span class="nav-label">Mon Planning</span>
+            </button>
+          </template>
+
+          <!-- ADMIN MODE DEDICATED NAVIGATION -->
+          <template v-else>
+            <!-- SECTION 1: PLANNINGS DÉDIÉS (DRAG & DROP) -->
+            <div class="nav-section-title">
+              <span>📅 PLANNINGS DÉDIÉS</span>
+            </div>
+
+            <button 
+              class="nav-item dedicated-nav-item" 
+              :class="{ active: currentPage === 'timeslots' }"
+              @click="navigateTo('timeslots')"
+              title="Planning des animations et ateliers en glisser-déposer"
+            >
+              <span class="nav-icon">🎯</span>
+              <span class="nav-label">Planning Animations</span>
+              <span class="nav-badge-pill dnd-pill">✨ D&D</span>
+            </button>
+
+            <button 
+              class="nav-item dedicated-nav-item" 
+              :class="{ active: currentPage === 'room-sessions' }"
+              @click="navigateTo('room-sessions')"
+              title="Gestion des ouvertures de salles et référents en glisser-déposer"
+            >
+              <span class="nav-icon">🚪</span>
+              <span class="nav-label">Ouverture Salles</span>
+              <span class="nav-badge-pill dnd-pill">✨ D&D</span>
+            </button>
+
+            <button 
+              class="nav-item" 
+              :class="{ active: currentPage === 'week-template' }"
+              @click="navigateTo('week-template')"
+              title="Modèle type de la semaine"
+            >
+              <span class="nav-icon">⚡</span>
+              <span class="nav-label">Semaine Type</span>
+            </button>
+
+            <button 
+              class="nav-item" 
+              :class="{ active: currentPage === 'individual-schedules' }"
+              @click="navigateTo('individual-schedules')"
+              title="Planning individuel par bénéficiaire ou animateur"
+            >
+              <span class="nav-icon">👤📅</span>
+              <span class="nav-label">Plannings Individuels</span>
+            </button>
+
+            <!-- SECTION 2: RÉPERTOIRES & GESTION -->
+            <div class="nav-section-title">
+              <span>📋 RÉPERTOIRES</span>
+            </div>
+
+            <button 
+              class="nav-item" 
+              :class="{ active: currentPage === 'activities' }"
+              @click="navigateTo('activities')"
+            >
+              <span class="nav-icon">🎯</span>
+              <span class="nav-label">Modèles d'Activités</span>
+            </button>
+
+            <button 
+              class="nav-item" 
+              :class="{ active: currentPage === 'locations' }"
+              @click="navigateTo('locations')"
+            >
+              <span class="nav-icon">📍</span>
+              <span class="nav-label">Lieux & Salles</span>
+            </button>
+
+            <button 
+              class="nav-item" 
+              :class="{ active: currentPage === 'facilitators' }"
+              @click="navigateTo('facilitators')"
+            >
+              <span class="nav-icon">👨‍🏫</span>
+              <span class="nav-label">Animateurs</span>
+            </button>
+
+            <button 
+              class="nav-item" 
+              :class="{ active: currentPage === 'participants' }"
+              @click="navigateTo('participants')"
+            >
+              <span class="nav-icon">👥</span>
+              <span class="nav-label">Participants</span>
+            </button>
+
+            <!-- SECTION 3: OUTILS & EXPORTS -->
+            <div class="nav-section-title">
+              <span>📊 OUTILS & RAPPORTS</span>
+            </div>
+
+            <button 
+              class="nav-item" 
+              :class="{ active: currentPage === 'extractions' }"
+              @click="navigateTo('extractions')"
+            >
+              <span class="nav-icon">📊</span>
+              <span class="nav-label">Extractions & Fiches</span>
+            </button>
+          </template>
 
 
           <div class="nav-footer">
@@ -364,7 +400,7 @@
           <!-- Removed intrusive banner — mode is visible via sidebar/header toggle -->
 
           <!-- Search & Info Bar (Admin Mode only) -->
-          <div class="content-header" v-if="appSettingsStore.isAdminMode && !error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions'">
+          <div class="content-header" v-if="appSettingsStore.isAdminMode && !error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots'">
             <div class="search-wrapper">
               <span class="search-icon">🔍</span>
               <input 
@@ -393,7 +429,7 @@
           </div>
 
           <!-- Tag Filters Bar (Admin Mode only) -->
-          <div class="tag-filter-bar mb-3" v-if="appSettingsStore.isAdminMode && !error && (currentPage === 'activities' || currentPage === 'timeslots')">
+          <div class="tag-filter-bar mb-3" v-if="appSettingsStore.isAdminMode && !error && currentPage === 'activities'">
             <div class="tag-filter-header">
               <span class="tag-filter-icon">🏷️</span>
               <span class="tag-filter-label">Catégories & Étiquettes :</span>
@@ -421,13 +457,13 @@
           </div>
 
           <!-- Loading State (Admin Mode) -->
-          <div class="loading-state" v-if="loading && appSettingsStore.isAdminMode && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions'">
+          <div class="loading-state" v-if="loading && appSettingsStore.isAdminMode && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots'">
             <div class="spinner"></div>
             <p>Chargement des données depuis Strapi...</p>
           </div>
 
           <!-- Error State -->
-          <div class="error-state" v-else-if="error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions'">
+          <div class="error-state" v-else-if="error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots'">
             <span class="error-icon">⚠️</span>
             <h3>Impossible de contacter l'API Strapi</h3>
             <p>{{ error }}</p>
@@ -444,6 +480,7 @@
               :facilitators="facilitators" 
               :participants="participants" 
               :timeslots="timeslots"
+              @navigate="navigateTo"
               @navigate-template="navigateTo('week-template')"
             />
 
@@ -558,164 +595,16 @@
               :current-user-persona="currentUserPersona"
             />
 
-            <!-- ADMIN MODE: Full planning with cards/calendar toggle -->
-            <div v-if="currentPage === 'timeslots' && appSettingsStore.isAdminMode" class="timeslots-page-wrapper">
-              <!-- View Display Switcher -->
-              <div class="display-mode-bar user-planning-switcher-bar no-print">
-                <div class="mode-tabs hero-mode-switch">
-                  <button 
-                    class="tab-btn main-view-btn" 
-                    :class="{ active: timeslotViewMode === 'calendar' }" 
-                    @click="timeslotViewMode = 'calendar'"
-                  >
-                    <span class="tab-icon">🗓️</span>
-                    <span class="tab-text">Vue Calendrier</span>
-                  </button>
-                  <button 
-                    class="tab-btn main-view-btn" 
-                    :class="{ active: timeslotViewMode === 'cards' }" 
-                    @click="timeslotViewMode = 'cards'"
-                  >
-                    <span class="tab-icon">📋</span>
-                    <span class="tab-text">Vue Planning</span>
-                  </button>
-                </div>
-
-                <div class="time-filter-tabs hero-filter-switch">
-                  <button 
-                    class="tab-btn filter-btn" 
-                    :class="{ active: timeFilterMode === 'upcoming' }" 
-                    @click="setTimeFilterMode('upcoming')"
-                  >
-                    🔮 À venir
-                  </button>
-                  <button 
-                    class="tab-btn filter-btn" 
-                    :class="{ active: timeFilterMode === 'all' }" 
-                    @click="setTimeFilterMode('all')"
-                  >
-                    ⏳ Tous les créneaux
-                  </button>
-                </div>
-              </div>
-
-              <!-- Empty State inside Timeslots View -->
-              <div class="empty-state" v-if="filteredItems.length === 0" style="margin-top: 1.5rem;">
-                <span class="empty-icon">📁</span>
-                <h3>Aucun créneau trouvé</h3>
-                <p v-if="isFilterActive">Aucun créneau ne correspond à vos filtres actuels ({{ activeFiltersSummary }}).</p>
-                <p v-else>Aucun créneau n'est disponible.</p>
-                <button class="action-btn reset-btn" v-if="isFilterActive" @click="clearSearchAndFilter">
-                  Réinitialiser les filtres
-                </button>
-              </div>
-
-              <!-- Calendar Component View -->
-              <CalendarView 
-                v-else-if="timeslotViewMode === 'calendar'" 
-                :timeslots="filteredItems" 
-                :target-date="calendarTargetDate"
-                :default-view="'month'"
-                @select-slot="handleCalendarSelectSlot" 
-              />
-
-              <!-- Cards Grid View (Admin mode only now) -->
-              <div v-else class="slots-grid">
-                  <div 
-                    v-for="slot in filteredItems" 
-                    :key="slot.documentId" 
-                    class="slot-card"
-                    :class="{ 
-                      'highlighted-item': slot.documentId === highlightedId,
-                      'is-past-slot': new Date(slot.endDate || slot.startDate) < new Date()
-                    }"
-                    :id="'slot-' + slot.documentId"
-                  >
-                    <div class="slot-header">
-                      <div class="slot-time-info">
-                        <span class="calendar-icon">🕒</span>
-                        <div class="time-texts">
-                          <span class="date">{{ formatSlotDate(slot.startDate) }}</span>
-                          <span class="time">{{ formatSlotTimeRange(slot.startDate, slot.endDate) }}</span>
-                        </div>
-                      </div>
-                      <div class="slot-actions">
-                        <button class="delete-slot-btn" title="Supprimer le créneau" @click="deleteSlot(slot.documentId)">✕</button>
-                      </div>
-                    </div>
-
-                    <div class="slot-relations">
-                      <div class="relation-row">
-                        <span class="row-label">Activité</span>
-                        <span 
-                          class="data-chip activity-chip clickable"
-                          @click="navigateTo('activities', slot.activityTemplate?.documentId)"
-                          title="Voir l'activité"
-                        >
-                          🎯 {{ slot.activityTemplate?.name || 'Inconnue' }}
-                        </span>
-                      </div>
-
-                      <div class="relation-row">
-                        <span class="row-label">Lieu</span>
-                        <span 
-                          class="data-chip location-chip clickable"
-                          @click="navigateTo('locations', slot.location?.documentId)"
-                          title="Voir le lieu"
-                        >
-                          📍 {{ slot.location?.name || 'Inconnu' }}
-                        </span>
-                      </div>
-
-                      <div class="relation-row">
-                        <span class="row-label">Animateurs</span>
-                        <div class="chips-list">
-                          <span 
-                            v-for="fac in (slot.facilitators || []).slice(0, 3)" 
-                            :key="fac.documentId" 
-                            class="data-chip facilitator-chip clickable"
-                            @click="navigateTo('facilitators', fac.documentId)"
-                            title="Voir l'animateur"
-                          >
-                            👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}
-                          </span>
-                          <span 
-                            v-if="slot.facilitators && slot.facilitators.length > 3" 
-                            class="data-chip count-chip"
-                            :title="`${slot.facilitators.length - 3} autre(s) animateur(s)`"
-                          >
-                            +{{ slot.facilitators.length - 3 }}
-                          </span>
-                          <span v-if="!slot.facilitators || slot.facilitators.length === 0" class="no-data">Aucun</span>
-                        </div>
-                      </div>
-
-                      <div class="relation-row">
-                        <span class="row-label">Participants</span>
-                        <div class="chips-list">
-                          <span 
-                            v-for="part in (slot.participants || []).slice(0, 3)" 
-                            :key="part.documentId" 
-                            class="data-chip participant-chip clickable"
-                            @click="navigateTo('participants', part.documentId)"
-                            title="Voir le participant"
-                          >
-                            👥 {{ part.firstName }} {{ part.lastName }}
-                          </span>
-                          <span 
-                            v-if="slot.participants && slot.participants.length > 3" 
-                            class="data-chip count-chip"
-                            :title="`${slot.participants.length - 3} autre(s) participant(s)`"
-                          >
-                            +{{ slot.participants.length - 3 }}
-                          </span>
-                          <span v-if="!slot.participants || slot.participants.length === 0" class="no-data">Aucun</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-              </div>
-            </div>
+            <!-- ADMIN MODE: Dedicated Drag & Drop Planning View for Animations -->
+            <AnimationsPlanningView 
+              v-if="currentPage === 'timeslots' && appSettingsStore.isAdminMode"
+              :locations="locations"
+              :activities="activities"
+              :facilitators="facilitators"
+              :participants="participants"
+              :timeslots="timeslots"
+              @navigate="navigateTo"
+            />
 
 
             <!-- TAB: LOCATIONS (LIEUX) -->
@@ -1879,6 +1768,7 @@ import FacilitatorsList from './views/admin/FacilitatorsList.vue';
 import RoomSessionsView from './components/RoomSessionsView.vue';
 import WeekTemplateView from './components/WeekTemplateView.vue';
 import ExtractionsView from './components/ExtractionsView.vue';
+import AnimationsPlanningView from './components/AnimationsPlanningView.vue';
 import CalendarView from './components/CalendarView.vue';
 import ClientPlanningView from './views/ClientPlanningView.vue';
 import SearchableSelect from './components/SearchableSelect.vue';
@@ -1902,6 +1792,7 @@ export default {
     RoomSessionsView,
     WeekTemplateView,
     ExtractionsView,
+    AnimationsPlanningView,
     CalendarView,
     ClientPlanningView,
     SearchableSelect
@@ -4677,6 +4568,18 @@ export default {
   }
 }
 
+.nav-section-title {
+  padding: 0.85rem 1rem 0.35rem 1rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
@@ -4684,11 +4587,11 @@ export default {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   cursor: pointer;
   text-align: left;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 500;
   width: 100%;
   transition: all 0.2s;
@@ -4706,6 +4609,35 @@ export default {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   font-weight: 600;
+}
+
+.nav-label {
+  flex-grow: 1;
+}
+
+.nav-badge-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 12px;
+  line-height: 1;
+}
+
+.nav-badge-pill.dnd-pill {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.nav-item.active .nav-badge-pill.dnd-pill {
+  background: #6366f1;
+  color: #ffffff;
+  border-color: #6366f1;
+}
+
+.dedicated-nav-item:hover .nav-badge-pill.dnd-pill {
+  background: rgba(99, 102, 241, 0.35);
+  color: #a5b4fc;
 }
 
 .nav-footer {

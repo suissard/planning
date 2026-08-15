@@ -108,6 +108,14 @@ const routes = [
     redirect: '/week-template'
   },
   {
+    path: '/animations-planning',
+    redirect: '/timeslots'
+  },
+  {
+    path: '/planning-animations',
+    redirect: '/timeslots'
+  },
+  {
     path: '/extractions',
     name: 'extractions',
     component: MainApp,

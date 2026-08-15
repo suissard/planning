@@ -117,6 +117,182 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
       useGlobalStore().addSuccess('Créneau horaire supprimé avec succès !', 'Créneau supprimé');
     },
 
+    // SLOTS DRAG & DROP & PLANNING HELPERS
+    async addParticipantToSlot(slotId, participantId) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const slot = this.timeslots.find(t => t.documentId === slotId || t.id === slotId);
+      if (!slot) throw new Error('Créneau introuvable');
+      const participant = this.participants.find(p => p.documentId === participantId || p.id === participantId);
+      if (!participant) throw new Error('Participant introuvable');
+
+      if (!slot.participants) slot.participants = [];
+      const alreadyIn = slot.participants.some(p => (p.documentId || p.id) === (participant.documentId || participant.id));
+      if (!alreadyIn) {
+        slot.participants.push(participant);
+        useGlobalStore().addSuccess(`${participant.firstName} ${participant.lastName} inscrit à l'animation !`, 'Inscription');
+      }
+      return slot;
+    },
+
+    async removeParticipantFromSlot(slotId, participantId) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const slot = this.timeslots.find(t => t.documentId === slotId || t.id === slotId);
+      if (!slot) throw new Error('Créneau introuvable');
+      if (slot.participants) {
+        slot.participants = slot.participants.filter(p => (p.documentId || p.id) !== participantId);
+        useGlobalStore().addSuccess('Participant désinscrit.', 'Désinscription');
+      }
+      return slot;
+    },
+
+    async moveParticipantBetweenSlots(fromSlotId, toSlotId, participantId) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await this.removeParticipantFromSlot(fromSlotId, participantId);
+      return await this.addParticipantToSlot(toSlotId, participantId);
+    },
+
+    async addFacilitatorToSlot(slotId, facilitatorId) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const slot = this.timeslots.find(t => t.documentId === slotId || t.id === slotId);
+      if (!slot) throw new Error('Créneau introuvable');
+      const facilitator = this.facilitators.find(f => f.documentId === facilitatorId || f.id === facilitatorId);
+      if (!facilitator) throw new Error('Animateur introuvable');
+
+      if (!slot.facilitators) slot.facilitators = [];
+      const alreadyIn = slot.facilitators.some(f => (f.documentId || f.id) === (facilitator.documentId || facilitator.id));
+      if (!alreadyIn) {
+        slot.facilitators.push(facilitator);
+        useGlobalStore().addSuccess(`${facilitator.firstName} ${facilitator.lastName} assigné à l'animation !`, 'Animateur assigné');
+      }
+      return slot;
+    },
+
+    async removeFacilitatorFromSlot(slotId, facilitatorId) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const slot = this.timeslots.find(t => t.documentId === slotId || t.id === slotId);
+      if (!slot) throw new Error('Créneau introuvable');
+      if (slot.facilitators) {
+        slot.facilitators = slot.facilitators.filter(f => (f.documentId || f.id) !== facilitatorId);
+        useGlobalStore().addSuccess('Animateur retiré.', 'Désaffectation');
+      }
+      return slot;
+    },
+
+    async setLocationForSlot(slotId, locationId) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const slot = this.timeslots.find(t => t.documentId === slotId || t.id === slotId);
+      if (!slot) throw new Error('Créneau introuvable');
+      if (!locationId) {
+        slot.location = null;
+        useGlobalStore().addSuccess('Salle retirée de l\'animation.', 'Lieu');
+      } else {
+        const loc = this.locations.find(l => l.documentId === locationId || l.id === locationId);
+        slot.location = loc || null;
+        if (loc) {
+          useGlobalStore().addSuccess(`Salle ${loc.name} assignée !`, 'Lieu');
+        }
+      }
+      return slot;
+    },
+
+    async createSlotForDate(activityId, dateStr, options = {}) {
+      await new Promise(resolve => setTimeout(resolve, 150));
+      const activity = this.activities.find(a => a.documentId === activityId || a.id === activityId);
+      if (!activity) throw new Error('Activité introuvable');
+
+      const durationMinutes = options.durationMinutes || activity.standardDuration || 60;
+      const startTimeStr = options.startTime || '10:00';
+      const [sh, sm] = startTimeStr.split(':').map(Number);
+      
+      const parts = dateStr.slice(0, 10).split('-');
+      const start = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), sh, sm, 0);
+      const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+
+      let loc = null;
+      if (options.locationId) {
+        loc = this.locations.find(l => l.documentId === options.locationId || l.id === options.locationId) || null;
+      }
+      
+      let facs = [];
+      if (Array.isArray(options.facilitatorIds) && options.facilitatorIds.length > 0) {
+        facs = options.facilitatorIds.map(id => this.facilitators.find(f => f.documentId === id || f.id === id)).filter(Boolean);
+      } else if (activity.authorizedFacilitators && activity.authorizedFacilitators.length > 0) {
+        // Option to prefill first authorized facilitator if available
+        const firstAuth = activity.authorizedFacilitators[0];
+        const foundFac = this.facilitators.find(f => (f.documentId || f.id) === (firstAuth.documentId || firstAuth.id || firstAuth));
+        if (foundFac) facs = [foundFac];
+      }
+
+      let partsList = [];
+      if (Array.isArray(options.participantIds)) {
+        partsList = options.participantIds.map(id => this.participants.find(p => p.documentId === id || p.id === id)).filter(Boolean);
+      }
+
+      const newSlot = {
+        documentId: `slot_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        location: loc,
+        activityTemplate: activity,
+        facilitators: facs,
+        participants: partsList
+      };
+
+      this.timeslots.push(newSlot);
+      this.timeslots.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+      useGlobalStore().addSuccess(`Animation "${activity.name}" ajoutée le ${parts[2]}/${parts[1]} !`, 'Animation créée');
+      return newSlot;
+    },
+
+    async duplicateDaySlots(sourceDateStr, targetDateStrings = [], options = {}) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      const sourceDate = sourceDateStr.slice(0, 10);
+      const sourceSlots = this.timeslots.filter(t => t.startDate && t.startDate.slice(0, 10) === sourceDate);
+      if (sourceSlots.length === 0) {
+        useGlobalStore().addWarning('Aucune animation trouvée sur le jour source.', 'Duplication');
+        return [];
+      }
+
+      const created = [];
+      for (const targetDateStr of targetDateStrings) {
+        const targetDate = targetDateStr.slice(0, 10);
+        const [ty, tm, td] = targetDate.split('-').map(Number);
+
+        for (const slot of sourceSlots) {
+          const origStart = new Date(slot.startDate);
+          const origEnd = new Date(slot.endDate);
+          const duration = origEnd.getTime() - origStart.getTime();
+
+          const newStart = new Date(ty, tm - 1, td, origStart.getHours(), origStart.getMinutes(), 0);
+          const newEnd = new Date(newStart.getTime() + duration);
+
+          const newSlot = {
+            documentId: `slot_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            startDate: newStart.toISOString(),
+            endDate: newEnd.toISOString(),
+            location: slot.location ? { ...slot.location } : null,
+            activityTemplate: slot.activityTemplate ? { ...slot.activityTemplate } : null,
+            facilitators: options.includeFacilitators !== false && Array.isArray(slot.facilitators) ? [...slot.facilitators] : [],
+            participants: options.includeParticipants !== false && Array.isArray(slot.participants) ? [...slot.participants] : []
+          };
+          this.timeslots.push(newSlot);
+          created.push(newSlot);
+        }
+      }
+
+      this.timeslots.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+      useGlobalStore().addSuccess(`${created.length} animation(s) dupliquée(s) avec succès !`, 'Duplication réussie');
+      return created;
+    },
+
+    async batchDeleteSlots(slotIds) {
+      await new Promise(resolve => setTimeout(resolve, 150));
+      const idsSet = new Set(slotIds);
+      const count = this.timeslots.filter(t => idsSet.has(t.documentId) || idsSet.has(t.id)).length;
+      this.timeslots = this.timeslots.filter(t => !idsSet.has(t.documentId) && !idsSet.has(t.id));
+      useGlobalStore().addSuccess(`${count} animation(s) supprimée(s).`, 'Suppression');
+    },
+
     // ACTIVITIES
     async createActivity(activityData) {
       await new Promise(resolve => setTimeout(resolve, 200));

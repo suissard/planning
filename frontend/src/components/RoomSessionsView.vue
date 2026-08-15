@@ -98,6 +98,10 @@
             📋 Dupliquer
           </button>
 
+          <button type="button" class="tool-btn shortcut-btn" @click="$emit('navigate', 'timeslots')" title="Accéder directement au planning des animations">
+            🎯 Planning Animations
+          </button>
+
           <button type="button" class="tool-btn assign-btn" @click="openBulkAssignModal" title="Affectation rapide des bénéficiaires">
             👥 Affectation
           </button>
