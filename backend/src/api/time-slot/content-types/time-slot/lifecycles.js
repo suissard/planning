@@ -149,29 +149,12 @@ async function validateTimeSlot(data, currentId) {
     throw new ValidationError(`Space Constraint Violated: Assigned participants (${participantIds.length}) exceeds location capacity (${location.capacity}).`);
   }
 
-  // --- CONSTRAINT 2: Activity Capacity Constraint (Min/Max limit) ---
-  if (participantIds.length < activityTemplate.minParticipants) {
-    throw new ValidationError(`Activity Capacity Violated: Registered participants (${participantIds.length}) is below standard minimum (${activityTemplate.minParticipants}).`);
-  }
+  // --- CONSTRAINT 2: Activity Capacity Constraint (Max limit) ---
   if (participantIds.length > activityTemplate.maxParticipants) {
     throw new ValidationError(`Activity Capacity Violated: Registered participants (${participantIds.length}) exceeds standard maximum (${activityTemplate.maxParticipants}).`);
   }
 
-  // --- CONSTRAINT 3: Time Constraint (Standard Duration verification) ---
-  const durationInMinutes = (endDate - startDate) / (1000 * 60);
-  if (durationInMinutes < activityTemplate.standardDuration) {
-    throw new ValidationError(`Time Constraint Violated: Time slot duration (${durationInMinutes} minutes) is shorter than activity's standard duration (${activityTemplate.standardDuration} minutes).`);
-  }
-
-  // --- CONSTRAINT 4: Skills Constraint (Authorized Facilitators) ---
-  const authorizedIds = activityTemplate.authorizedFacilitators.map(f => f.documentId);
-  for (const fid of facilitatorIds) {
-    if (!authorizedIds.includes(fid)) {
-      const facilitator = await strapi.documents('api::facilitator.facilitator').findOne({ documentId: fid });
-      const name = facilitator ? `${facilitator.firstName} ${facilitator.lastName}` : `ID ${fid}`;
-      throw new ValidationError(`Skills Constraint Violated: Facilitator "${name}" is not authorized for "${activityTemplate.name}".`);
-    }
-  }
+  // (Contraintes assouplies : le minimum de participants, la durée minimale standard et la restriction exclusive des compétences d'animateurs ne bloquent plus la création/mise à jour)
 
   // --- CONSTRAINT 5: Location Availability Constraint ---
   const globalStart = new Date(location.globalOpeningStart);

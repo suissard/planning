@@ -37,9 +37,10 @@
           ✕
         </button>
 
-        <!-- Progress bar for auto-close -->
+        <!-- Progress bar for auto-close (restarts on timer refresh) -->
         <div
           v-if="notif.autoClose"
+          :key="`${notif.id}-${notif.updatedAt || notif.id}`"
           class="toast-progress-bar"
           :style="{ animationDuration: `${notif.timeout}ms` }"
         ></div>

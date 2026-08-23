@@ -1743,11 +1743,6 @@
         </div>
       </div>
 
-      <!-- SUCCESS NOTIFICATION TOAST -->
-      <div class="toast-notification" v-if="successMessage">
-        <span class="toast-icon">✅</span>
-        <span class="toast-text">{{ successMessage }}</span>
-      </div>
     </div>
   </div>
 </template>
@@ -5229,20 +5224,45 @@ export default {
 }
 
 .form-input, .form-select {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--border-color);
-  border-radius: 0.375rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.18));
+  border-radius: 0.5rem;
   padding: 0.65rem 0.85rem;
-  color: var(--text-primary);
+  color: var(--text-primary, #ffffff);
   font-size: 0.9rem;
   width: 100%;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
+  color-scheme: dark;
+}
+
+.form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235eead4'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.15rem 1.15rem;
+  padding-right: 2.4rem;
+  cursor: pointer;
+}
+
+.form-select option,
+.form-input option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 10px 14px;
+}
+
+.form-select option:disabled {
+  color: #64748b !important;
 }
 
 .form-input:focus, .form-select:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 8px rgba(13, 148, 136, 0.25);
+  border-color: var(--primary, #0d9488);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.3);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 /* Modal Search Filters & Headers */

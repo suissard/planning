@@ -60,4 +60,6 @@ Une fois les conteneurs démarrés et stables :
 ## 🛠️ Modèles de Données & Moteur de Contraintes
 Le cœur fonctionnel du projet repose sur un système robuste de validation de créneaux horaires (`TimeSlots`). Chaque créneau lie une activité à un lieu, un ou plusieurs animateurs et des participants tout en vérifiant le respect strict de **6 contraintes majeures** (capacité physique, compétences, disponibilités des personnes, absence de double réservation, etc.).
 
-Consultez le fichier [agend.md](file:///c:/Users/Suissard/Desktop/Programmations/planning/agend.md) à la racine pour une explication complète de la logique métier et du fonctionnement interne du moteur d'agenda.
+Consultez :
+- [API_DOCUMENTATION.md](file:///home/suissard/PROGRAMMATIONS/planning/API_DOCUMENTATION.md) pour la documentation exhaustive de toutes les routes API REST, payloads et règles de validation.
+- [agenda.md](file:///home/suissard/PROGRAMMATIONS/planning/agenda.md) pour l'explication complète de la logique métier et du fonctionnement interne du moteur d'agenda.

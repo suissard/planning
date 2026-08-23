@@ -28,14 +28,44 @@
 
       <!-- DATE NAVIGATION -->
       <div class="date-navigation">
-        <button class="nav-arrow-btn" @click="navigateDate(-1)" title="Période précédente">◄</button>
-        <button class="today-btn" @click="goToToday" title="Revenir au jour présent">Aujourd'hui</button>
-        <button class="nav-arrow-btn" @click="navigateDate(1)" title="Période suivante">►</button>
+        <button 
+          class="nav-arrow-btn" 
+          :class="{ 'is-loading': loading && activeNavAction === 'prev' }"
+          :disabled="loading" 
+          @click="navigateDate(-1)" 
+          title="Période précédente"
+        >
+          <span v-if="loading && activeNavAction === 'prev'" class="mini-spinner"></span>
+          <span v-else>◄</span>
+        </button>
+        <button 
+          class="today-btn" 
+          :class="{ 'is-loading': loading && activeNavAction === 'today' }"
+          :disabled="loading" 
+          @click="goToToday" 
+          title="Revenir au jour présent"
+        >
+          <span v-if="loading && activeNavAction === 'today'" class="mini-spinner inline"></span>
+          Aujourd'hui
+        </button>
+        <button 
+          class="nav-arrow-btn" 
+          :class="{ 'is-loading': loading && activeNavAction === 'next' }"
+          :disabled="loading" 
+          @click="navigateDate(1)" 
+          title="Période suivante"
+        >
+          <span v-if="loading && activeNavAction === 'next'" class="mini-spinner"></span>
+          <span v-else>►</span>
+        </button>
         <div class="period-title-block">
           <Transition :name="transitionName" mode="out-in">
             <span :key="periodTitle" class="current-period-title">{{ periodTitle }}</span>
           </Transition>
-          <span v-if="viewMode === 'week' && weekRelativeDaysLabel" class="period-relative-subtitle">
+          <span v-if="loading" class="nav-loading-badge">
+            <span class="pulse-dot"></span> Chargement...
+          </span>
+          <span v-else-if="viewMode === 'week' && weekRelativeDaysLabel" class="period-relative-subtitle">
             {{ weekRelativeDaysLabel }}
           </span>
         </div>
@@ -46,6 +76,14 @@
         <button class="action-btn print-btn" @click="printCalendar">
           🖨️ Imprimer la vue
         </button>
+      </div>
+    </div>
+
+    <!-- CALENDAR LOADING OVERLAY -->
+    <div v-if="loading" class="calendar-loading-overlay">
+      <div class="calendar-loading-spinner-box">
+        <div class="spinner"></div>
+        <span>Actualisation du planning ({{ periodTitle }})...</span>
       </div>
     </div>
 
@@ -278,14 +316,19 @@ export default {
     hideViewSwitchers: {
       type: Boolean,
       default: false
+    },
+    loading: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['select-slot'],
+  emits: ['select-slot', 'date-change', 'view-mode-change'],
   data() {
     return {
       viewMode: this.defaultView || 'month',
       currentDate: new Date(),
       transitionName: 'slide-left',
+      activeNavAction: null, // 'prev' | 'next' | 'today' | null
       weekDays: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
       hoursList: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
       isMobile: false
@@ -299,6 +342,11 @@ export default {
     window.removeEventListener('resize', this.checkMobile);
   },
   watch: {
+    loading(newVal) {
+      if (!newVal) {
+        this.activeNavAction = null;
+      }
+    },
     targetDate: {
       immediate: true,
       handler(newVal) {
@@ -605,11 +653,19 @@ export default {
       // On mobile, redirect week to day only if view switchers are enabled
       if (this.isMobile && mode === 'week' && !this.hideViewSwitchers) {
         this.viewMode = 'day';
+        this.$emit('view-mode-change', 'day');
         return;
       }
       this.viewMode = mode;
+      this.$emit('view-mode-change', mode);
+      this.$emit('date-change', {
+        date: this.currentDate,
+        dateKey: this.toDateKey(this.currentDate),
+        viewMode: this.viewMode
+      });
     },
     navigateDate(direction) {
+      this.activeNavAction = direction < 0 ? 'prev' : 'next';
       if (direction > 0) {
         this.transitionName = 'slide-left';
       } else {
@@ -626,8 +682,14 @@ export default {
         d.setMonth(d.getMonth() + direction);
       }
       this.currentDate = d;
+      this.$emit('date-change', {
+        date: this.currentDate,
+        dateKey: this.toDateKey(this.currentDate),
+        viewMode: this.viewMode
+      });
     },
     goToToday() {
+      this.activeNavAction = 'today';
       const today = new Date();
       if (today > this.currentDate) {
         this.transitionName = 'slide-left';
@@ -635,10 +697,21 @@ export default {
         this.transitionName = 'slide-right';
       }
       this.currentDate = today;
+      this.$emit('date-change', {
+        date: this.currentDate,
+        dateKey: this.toDateKey(this.currentDate),
+        viewMode: this.viewMode
+      });
     },
     selectDayFromCell(date) {
       this.currentDate = new Date(date);
       this.viewMode = 'day';
+      this.$emit('view-mode-change', 'day');
+      this.$emit('date-change', {
+        date: this.currentDate,
+        dateKey: this.toDateKey(this.currentDate),
+        viewMode: this.viewMode
+      });
     },
     getStartOfWeek(date) {
       const d = new Date(date);
@@ -786,20 +859,39 @@ export default {
 }
 
 .nav-arrow-btn, .today-btn {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #ffffff;
-  padding: 0.4rem 0.75rem;
-  border-radius: 0.4rem;
-  font-size: 0.85rem;
-  font-weight: 500;
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.45rem;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.nav-arrow-btn:hover, .today-btn:hover {
-  background: rgba(13, 148, 136, 0.2);
-  border-color: rgba(13, 148, 136, 0.4);
+.today-btn {
+  background: rgba(13, 148, 136, 0.22);
+  border-color: rgba(13, 148, 136, 0.45);
+  color: #5eead4;
+}
+
+.nav-arrow-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.today-btn:hover {
+  background: rgba(13, 148, 136, 0.38);
+  border-color: #5eead4;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .period-title-block {

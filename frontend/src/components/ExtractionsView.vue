@@ -57,19 +57,54 @@
 
         <!-- Date navigator controls -->
         <div class="date-navigator-controls">
-          <button class="nav-arrow-btn" @click="navigatePeriod(-1)" title="Période précédente">◄</button>
-          <button class="today-btn" @click="goToToday" title="Revenir au jour présent">Aujourd'hui</button>
-          <button class="nav-arrow-btn" @click="navigatePeriod(1)" title="Période suivante">►</button>
+          <button 
+            type="button" 
+            class="nav-arrow-btn" 
+            :class="{ 'is-loading': loading && lastNavAction === 'prev' }"
+            :disabled="loading" 
+            @click="navigatePeriod(-1)" 
+            title="Période précédente"
+          >
+            <span v-if="loading && lastNavAction === 'prev'" class="mini-spinner"></span>
+            <span v-else>◄</span>
+          </button>
+          <button 
+            type="button" 
+            class="today-btn" 
+            :class="{ 'is-loading': loading && lastNavAction === 'today' }"
+            :disabled="loading" 
+            @click="goToToday" 
+            title="Revenir au jour présent"
+          >
+            <span v-if="loading && lastNavAction === 'today'" class="mini-spinner inline"></span>
+            Aujourd'hui
+          </button>
+          <button 
+            type="button" 
+            class="nav-arrow-btn" 
+            :class="{ 'is-loading': loading && lastNavAction === 'next' }"
+            :disabled="loading" 
+            @click="navigatePeriod(1)" 
+            title="Période suivante"
+          >
+            <span v-if="loading && lastNavAction === 'next'" class="mini-spinner"></span>
+            <span v-else>►</span>
+          </button>
 
           <div class="period-title-badge">
             <span class="period-text">{{ periodTitle }}</span>
-            <span class="period-sub" v-if="timeView === 'week'">{{ periodDateRangeLabel }}</span>
+            <span v-if="loading" class="nav-loading-badge">
+              <span class="pulse-dot"></span> Chargement...
+            </span>
+            <span v-else-if="timeView === 'week'" class="period-sub">{{ periodDateRangeLabel }}</span>
           </div>
 
-          <div class="date-picker-inline">
+          <div class="date-picker-inline" :class="{ 'is-loading': loading && lastNavAction === 'date-input' }">
             <input 
               type="date" 
               v-model="selectedDate" 
+              :disabled="loading"
+              @change="lastNavAction = 'date-input'"
               class="form-input date-input-field" 
               title="Choisir une date de référence"
             />
@@ -120,13 +155,14 @@
       <div class="print-sub-info">Document édité le {{ currentFormattedDate }} • Système de Gestion AetherScheduler</div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="state-container">
-      <div class="spinner"></div>
-      <p>Chargement et calcul des données d'extraction ({{ periodTitle }})...</p>
-    </div>
-
-    <div v-else class="extraction-body printable-area">
+    <div class="extraction-body printable-area" style="position: relative;">
+      <!-- Translucent Loading Overlay during extraction fetch -->
+      <div v-if="loading" class="extraction-loading-overlay">
+        <div class="loading-card-badge">
+          <div class="spinner"></div>
+          <span>Actualisation des données d'extraction ({{ periodTitle }})...</span>
+        </div>
+      </div>
       <!-- ══════════════════════════════════════════════════════════════
            MODE 1: FICHE BÉNÉFICIAIRE (PARTICIPANT)
       ══════════════════════════════════════════════════════════════ -->
@@ -1357,6 +1393,7 @@ const selectedFacilitatorId = ref('');
 const selectedLocationId = ref('');
 
 const loading = ref(false);
+const lastNavAction = ref(null); // 'prev' | 'next' | 'today' | 'date-input' | 'time-view' | null
 const allTimeSlots = ref([]);
 const showExportMenu = ref(false);
 const summarySearch = ref('');
@@ -1651,10 +1688,12 @@ async function fetchPeriodData() {
 
 // ─── NAVIGATION HELPERS ───
 function setTimeView(v) {
+  lastNavAction.value = 'time-view';
   timeView.value = v;
 }
 
 function navigatePeriod(step) {
+  lastNavAction.value = step < 0 ? 'prev' : 'next';
   const d = new Date(selectedDate.value + 'T12:00:00');
   if (timeView.value === 'day') {
     d.setDate(d.getDate() + step);
@@ -1667,13 +1706,21 @@ function navigatePeriod(step) {
 }
 
 function goToToday() {
+  lastNavAction.value = 'today';
   selectedDate.value = new Date().toISOString().slice(0, 10);
 }
 
 function selectDayFromMonth(dateKey) {
+  lastNavAction.value = 'date-input';
   selectedDate.value = dateKey;
   timeView.value = 'day';
 }
+
+watch(loading, (isLoading) => {
+  if (!isLoading) {
+    lastNavAction.value = null;
+  }
+});
 
 function toggleExportMenu() {
   showExportMenu.value = !showExportMenu.value;
@@ -2168,10 +2215,8 @@ async function submitRoomSessionForm() {
     if (editingSession.value) {
       const docId = editingSession.value.documentId || editingSession.value.id;
       await roomSessionStore.updateSession(docId, sessionForm.value);
-      globalStore.addSuccess('Session de salle mise à jour avec succès !', 'Session modifiée');
     } else {
       await roomSessionStore.createSession(sessionForm.value);
-      globalStore.addSuccess('Session de salle créée avec succès !', 'Salle ouverte');
     }
     showRoomAssignModal.value = false;
     await fetchPeriodData();
@@ -2238,7 +2283,6 @@ async function removeParticipantFromSession(session, participant) {
       manager: session.manager?.documentId || session.manager?.id,
       participants: currentPartIds
     });
-    globalStore.addSuccess('Bénéficiaire retiré de la salle avec succès !');
     await fetchPeriodData();
     emit('refresh-data');
   } catch (err) {
@@ -2257,7 +2301,6 @@ async function confirmDeleteSession(session) {
   try {
     const docId = session.documentId || session.id;
     await roomSessionStore.deleteSession(docId);
-    globalStore.addSuccess('Session de salle fermée avec succès !');
     await fetchPeriodData();
     emit('refresh-data');
   } catch (err) {
@@ -2837,17 +2880,39 @@ function printExtraction() {
 }
 
 .nav-arrow-btn, .today-btn {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cbd5e1;
-  padding: 0.45rem 0.75rem;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+  padding: 0.45rem 0.85rem;
   border-radius: 0.45rem;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
-.nav-arrow-btn:hover, .today-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+
+.today-btn {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #c7d2fe;
+}
+
+.nav-arrow-btn:hover {
+  background: rgba(51, 65, 85, 0.95);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.today-btn:hover {
+  background: rgba(99, 102, 241, 0.4);
+  border-color: rgba(165, 180, 252, 0.7);
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .period-title-badge {
@@ -3424,10 +3489,38 @@ function printExtraction() {
 
 .form-input {
   padding: 0.6rem 0.85rem;
-  border-radius: 0.45rem;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(15, 23, 42, 0.6);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 42, 0.85);
   color: #fff;
+  color-scheme: dark;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: #0d9488;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
+  background: rgba(15, 23, 42, 0.98);
+}
+
+select.form-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235eead4'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.15rem 1.15rem;
+  padding-right: 2.4rem;
+  cursor: pointer;
+}
+
+select.form-input option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 10px 14px;
 }
 
 .checkbox-scroll-list {

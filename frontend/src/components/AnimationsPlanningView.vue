@@ -51,20 +51,54 @@
       <div class="header-toolbar-row">
         <!-- Date Navigation Controls -->
         <div class="date-nav-group">
-          <button type="button" class="nav-arrow-btn" @click="navigateDate(-1)" title="Période précédente">◄</button>
-          <button type="button" class="today-btn" @click="goToToday" title="Revenir à aujourd'hui">Aujourd'hui</button>
-          <button type="button" class="nav-arrow-btn" @click="navigateDate(1)" title="Période suivante">►</button>
+          <button 
+            type="button" 
+            class="nav-arrow-btn" 
+            :class="{ 'is-loading': schedulerStore.loading && lastNavAction === 'prev' }"
+            :disabled="schedulerStore.loading"
+            @click="navigateDate(-1)" 
+            title="Période précédente"
+          >
+            <span v-if="schedulerStore.loading && lastNavAction === 'prev'" class="mini-spinner"></span>
+            <span v-else>◄</span>
+          </button>
+          <button 
+            type="button" 
+            class="today-btn" 
+            :class="{ 'is-loading': schedulerStore.loading && lastNavAction === 'today' }"
+            :disabled="schedulerStore.loading"
+            @click="goToToday" 
+            title="Revenir à aujourd'hui"
+          >
+            <span v-if="schedulerStore.loading && lastNavAction === 'today'" class="mini-spinner inline"></span>
+            Aujourd'hui
+          </button>
+          <button 
+            type="button" 
+            class="nav-arrow-btn" 
+            :class="{ 'is-loading': schedulerStore.loading && lastNavAction === 'next' }"
+            :disabled="schedulerStore.loading"
+            @click="navigateDate(1)" 
+            title="Période suivante"
+          >
+            <span v-if="schedulerStore.loading && lastNavAction === 'next'" class="mini-spinner"></span>
+            <span v-else>►</span>
+          </button>
           
           <div class="period-title-block">
             <span class="current-period-title">{{ periodTitle }}</span>
-            <span v-if="viewMode === 'week'" class="period-subtitle">{{ weekDaysRangeLabel }}</span>
+            <span v-if="schedulerStore.loading" class="nav-loading-badge">
+              <span class="pulse-dot"></span> Chargement...
+            </span>
+            <span v-else-if="viewMode === 'week'" class="period-subtitle">{{ weekDaysRangeLabel }}</span>
           </div>
 
           <!-- Date Picker input to jump anywhere -->
-          <div class="direct-date-input-wrapper">
+          <div class="direct-date-input-wrapper" :class="{ 'is-loading': schedulerStore.loading && lastNavAction === 'date-input' }">
             <input 
               type="date" 
               :value="currentDateStr" 
+              :disabled="schedulerStore.loading"
               @change="onDirectDateChange" 
               class="direct-date-input" 
               title="Sélectionner une date précise"
@@ -74,6 +108,18 @@
 
         <!-- ACTION TOOLS (Édition & Remplissage) -->
         <div class="action-tools-group">
+          <!-- Toggle Collapse / Expand All Slots Button -->
+          <button 
+            type="button" 
+            class="tool-btn collapse-toggle-btn"
+            :class="{ active: areAllSlotsExpanded }"
+            @click="toggleAllSlots"
+            :title="areAllSlotsExpanded ? 'Réduire toutes les activités' : 'Déplier toutes les activités'"
+          >
+            <span class="btn-icon">{{ areAllSlotsExpanded ? '🔼' : '🔽' }}</span>
+            <span>{{ areAllSlotsExpanded ? 'Tout réduire' : 'Tout déplier' }}</span>
+          </button>
+
           <!-- Toggle Side Palette Button -->
           <button 
             type="button" 
@@ -231,16 +277,18 @@
     <div class="main-planning-layout" :class="{ 'has-open-palette': isPaletteOpen }">
       
       <!-- ──────────────── CENTRAL PLANNING CANVAS ──────────────── -->
-      <div class="planning-canvas-container">
+      <div class="planning-canvas-container" style="position: relative;">
         
-        <!-- LOADING SPINNER -->
-        <div v-if="schedulerStore.loading" class="loading-state">
-          <div class="spinner"></div>
-          <p>Chargement des animations...</p>
+        <!-- LOADING OVERLAY -->
+        <div v-if="schedulerStore.loading" class="canvas-loading-overlay">
+          <div class="loading-card-badge">
+            <div class="spinner"></div>
+            <span>Actualisation des animations ({{ periodTitle }})...</span>
+          </div>
         </div>
 
         <!-- ────────── VIEW 1: WEEK VIEW (COLUMNS KANBAN D&D) ────────── -->
-        <div v-else-if="viewMode === 'week'" class="week-kanban-board">
+        <div v-if="viewMode === 'week'" class="week-kanban-board">
           <div class="week-columns-grid">
             <div 
               v-for="day in weekDaysList" 
@@ -265,6 +313,15 @@
                   <span class="slots-count-chip" :class="{ 'has-slots': day.slots.length > 0 }">
                     🎯 {{ day.slots.length }} anim.
                   </span>
+                  <button 
+                    v-if="day.slots.length > 0"
+                    type="button"
+                    class="day-collapse-toggle-btn no-print"
+                    @click="toggleDaySlots(day)"
+                    :title="isDayAllExpanded(day) ? 'Réduire les activités de ce jour' : 'Déplier les activités de ce jour'"
+                  >
+                    {{ isDayAllExpanded(day) ? '▲' : '▼' }}
+                  </button>
                   <button 
                     type="button" 
                     class="quick-add-day-btn" 
@@ -309,6 +366,8 @@
                   :key="slot.documentId || slot.id" 
                   class="animation-card"
                   :class="{
+                    'is-collapsed': !isSlotExpanded(slot),
+                    'is-expanded': isSlotExpanded(slot),
                     'has-conflict': slotConflicts(slot).length > 0,
                     'is-under-min': isUnderMinParticipants(slot),
                     'is-over-max': isOverMaxParticipants(slot),
@@ -321,7 +380,7 @@
                   @drop.prevent="onDropOnCard($event, slot)"
                 >
                   <!-- Card Header: Time, Title, Tag & Actions -->
-                  <div class="anim-card-header">
+                  <div class="anim-card-header is-clickable" @click="toggleSlotExpand(slot, $event)">
                     <div class="time-and-tag">
                       <span class="time-chip" title="Horaire de l'animation">
                         🕒 {{ formatSlotTimeRange(slot.startDate, slot.endDate) }}
@@ -331,7 +390,15 @@
                       </span>
                     </div>
 
-                    <div class="card-quick-actions no-print">
+                    <div class="card-quick-actions no-print" @click.stop>
+                      <button 
+                        type="button" 
+                        class="card-action-btn toggle-card-btn" 
+                        @click.stop="toggleSlotExpand(slot, $event)"
+                        :title="isSlotExpanded(slot) ? 'Réduire cette animation' : 'Déplier les détails'"
+                      >
+                        <span class="chevron-icon" :class="{ 'is-rotated': isSlotExpanded(slot) }">▼</span>
+                      </button>
                       <button 
                         type="button" 
                         class="card-action-btn edit-btn" 
@@ -352,7 +419,7 @@
                   </div>
 
                   <!-- Activity Name & Duration -->
-                  <div class="anim-title-row">
+                  <div class="anim-title-row is-clickable" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier/réduire">
                     <span class="anim-icon">🎯</span>
                     <strong class="anim-name">{{ slot.activityTemplate?.name || 'Activité sans nom' }}</strong>
                   </div>
@@ -362,133 +429,168 @@
                     ⚠️ {{ slotConflicts(slot)[0] }}
                   </div>
 
-                  <!-- ──────── LOCATION TARGET ──────── -->
-                  <div 
-                    class="anim-section location-section"
-                    :class="{ 'drop-target-active': activeDragType === 'location' }"
-                    @dragover.prevent="onDragOver($event, ['location'])"
-                    @dragleave="onDragLeave($event)"
-                    @drop.prevent="onDropOnSlot($event, slot, 'location')"
-                  >
-                    <div class="section-label-row">
-                      <span class="label-text">📍 Salle / Lieu</span>
-                      <button 
-                        v-if="slot.location" 
-                        type="button" 
-                        class="clear-chip-btn no-print" 
-                        @click="clearSlotLocation(slot)" 
-                        title="Retirer la salle"
-                      >✕</button>
-                    </div>
-
-                    <div v-if="slot.location" class="location-chip">
-                      <span class="loc-name">{{ slot.location.name }}</span>
-                      <span v-if="slot.location.capacity" class="loc-cap">Max {{ slot.location.capacity }}p</span>
-                    </div>
-                    <div v-else class="empty-drop-slot location-drop-slot">
-                      <span class="drop-invite-text">👉 Glisser une salle ici</span>
-                    </div>
-                  </div>
-
-                  <!-- ──────── FACILITATORS (ANIMATEURS) TARGET ──────── -->
-                  <div 
-                    class="anim-section facilitators-section"
-                    :class="{ 'drop-target-active': activeDragType === 'facilitator' }"
-                    @dragover.prevent="onDragOver($event, ['facilitator'])"
-                    @dragleave="onDragLeave($event)"
-                    @drop.prevent="onDropOnSlot($event, slot, 'facilitator')"
-                  >
-                    <div class="section-label-row">
-                      <span class="label-text">👨‍🏫 Animateur(s)</span>
-                      <span class="count-badge">{{ (slot.facilitators || []).length }}</span>
-                    </div>
-
-                    <!-- Facilitators Chips List -->
-                    <div class="facilitators-chips-list" v-if="slot.facilitators && slot.facilitators.length > 0">
-                      <div 
-                        v-for="fac in slot.facilitators" 
-                        :key="fac.documentId || fac.id" 
-                        class="person-chip facilitator-chip"
-                        draggable="true"
-                        @dragstart="onDragStart($event, { type: 'facilitator', data: fac, fromSlotId: slot.documentId || slot.id })"
-                        @dragend="onDragEnd($event)"
+                  <!-- ════════ COLLAPSED SUMMARY VIEW ════════ -->
+                  <div v-if="!isSlotExpanded(slot)" class="anim-collapsed-summary" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier les détails">
+                    <div class="collapsed-badges-row">
+                      <!-- Location pill -->
+                      <span 
+                        class="summary-badge loc-badge" 
+                        :class="{ 'badge-empty': !slot.location }" 
+                        :title="slot.location ? ('Salle : ' + slot.location.name) : 'Aucune salle assignée'"
                       >
-                        <span class="person-name">{{ fac.firstName }} {{ fac.lastName }}</span>
-                        <!-- Conflict indicator -->
-                        <span 
-                          v-if="getPersonSlotConflict(fac, slot, 'facilitator')" 
-                          class="conflict-warn-dot" 
-                          :title="getPersonSlotConflict(fac, slot, 'facilitator')"
-                        >⚠️</span>
-                        <button 
-                          type="button" 
-                          class="remove-chip-btn no-print" 
-                          @click.stop="removeFacilitator(slot, fac)" 
-                          title="Désaffecter"
-                        >✕</button>
-                      </div>
-                    </div>
+                        📍 {{ slot.location ? slot.location.name : 'Sans salle' }}
+                      </span>
 
-                    <!-- Drop invite if no facilitator -->
-                    <div v-else class="empty-drop-slot facilitator-drop-slot">
-                      <span class="drop-invite-text">👉 Glisser un animateur ici</span>
-                    </div>
-                  </div>
+                      <!-- Facilitators pill -->
+                      <span 
+                        class="summary-badge fac-badge" 
+                        :class="{ 'badge-empty': !(slot.facilitators && slot.facilitators.length > 0) }"
+                        :title="getFacilitatorsSummaryTooltip(slot)"
+                      >
+                        👨‍🏫 {{ getFacilitatorsSummaryText(slot) }}
+                      </span>
 
-                  <!-- ──────── PARTICIPANTS (BÉNÉFICIAIRES) TARGET ──────── -->
-                  <div 
-                    class="anim-section participants-section"
-                    :class="{ 'drop-target-active': activeDragType === 'participant' }"
-                    @dragover.prevent="onDragOver($event, ['participant'])"
-                    @dragleave="onDragLeave($event)"
-                    @drop.prevent="onDropOnSlot($event, slot, 'participant')"
-                  >
-                    <div class="section-label-row">
-                      <span class="label-text">👥 Bénéficiaires</span>
-                      <span class="capacity-gauge-pill" :class="getCapacityClass(slot)">
-                        {{ (slot.participants || []).length }} / {{ getMaxParticipants(slot) }}
+                      <!-- Participants pill -->
+                      <span 
+                        class="summary-badge part-badge" 
+                        :class="getCapacityClass(slot)" 
+                        :title="'Bénéficiaires : ' + (slot.participants || []).length + ' / ' + getMaxParticipants(slot)"
+                      >
+                        👥 {{ (slot.participants || []).length }}/{{ getMaxParticipants(slot) }}
                       </span>
                     </div>
+                  </div>
 
-                    <!-- Capacity Gauge Bar -->
-                    <div class="capacity-progress-track">
-                      <div 
-                        class="capacity-progress-fill" 
-                        :style="{ width: getCapacityPercentage(slot) + '%' }"
-                        :class="getCapacityClass(slot)"
-                      ></div>
-                    </div>
-
-                    <!-- Participants Chips Grid -->
-                    <div class="participants-chips-grid" v-if="slot.participants && slot.participants.length > 0">
-                      <div 
-                        v-for="part in slot.participants" 
-                        :key="part.documentId || part.id" 
-                        class="person-chip participant-chip"
-                        draggable="true"
-                        @dragstart="onDragStart($event, { type: 'participant', data: part, fromSlotId: slot.documentId || slot.id })"
-                        @dragend="onDragEnd($event)"
-                      >
-                        <span class="person-avatar">👤</span>
-                        <span class="person-name">{{ part.firstName }} {{ part.lastName }}</span>
-                        <!-- Conflict Dot -->
-                        <span 
-                          v-if="getPersonSlotConflict(part, slot, 'participant')" 
-                          class="conflict-warn-dot" 
-                          :title="getPersonSlotConflict(part, slot, 'participant')"
-                        >⚠️</span>
+                  <!-- ════════ EXPANDED FULL DETAILS (DROP TARGETS) ════════ -->
+                  <div v-show="isSlotExpanded(slot)" class="anim-expanded-body">
+                    <!-- ──────── LOCATION TARGET ──────── -->
+                    <div 
+                      class="anim-section location-section"
+                      :class="{ 'drop-target-active': activeDragType === 'location' }"
+                      @dragover.prevent="onDragOver($event, ['location'])"
+                      @dragleave="onDragLeave($event)"
+                      @drop.prevent="onDropOnSlot($event, slot, 'location')"
+                    >
+                      <div class="section-label-row">
+                        <span class="label-text">📍 Salle / Lieu</span>
                         <button 
+                          v-if="slot.location" 
                           type="button" 
-                          class="remove-chip-btn no-print" 
-                          @click.stop="removeParticipant(slot, part)" 
-                          title="Désinscrire"
+                          class="clear-chip-btn no-print" 
+                          @click="clearSlotLocation(slot)" 
+                          title="Retirer la salle"
                         >✕</button>
+                      </div>
+
+                      <div v-if="slot.location" class="location-chip">
+                        <span class="loc-name">{{ slot.location.name }}</span>
+                        <span v-if="slot.location.capacity" class="loc-cap">Max {{ slot.location.capacity }}p</span>
+                      </div>
+                      <div v-else class="empty-drop-slot location-drop-slot">
+                        <span class="drop-invite-text">👉 Glisser une salle ici</span>
                       </div>
                     </div>
 
-                    <!-- Drop Target Prompt -->
-                    <div class="participants-drop-zone-cta">
-                      <span class="drop-cta-text">📥 Glisser des bénéficiaires ici</span>
+                    <!-- ──────── FACILITATORS (ANIMATEURS) TARGET ──────── -->
+                    <div 
+                      class="anim-section facilitators-section"
+                      :class="{ 'drop-target-active': activeDragType === 'facilitator' }"
+                      @dragover.prevent="onDragOver($event, ['facilitator'])"
+                      @dragleave="onDragLeave($event)"
+                      @drop.prevent="onDropOnSlot($event, slot, 'facilitator')"
+                    >
+                      <div class="section-label-row">
+                        <span class="label-text">👨‍🏫 Animateur(s)</span>
+                        <span class="count-badge">{{ (slot.facilitators || []).length }}</span>
+                      </div>
+
+                      <!-- Facilitators Chips List -->
+                      <div class="facilitators-chips-list" v-if="slot.facilitators && slot.facilitators.length > 0">
+                        <div 
+                          v-for="fac in slot.facilitators" 
+                          :key="fac.documentId || fac.id" 
+                          class="person-chip facilitator-chip"
+                          draggable="true"
+                          @dragstart="onDragStart($event, { type: 'facilitator', data: fac, fromSlotId: slot.documentId || slot.id })"
+                          @dragend="onDragEnd($event)"
+                        >
+                          <span class="person-name">{{ fac.firstName }} {{ fac.lastName }}</span>
+                          <!-- Conflict indicator -->
+                          <span 
+                            v-if="getPersonSlotConflict(fac, slot, 'facilitator')" 
+                            class="conflict-warn-dot" 
+                            :title="getPersonSlotConflict(fac, slot, 'facilitator')"
+                          >⚠️</span>
+                          <button 
+                            type="button" 
+                            class="remove-chip-btn no-print" 
+                            @click.stop="removeFacilitator(slot, fac)" 
+                            title="Désaffecter"
+                          >✕</button>
+                        </div>
+                      </div>
+
+                      <!-- Drop invite if no facilitator -->
+                      <div v-else class="empty-drop-slot facilitator-drop-slot">
+                        <span class="drop-invite-text">👉 Glisser un animateur ici</span>
+                      </div>
+                    </div>
+
+                    <!-- ──────── PARTICIPANTS (BÉNÉFICIAIRES) TARGET ──────── -->
+                    <div 
+                      class="anim-section participants-section"
+                      :class="{ 'drop-target-active': activeDragType === 'participant' }"
+                      @dragover.prevent="onDragOver($event, ['participant'])"
+                      @dragleave="onDragLeave($event)"
+                      @drop.prevent="onDropOnSlot($event, slot, 'participant')"
+                    >
+                      <div class="section-label-row">
+                        <span class="label-text">👥 Bénéficiaires</span>
+                        <span class="capacity-gauge-pill" :class="getCapacityClass(slot)">
+                          {{ (slot.participants || []).length }} / {{ getMaxParticipants(slot) }}
+                        </span>
+                      </div>
+
+                      <!-- Capacity Gauge Bar -->
+                      <div class="capacity-progress-track">
+                        <div 
+                          class="capacity-progress-fill" 
+                          :style="{ width: getCapacityPercentage(slot) + '%' }"
+                          :class="getCapacityClass(slot)"
+                        ></div>
+                      </div>
+
+                      <!-- Participants Chips Grid -->
+                      <div class="participants-chips-grid" v-if="slot.participants && slot.participants.length > 0">
+                        <div 
+                          v-for="part in slot.participants" 
+                          :key="part.documentId || part.id" 
+                          class="person-chip participant-chip"
+                          draggable="true"
+                          @dragstart="onDragStart($event, { type: 'participant', data: part, fromSlotId: slot.documentId || slot.id })"
+                          @dragend="onDragEnd($event)"
+                        >
+                          <span class="person-avatar">👤</span>
+                          <span class="person-name">{{ part.firstName }} {{ part.lastName }}</span>
+                          <!-- Conflict Dot -->
+                          <span 
+                            v-if="getPersonSlotConflict(part, slot, 'participant')" 
+                            class="conflict-warn-dot" 
+                            :title="getPersonSlotConflict(part, slot, 'participant')"
+                          >⚠️</span>
+                          <button 
+                            type="button" 
+                            class="remove-chip-btn no-print" 
+                            @click.stop="removeParticipant(slot, part)" 
+                            title="Désinscrire"
+                          >✕</button>
+                        </div>
+                      </div>
+
+                      <!-- Drop Target Prompt -->
+                      <div class="participants-drop-zone-cta">
+                        <span class="drop-cta-text">📥 Glisser des bénéficiaires ici</span>
+                      </div>
                     </div>
                   </div>
 
@@ -550,6 +652,8 @@
               :key="slot.documentId || slot.id" 
               class="day-slot-expanded-card"
               :class="{
+                'is-collapsed': !isSlotExpanded(slot),
+                'is-expanded': isSlotExpanded(slot),
                 'has-conflict': slotConflicts(slot).length > 0,
                 'is-under-min': isUnderMinParticipants(slot),
                 'is-over-max': isOverMaxParticipants(slot),
@@ -557,115 +661,139 @@
               }"
             >
               <div class="card-main-info">
-                <div class="time-badge-large">
+                <div class="time-badge-large is-clickable" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier/réduire">
                   <span class="time-clock">🕒</span>
                   <span class="time-range-text">{{ formatSlotTimeRange(slot.startDate, slot.endDate) }}</span>
                   <span class="duration-pill">{{ getSlotDurationMinutes(slot) }} min</span>
                 </div>
 
-                <div class="title-and-tags-large">
+                <div class="title-and-tags-large is-clickable" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier/réduire">
                   <h3 class="anim-heading">{{ slot.activityTemplate?.name || 'Activité' }}</h3>
                   <div class="tags-row">
                     <span v-if="getActivityTag(slot)" class="category-tag-chip">{{ getActivityTag(slot) }}</span>
                     <span class="rules-tag-chip">Min: {{ getMinParticipants(slot) }} • Max: {{ getMaxParticipants(slot) }}</span>
                   </div>
+
+                  <!-- Collapsed summary badges for day view -->
+                  <div v-if="!isSlotExpanded(slot)" class="day-collapsed-badges-row">
+                    <span class="summary-badge loc-badge" :class="{ 'badge-empty': !slot.location }">
+                      📍 {{ slot.location ? slot.location.name : 'Sans salle' }}
+                    </span>
+                    <span class="summary-badge fac-badge" :class="{ 'badge-empty': !(slot.facilitators && slot.facilitators.length > 0) }" :title="getFacilitatorsSummaryTooltip(slot)">
+                      👨‍🏫 {{ getFacilitatorsSummaryText(slot) }}
+                    </span>
+                    <span class="summary-badge part-badge" :class="getCapacityClass(slot)">
+                      👥 {{ (slot.participants || []).length }} / {{ getMaxParticipants(slot) }} inscrits
+                    </span>
+                  </div>
                 </div>
 
                 <div class="card-actions-top no-print">
+                  <button 
+                    type="button" 
+                    class="tool-btn toggle-day-slot-btn" 
+                    @click.stop="toggleSlotExpand(slot, $event)"
+                    :title="isSlotExpanded(slot) ? 'Réduire les détails' : 'Déplier les détails'"
+                  >
+                    <span>{{ isSlotExpanded(slot) ? '▲ Réduire' : '▼ Déplier' }}</span>
+                  </button>
                   <button type="button" class="tool-btn" @click="openEditModal(slot)">✏️ Modifier</button>
                   <button type="button" class="tool-btn danger-tool-btn" @click="confirmDeleteSlot(slot)">🗑️ Supprimer</button>
                 </div>
               </div>
 
-              <!-- Location & Facilitators Row -->
-              <div class="expanded-middle-row">
-                <!-- Location Target -->
-                <div 
-                  class="location-box"
-                  :class="{ 'drop-target-active': activeDragType === 'location' }"
-                  @dragover.prevent="onDragOver($event, ['location'])"
-                  @dragleave="onDragLeave($event)"
-                  @drop.prevent="onDropOnSlot($event, slot, 'location')"
-                >
-                  <span class="box-title">📍 Salle / Lieu</span>
-                  <div v-if="slot.location" class="location-chip large">
-                    <strong>{{ slot.location.name }}</strong>
-                    <span v-if="slot.location.capacity" class="cap-text">Capacité: {{ slot.location.capacity }}</span>
-                    <button type="button" class="remove-chip-btn no-print" @click="clearSlotLocation(slot)">✕</button>
-                  </div>
-                  <div v-else class="empty-drop-slot">
-                    <span>👉 Glisser une salle ici</span>
-                  </div>
-                </div>
-
-                <!-- Facilitators Target -->
-                <div 
-                  class="facilitators-box"
-                  :class="{ 'drop-target-active': activeDragType === 'facilitator' }"
-                  @dragover.prevent="onDragOver($event, ['facilitator'])"
-                  @dragleave="onDragLeave($event)"
-                  @drop.prevent="onDropOnSlot($event, slot, 'facilitator')"
-                >
-                  <span class="box-title">👨‍🏫 Animateur(s) ({{ (slot.facilitators || []).length }})</span>
-                  <div class="facilitators-chips-list" v-if="slot.facilitators && slot.facilitators.length > 0">
-                    <div 
-                      v-for="fac in slot.facilitators" 
-                      :key="fac.documentId || fac.id" 
-                      class="person-chip facilitator-chip large"
-                      draggable="true"
-                      @dragstart="onDragStart($event, { type: 'facilitator', data: fac, fromSlotId: slot.documentId || slot.id })"
-                      @dragend="onDragEnd($event)"
-                    >
-                      <span class="person-name">{{ fac.firstName }} {{ fac.lastName }}</span>
-                      <span v-if="getPersonSlotConflict(fac, slot, 'facilitator')" class="conflict-warn-dot" :title="getPersonSlotConflict(fac, slot, 'facilitator')">⚠️</span>
-                      <button type="button" class="remove-chip-btn no-print" @click.stop="removeFacilitator(slot, fac)">✕</button>
+              <!-- Expanded Middle & Participants Row in Day View -->
+              <div v-show="isSlotExpanded(slot)" class="day-slot-expanded-body">
+                <!-- Location & Facilitators Row -->
+                <div class="expanded-middle-row">
+                  <!-- Location Target -->
+                  <div 
+                    class="location-box"
+                    :class="{ 'drop-target-active': activeDragType === 'location' }"
+                    @dragover.prevent="onDragOver($event, ['location'])"
+                    @dragleave="onDragLeave($event)"
+                    @drop.prevent="onDropOnSlot($event, slot, 'location')"
+                  >
+                    <span class="box-title">📍 Salle / Lieu</span>
+                    <div v-if="slot.location" class="location-chip large">
+                      <strong>{{ slot.location.name }}</strong>
+                      <span v-if="slot.location.capacity" class="cap-text">Capacité: {{ slot.location.capacity }}</span>
+                      <button type="button" class="remove-chip-btn no-print" @click="clearSlotLocation(slot)">✕</button>
+                    </div>
+                    <div v-else class="empty-drop-slot">
+                      <span>👉 Glisser une salle ici</span>
                     </div>
                   </div>
-                  <div v-else class="empty-drop-slot">
-                    <span>👉 Glisser un animateur ici</span>
-                  </div>
-                </div>
-              </div>
 
-              <!-- Participants Section -->
-              <div 
-                class="expanded-participants-section"
-                :class="{ 'drop-target-active': activeDragType === 'participant' }"
-                @dragover.prevent="onDragOver($event, ['participant'])"
-                @dragleave="onDragLeave($event)"
-                @drop.prevent="onDropOnSlot($event, slot, 'participant')"
-              >
-                <div class="section-label-row">
-                  <span class="label-text">👥 Bénéficiaires inscrits ({{ (slot.participants || []).length }} / {{ getMaxParticipants(slot) }})</span>
-                  <button type="button" class="tool-btn small-btn no-print" @click="openQuickAddParticipants(slot)">➕ Ajouter des inscrits</button>
-                </div>
-
-                <div class="capacity-progress-track">
+                  <!-- Facilitators Target -->
                   <div 
-                    class="capacity-progress-fill" 
-                    :style="{ width: getCapacityPercentage(slot) + '%' }"
-                    :class="getCapacityClass(slot)"
-                  ></div>
-                </div>
-
-                <div class="participants-chips-grid large-grid" v-if="slot.participants && slot.participants.length > 0">
-                  <div 
-                    v-for="part in slot.participants" 
-                    :key="part.documentId || part.id" 
-                    class="person-chip participant-chip large"
-                    draggable="true"
-                    @dragstart="onDragStart($event, { type: 'participant', data: part, fromSlotId: slot.documentId || slot.id })"
-                    @dragend="onDragEnd($event)"
+                    class="facilitators-box"
+                    :class="{ 'drop-target-active': activeDragType === 'facilitator' }"
+                    @dragover.prevent="onDragOver($event, ['facilitator'])"
+                    @dragleave="onDragLeave($event)"
+                    @drop.prevent="onDropOnSlot($event, slot, 'facilitator')"
                   >
-                    <span class="person-avatar">👤</span>
-                    <span class="person-name">{{ part.firstName }} {{ part.lastName }}</span>
-                    <span v-if="getPersonSlotConflict(part, slot, 'participant')" class="conflict-warn-dot" :title="getPersonSlotConflict(part, slot, 'participant')">⚠️</span>
-                    <button type="button" class="remove-chip-btn no-print" @click.stop="removeParticipant(slot, part)">✕</button>
+                    <span class="box-title">👨‍🏫 Animateur(s) ({{ (slot.facilitators || []).length }})</span>
+                    <div class="facilitators-chips-list" v-if="slot.facilitators && slot.facilitators.length > 0">
+                      <div 
+                        v-for="fac in slot.facilitators" 
+                        :key="fac.documentId || fac.id" 
+                        class="person-chip facilitator-chip large"
+                        draggable="true"
+                        @dragstart="onDragStart($event, { type: 'facilitator', data: fac, fromSlotId: slot.documentId || slot.id })"
+                        @dragend="onDragEnd($event)"
+                      >
+                        <span class="person-name">{{ fac.firstName }} {{ fac.lastName }}</span>
+                        <span v-if="getPersonSlotConflict(fac, slot, 'facilitator')" class="conflict-warn-dot" :title="getPersonSlotConflict(fac, slot, 'facilitator')">⚠️</span>
+                        <button type="button" class="remove-chip-btn no-print" @click.stop="removeFacilitator(slot, fac)">✕</button>
+                      </div>
+                    </div>
+                    <div v-else class="empty-drop-slot">
+                      <span>👉 Glisser un animateur ici</span>
+                    </div>
                   </div>
                 </div>
 
-                <div class="participants-drop-zone-cta large-cta">
-                  <span>📥 Glisser des bénéficiaires ici depuis la palette ou une autre animation</span>
+                <!-- Participants Section -->
+                <div 
+                  class="expanded-participants-section"
+                  :class="{ 'drop-target-active': activeDragType === 'participant' }"
+                  @dragover.prevent="onDragOver($event, ['participant'])"
+                  @dragleave="onDragLeave($event)"
+                  @drop.prevent="onDropOnSlot($event, slot, 'participant')"
+                >
+                  <div class="section-label-row">
+                    <span class="label-text">👥 Bénéficiaires inscrits ({{ (slot.participants || []).length }} / {{ getMaxParticipants(slot) }})</span>
+                    <button type="button" class="tool-btn small-btn no-print" @click="openQuickAddParticipants(slot)">➕ Ajouter des inscrits</button>
+                  </div>
+
+                  <div class="capacity-progress-track">
+                    <div 
+                      class="capacity-progress-fill" 
+                      :style="{ width: getCapacityPercentage(slot) + '%' }"
+                      :class="getCapacityClass(slot)"
+                    ></div>
+                  </div>
+
+                  <div class="participants-chips-grid large-grid" v-if="slot.participants && slot.participants.length > 0">
+                    <div 
+                      v-for="part in slot.participants" 
+                      :key="part.documentId || part.id" 
+                      class="person-chip participant-chip large"
+                      draggable="true"
+                      @dragstart="onDragStart($event, { type: 'participant', data: part, fromSlotId: slot.documentId || slot.id })"
+                      @dragend="onDragEnd($event)"
+                    >
+                      <span class="person-avatar">👤</span>
+                      <span class="person-name">{{ part.firstName }} {{ part.lastName }}</span>
+                      <span v-if="getPersonSlotConflict(part, slot, 'participant')" class="conflict-warn-dot" :title="getPersonSlotConflict(part, slot, 'participant')">⚠️</span>
+                      <button type="button" class="remove-chip-btn no-print" @click.stop="removeParticipant(slot, part)">✕</button>
+                    </div>
+                  </div>
+
+                  <div class="participants-drop-zone-cta large-cta">
+                    <span>📥 Glisser des bénéficiaires ici depuis la palette ou une autre animation</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1208,7 +1336,7 @@
 </template>
 
 <script>
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useActiveSchedulerStore } from '../stores/activeScheduler';
 import { useGlobalStore } from '../stores/global';
 import { checkPersonDateAvailability } from '../utils/availabilityHelper';
@@ -1244,9 +1372,81 @@ export default {
     // View state
     const viewMode = ref('week'); // 'week' | 'day' | 'month'
     const currentDate = ref(new Date());
+    const lastNavAction = ref(null); // 'prev' | 'next' | 'today' | 'date-input' | null
     const isPaletteOpen = ref(true);
     const paletteTab = ref('activities'); // 'activities' | 'facilitators' | 'participants' | 'locations'
     const highlightedSlotId = ref(null);
+
+    // Collapse / Expand state (Collapsed by default)
+    const expandedSlotIds = ref(new Set());
+
+    function isSlotExpanded(slot) {
+      if (!slot) return false;
+      const slotId = String(slot.documentId || slot.id);
+      return expandedSlotIds.value.has(slotId);
+    }
+
+    function toggleSlotExpand(slot, event) {
+      if (event && event.stopPropagation) {
+        event.stopPropagation();
+      }
+      if (!slot) return;
+      const slotId = String(slot.documentId || slot.id);
+      const nextSet = new Set(expandedSlotIds.value);
+      if (nextSet.has(slotId)) {
+        nextSet.delete(slotId);
+      } else {
+        nextSet.add(slotId);
+      }
+      expandedSlotIds.value = nextSet;
+    }
+
+    function expandAllSlots() {
+      const nextSet = new Set(expandedSlotIds.value);
+      (currentPeriodSlots.value || []).forEach(s => {
+        const slotId = String(s.documentId || s.id);
+        nextSet.add(slotId);
+      });
+      expandedSlotIds.value = nextSet;
+    }
+
+    function collapseAllSlots() {
+      expandedSlotIds.value = new Set();
+    }
+
+    function toggleAllSlots() {
+      if (areAllSlotsExpanded.value) {
+        collapseAllSlots();
+      } else {
+        expandAllSlots();
+      }
+    }
+
+    const areAllSlotsExpanded = computed(() => {
+      const slots = currentPeriodSlots.value || [];
+      if (slots.length === 0) return false;
+      return slots.every(s => expandedSlotIds.value.has(String(s.documentId || s.id)));
+    });
+
+    function isDayAllExpanded(day) {
+      if (!day || !day.slots || day.slots.length === 0) return false;
+      return day.slots.every(s => expandedSlotIds.value.has(String(s.documentId || s.id)));
+    }
+
+    function toggleDaySlots(day) {
+      if (!day || !day.slots || day.slots.length === 0) return;
+      const isAllExp = isDayAllExpanded(day);
+      const nextSet = new Set(expandedSlotIds.value);
+      day.slots.forEach(s => {
+        const slotId = String(s.documentId || s.id);
+        if (isAllExp) {
+          nextSet.delete(slotId);
+        } else {
+          nextSet.add(slotId);
+        }
+      });
+      expandedSlotIds.value = nextSet;
+    }
 
     // Search queries in palette
     const activitySearchQuery = ref('');
@@ -1711,6 +1911,20 @@ export default {
       return null;
     }
 
+    function getFacilitatorsSummaryText(slot) {
+      const facs = slot.facilitators || [];
+      if (facs.length === 0) return 'Sans animateur';
+      if (facs.length === 1) return `${facs[0].firstName || ''} ${facs[0].lastName || ''}`.trim() || '1 animateur';
+      return `${facs.length} animateurs`;
+    }
+
+    function getFacilitatorsSummaryTooltip(slot) {
+      const facs = slot.facilitators || [];
+      if (facs.length === 0) return 'Aucun animateur assigné';
+      const names = facs.map(f => `${f.firstName || ''} ${f.lastName || ''}`.trim()).filter(Boolean).join(', ');
+      return 'Animateur(s) : ' + names;
+    }
+
     function formatSlotTimeRange(start, end) {
       if (!start) return '';
       const s = new Date(start);
@@ -2011,6 +2225,7 @@ export default {
     }
 
     function navigateDate(delta) {
+      lastNavAction.value = delta < 0 ? 'prev' : 'next';
       const d = new Date(currentDate.value);
       if (viewMode.value === 'day') {
         d.setDate(d.getDate() + delta);
@@ -2023,21 +2238,30 @@ export default {
     }
 
     function goToToday() {
+      lastNavAction.value = 'today';
       currentDate.value = new Date();
     }
 
     function onDirectDateChange(event) {
       if (event.target.value) {
+        lastNavAction.value = 'date-input';
         const [y, m, d] = event.target.value.split('-').map(Number);
         currentDate.value = new Date(y, m - 1, d);
       }
     }
 
     function selectDayFromMonth(dateStr) {
+      lastNavAction.value = 'date-input';
       const [y, m, d] = dateStr.split('-').map(Number);
       currentDate.value = new Date(y, m - 1, d);
       viewMode.value = 'day';
     }
+
+    watch(() => schedulerStore.loading, (isLoading) => {
+      if (!isLoading) {
+        lastNavAction.value = null;
+      }
+    });
 
     // Modal Create / Edit Slot
     const modalContextTitle = ref('');
@@ -2313,7 +2537,19 @@ export default {
       locationSlotCounts,
       modalContextTitle,
       applyTimePreset,
-      onDropOnCard
+      onDropOnCard,
+      expandedSlotIds,
+      isSlotExpanded,
+      toggleSlotExpand,
+      expandAllSlots,
+      collapseAllSlots,
+      toggleAllSlots,
+      areAllSlotsExpanded,
+      isDayAllExpanded,
+      toggleDaySlots,
+      getFacilitatorsSummaryText,
+      getFacilitatorsSummaryTooltip,
+      lastNavAction
     };
   }
 };
@@ -2386,8 +2622,8 @@ export default {
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0.2rem 0.55rem;
-  background: #f1f5f9;
-  color: #475569;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
   border-radius: 20px;
   text-transform: uppercase;
 }
@@ -2396,22 +2632,23 @@ export default {
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.2rem 0.65rem;
-  background: rgba(99, 102, 241, 0.12);
-  color: #4f46e5;
+  background: rgba(13, 148, 136, 0.15);
+  color: #5eead4;
   border-radius: 20px;
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(13, 148, 136, 0.35);
 }
 
 .subtitle {
   margin: 0.2rem 0 0 0;
   font-size: 0.88rem;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted, #94a3b8);
 }
 
 /* View Switcher */
 .view-switcher-pill {
   display: flex;
-  background: #f1f5f9;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 4px;
   border-radius: 10px;
   gap: 4px;
@@ -2423,20 +2660,21 @@ export default {
   padding: 0.45rem 0.9rem;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #64748b;
+  color: #94a3b8;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .view-pill-btn:hover {
-  color: #0f172a;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .view-pill-btn.active {
-  background: #ffffff;
-  color: #4f46e5;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
 }
 
 /* Toolbar Row */
@@ -2447,7 +2685,7 @@ export default {
   flex-wrap: wrap;
   gap: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--border-color, #f1f5f9);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .date-nav-group {
@@ -2458,18 +2696,55 @@ export default {
 }
 
 .nav-arrow-btn, .today-btn {
-  background: #f8fafc;
-  border: 1px solid var(--border-color, #e2e8f0);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
   padding: 0.45rem 0.75rem;
   border-radius: 8px;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.nav-arrow-btn:hover, .today-btn:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+.nav-arrow-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 0.95rem;
+  color: #f8fafc;
+}
+
+.today-btn {
+  height: 36px;
+  padding: 0 0.9rem;
+  background: rgba(13, 148, 136, 0.2);
+  border-color: rgba(13, 148, 136, 0.4);
+  color: #5eead4;
+}
+
+.nav-arrow-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.today-btn:hover {
+  background: rgba(13, 148, 136, 0.35);
+  border-color: #5eead4;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
+}
+
+.nav-arrow-btn:active, .today-btn:active {
+  transform: translateY(0);
 }
 
 .period-title-block {
@@ -2479,23 +2754,33 @@ export default {
 }
 
 .current-period-title {
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   font-weight: 700;
-  color: var(--text-color, #0f172a);
+  color: #f8fafc;
 }
 
 .period-subtitle {
   font-size: 0.78rem;
-  color: var(--text-muted, #64748b);
+  font-weight: 500;
+  color: #94a3b8;
 }
 
 .direct-date-input {
-  border: 1px solid var(--border-color, #cbd5e1);
-  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 0 0.65rem;
   border-radius: 8px;
   font-size: 0.85rem;
-  background: #ffffff;
-  color: inherit;
+  height: 36px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  font-weight: 500;
+  transition: border-color 0.2s;
+}
+
+.direct-date-input:focus {
+  border-color: #0d9488;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
 }
 
 /* Action tools */
@@ -2511,20 +2796,20 @@ export default {
   align-items: center;
   gap: 0.4rem;
   padding: 0.45rem 0.85rem;
-  background: #f8fafc;
-  border: 1px solid var(--border-color, #e2e8f0);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #334155;
+  color: #cbd5e1;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .tool-btn:hover:not(:disabled) {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #0f172a;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 .tool-btn:disabled {
@@ -2731,6 +3016,12 @@ export default {
   align-items: start;
 }
 
+.planning-canvas-container {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
 .main-planning-layout.has-open-palette {
   grid-template-columns: 1fr 340px;
 }
@@ -2827,6 +3118,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.25rem;
 }
 
 .slots-count-chip {
@@ -2837,6 +3129,26 @@ export default {
 
 .slots-count-chip.has-slots {
   color: #4f46e5;
+}
+
+.day-collapse-toggle-btn {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  font-size: 0.65rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.day-collapse-toggle-btn:hover {
+  background: #e0e7ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
 }
 
 .quick-add-day-btn {
@@ -2952,6 +3264,22 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+.animation-card.is-collapsed {
+  padding: 0.55rem 0.65rem;
+  gap: 0.4rem;
+  border-left: 3px solid #6366f1;
+}
+
+.animation-card.is-collapsed:hover {
+  border-color: #a5b4fc;
+  box-shadow: 0 3px 10px rgba(99, 102, 241, 0.12);
+}
+
+.animation-card.is-expanded {
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.08);
+}
+
 .animation-card.has-conflict {
   border-color: #f59e0b;
   background: #fffdfa;
@@ -2962,6 +3290,143 @@ export default {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.3rem;
+}
+
+.anim-card-header.is-clickable,
+.anim-title-row.is-clickable {
+  cursor: pointer;
+}
+
+.anim-title-row.is-clickable:hover .anim-name {
+  color: #4f46e5;
+}
+
+.toggle-card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+.toggle-card-btn:hover {
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.chevron-icon {
+  display: inline-block;
+  font-size: 0.6rem;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: rotate(-90deg);
+}
+
+.chevron-icon.is-rotated {
+  transform: rotate(0deg);
+}
+
+/* Collapsed Summary Badges */
+.anim-collapsed-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  cursor: pointer;
+  padding-top: 0.1rem;
+}
+
+.collapsed-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.12rem 0.4rem;
+  border-radius: 5px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+.summary-badge.loc-badge {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.summary-badge.loc-badge.badge-empty {
+  background: #f8fafc;
+  color: #94a3b8;
+  border: 1px dashed #cbd5e1;
+  font-weight: 500;
+}
+
+.summary-badge.fac-badge {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.summary-badge.fac-badge.badge-empty {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px dashed #fde68a;
+  font-weight: 500;
+}
+
+.summary-badge.part-badge {
+  border: 1px solid transparent;
+}
+
+.summary-badge.part-badge.cap-good {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.summary-badge.part-badge.cap-full {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.summary-badge.part-badge.cap-low {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.summary-badge.part-badge.cap-overload {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+/* Expanded body animations */
+.anim-expanded-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  animation: animFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes animFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .time-and-tag {
@@ -3340,6 +3805,45 @@ export default {
   flex-direction: column;
   gap: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.day-slot-expanded-card.is-collapsed {
+  padding: 0.9rem 1.2rem;
+  gap: 0.5rem;
+  border-left: 4px solid #6366f1;
+}
+
+.day-slot-expanded-card.is-collapsed:hover {
+  border-color: #a5b4fc;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+}
+
+.day-collapsed-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.toggle-day-slot-btn {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
+  font-size: 0.8rem;
+}
+
+.toggle-day-slot-btn:hover {
+  background: #e0e7ff;
+  border-color: #818cf8;
+}
+
+.day-slot-expanded-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: animFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-main-info {
@@ -3554,8 +4058,8 @@ export default {
 
 /* ──────────────── DOCKABLE SIDE PALETTE ──────────────── */
 .side-dnd-palette {
-  background: #ffffff;
-  border: 1px solid var(--border-color, #e2e8f0);
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -3563,13 +4067,14 @@ export default {
   max-height: 800px;
   position: sticky;
   top: 1rem;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   overflow: hidden;
+  color: #f8fafc;
 }
 
 .palette-header {
   padding: 1rem 1.1rem 0.5rem 1.1rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .palette-title-row {
@@ -3582,7 +4087,7 @@ export default {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #f8fafc;
 }
 
 .close-palette-btn {
@@ -3590,20 +4095,21 @@ export default {
   border: none;
   font-size: 0.9rem;
   cursor: pointer;
-  color: #64748b;
+  color: #94a3b8;
   border-radius: 4px;
   padding: 0.2rem 0.4rem;
+  transition: all 0.15s;
 }
 
 .close-palette-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
 }
 
 .palette-subtitle {
   margin: 0.2rem 0 0.6rem 0;
   font-size: 0.78rem;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .palette-tabs {
@@ -3614,13 +4120,13 @@ export default {
 
 .palette-tab-btn {
   border: none;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 0.4rem 0.5rem;
   border-radius: 8px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #475569;
+  color: #94a3b8;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -3629,17 +4135,23 @@ export default {
   gap: 0.25rem;
 }
 
+.palette-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
 .palette-tab-btn.active {
-  background: #4f46e5;
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
   color: #ffffff;
-  border-color: #4f46e5;
+  border-color: #5eead4;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35);
 }
 
 .tab-count-badge {
   font-size: 0.68rem;
   padding: 0.05rem 0.35rem;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .palette-content-scroll {
@@ -3656,10 +4168,18 @@ export default {
 .palette-search-input {
   width: 100%;
   padding: 0.45rem 1.8rem 0.45rem 0.7rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   font-size: 0.82rem;
-  background: #f8fafc;
+  background: rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  outline: none;
+}
+
+.palette-search-input:focus {
+  border-color: #0d9488;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
 }
 
 .clear-search-btn {
@@ -3682,26 +4202,32 @@ export default {
 }
 
 .filter-pill-btn {
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
   padding: 0.25rem 0.55rem;
   border-radius: 6px;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #475569;
+  color: #cbd5e1;
   cursor: pointer;
   transition: all 0.2s;
 }
 
+.filter-pill-btn:hover {
+  background: rgba(13, 148, 136, 0.15);
+  color: #5eead4;
+  border-color: rgba(13, 148, 136, 0.4);
+}
+
 .filter-pill-btn.active {
-  background: #4f46e5;
+  background: #0d9488;
   color: #ffffff;
-  border-color: #4f46e5;
+  border-color: #5eead4;
 }
 
 .filter-pill-btn.highlight-pill {
-  border-color: #f59e0b;
-  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
 }
 
 .filter-pill-btn.highlight-pill.active {
@@ -3720,20 +4246,21 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 0.55rem 0.65rem;
   border-radius: 10px;
   cursor: grab;
   user-select: none;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .draggable-palette-item:hover {
-  border-color: #6366f1;
+  border-color: #0d9488;
+  background: rgba(13, 148, 136, 0.1);
   transform: translateX(2px);
-  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 3px 8px rgba(13, 148, 136, 0.2);
 }
 
 .draggable-palette-item:active {
@@ -3741,7 +4268,7 @@ export default {
 }
 
 .item-drag-handle {
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.9rem;
 }
 
@@ -3761,7 +4288,7 @@ export default {
 .item-title {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #f8fafc;
 }
 
 .item-meta-row {
@@ -3773,30 +4300,32 @@ export default {
 
 .duration-badge {
   font-size: 0.7rem;
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
   font-weight: 600;
-  color: #475569;
+  color: #cbd5e1;
 }
 
 .rule-chip, .subtext-chip {
   font-size: 0.68rem;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .weekly-presence-pill {
   font-size: 0.68rem;
   font-weight: 700;
-  background: #eff6ff;
-  color: #1e40af;
+  background: rgba(2, 132, 199, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(2, 132, 199, 0.35);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
 }
 
 .weekly-presence-pill.zero-count {
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .availability-badge {
@@ -3807,19 +4336,21 @@ export default {
 }
 
 .badge-available {
-  background: #dcfce7;
-  color: #166534;
+  background: rgba(16, 185, 129, 0.18);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 .badge-unavailable {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .palette-empty-search {
   text-align: center;
   padding: 1.5rem 0.5rem;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.82rem;
 }
 
@@ -3829,14 +4360,14 @@ export default {
   align-items: center;
   gap: 0.75rem;
   padding: 0.85rem 1rem;
-  background: #fff1f2;
-  border-top: 1px dashed #fecdd3;
+  background: rgba(239, 68, 68, 0.08);
+  border-top: 1px dashed rgba(239, 68, 68, 0.3);
   transition: all 0.2s;
 }
 
 .palette-trash-zone.drop-trash-hover {
-  background: #ffe4e6;
-  border-top-color: #e11d48;
+  background: rgba(239, 68, 68, 0.2);
+  border-top-color: #ef4444;
   transform: scale(1.02);
 }
 
@@ -3851,20 +4382,21 @@ export default {
 
 .trash-text-block strong {
   font-size: 0.82rem;
-  color: #e11d48;
+  color: #f87171;
 }
 
 .trash-text-block small {
   font-size: 0.7rem;
-  color: #9f1239;
+  color: #fca5a5;
 }
 
 /* ──────────────── MODALS ──────────────── */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(11, 19, 32, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3873,15 +4405,17 @@ export default {
 }
 
 .modal-card {
-  background: #ffffff;
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 16px;
   width: 100%;
   max-width: 580px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75);
   display: flex;
   flex-direction: column;
+  color: #f8fafc;
 }
 
 .modal-header {
@@ -3889,22 +4423,30 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .modal-header h3 {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #ffffff;
 }
 
 .close-modal-btn {
   background: transparent;
   border: none;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   cursor: pointer;
   color: #94a3b8;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.close-modal-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .modal-form {
@@ -3923,7 +4465,7 @@ export default {
 .form-group label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #334155;
+  color: #cbd5e1;
 }
 
 .form-row-2 {
@@ -3934,11 +4476,20 @@ export default {
 
 .form-input {
   width: 100%;
-  padding: 0.55rem 0.8rem;
-  border: 1px solid #cbd5e1;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
   font-size: 0.9rem;
-  color: inherit;
+  background: rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: #0d9488;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
 }
 
 /* Time Presets */
@@ -3946,16 +4497,16 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(13, 148, 136, 0.08);
   padding: 0.6rem 0.75rem;
   border-radius: 8px;
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(13, 148, 136, 0.25);
 }
 
 .presets-label {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #4f46e5;
+  color: #5eead4;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -3967,10 +4518,10 @@ export default {
 }
 
 .preset-pill-btn {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  padding: 0.3rem 0.6rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  padding: 0.3rem 0.65rem;
   border-radius: 6px;
   font-size: 0.78rem;
   font-weight: 500;
@@ -3979,27 +4530,27 @@ export default {
 }
 
 .preset-pill-btn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: #1e293b;
+  background: rgba(13, 148, 136, 0.2);
+  border-color: rgba(13, 148, 136, 0.5);
+  color: #5eead4;
 }
 
 .preset-pill-btn.active {
-  background: #4f46e5;
+  background: #0d9488;
   color: #ffffff;
-  border-color: #4f46e5;
+  border-color: #5eead4;
   font-weight: 600;
-  box-shadow: 0 1px 4px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35);
 }
 
 .multi-select-box {
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  padding: 0.6rem;
+  padding: 0.65rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  background: #f8fafc;
+  gap: 0.45rem;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .scrollable-select {
@@ -4010,9 +4561,17 @@ export default {
 .checkbox-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   font-size: 0.85rem;
+  color: #f1f5f9;
   cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.checkbox-item:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .label-with-actions {
@@ -4029,11 +4588,15 @@ export default {
 .link-btn {
   background: transparent;
   border: none;
-  color: #4f46e5;
+  color: #5eead4;
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
+}
+
+.link-btn:hover {
+  color: #ffffff;
 }
 
 .modal-actions-footer {
@@ -4041,7 +4604,7 @@ export default {
   justify-content: flex-end;
   gap: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ──────────────── PRINT STYLES ──────────────── */
@@ -4072,6 +4635,11 @@ export default {
     border: 1px solid #666666 !important;
     box-shadow: none !important;
     page-break-inside: avoid;
+    padding: 0.5rem !important;
+  }
+  .anim-expanded-body,
+  .day-slot-expanded-body {
+    display: flex !important;
   }
 }
 </style>

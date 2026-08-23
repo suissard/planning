@@ -163,13 +163,29 @@
     </div>
 
     <!-- ════════════════ 1. VUE JOURNÉE (AFFICHAGE PAR DÉFAUT ÉPURÉ & NAVIGATION JOUR PAR JOUR) ════════════════ -->
-    <div v-if="viewMode === 'day'" class="day-view-section printable-day-area">
+    <div v-if="viewMode === 'day'" class="day-view-section printable-day-area" style="position: relative;">
+      <!-- Loading Overlay for Day View -->
+      <div v-if="loading" class="client-day-loading-overlay">
+        <div class="loading-card-badge">
+          <div class="spinner"></div>
+          <span>Actualisation du planning de la journée...</span>
+        </div>
+      </div>
+
       <!-- Day Navigation & Pagination Card -->
       <div class="day-navigator-card no-print">
         <!-- Main Day Navigation Bar -->
         <div class="day-nav-main-bar">
-          <button class="nav-day-btn prev-btn" @click="goToPreviousDay" title="Afficher la journée précédente">
-            <span class="btn-arrow">←</span>
+          <button 
+            type="button" 
+            class="nav-day-btn prev-btn" 
+            :class="{ 'is-loading': loading && lastNavAction === 'prev' }"
+            :disabled="loading" 
+            @click="goToPreviousDay" 
+            title="Afficher la journée précédente"
+          >
+            <span v-if="loading && lastNavAction === 'prev'" class="mini-spinner inline"></span>
+            <span v-else class="btn-arrow">←</span>
             <span class="btn-label">Jour précédent</span>
           </button>
 
@@ -181,15 +197,21 @@
               <button 
                 v-if="!isSelectedDayToday" 
                 class="jump-today-btn" 
+                :class="{ 'is-loading': loading && lastNavAction === 'today' }"
+                :disabled="loading" 
                 @click="goToToday" 
                 title="Revenir à la date d'aujourd'hui"
               >
+                <span v-if="loading && lastNavAction === 'today'" class="mini-spinner inline"></span>
                 Revenir à Aujourd'hui
               </button>
             </div>
 
             <div class="day-date-heading-row">
               <h2 class="day-formatted-heading">{{ selectedDayFormattedFull }}</h2>
+              <span v-if="loading" class="nav-loading-badge">
+                <span class="pulse-dot"></span> Chargement...
+              </span>
               
               <!-- Quick Date Picker Button -->
               <label class="date-picker-button-label" title="Choisir une date précise dans le calendrier">
@@ -198,6 +220,8 @@
                 <input 
                   type="date" 
                   v-model="selectedDayDateStr" 
+                  :disabled="loading"
+                  @change="lastNavAction = 'date-input'"
                   class="hidden-native-date-input"
                 />
               </label>
@@ -213,9 +237,17 @@
             </div>
           </div>
 
-          <button class="nav-day-btn next-btn" @click="goToNextDay" title="Afficher la journée suivante">
+          <button 
+            type="button" 
+            class="nav-day-btn next-btn" 
+            :class="{ 'is-loading': loading && lastNavAction === 'next' }"
+            :disabled="loading" 
+            @click="goToNextDay" 
+            title="Afficher la journée suivante"
+          >
             <span class="btn-label">Jour suivant</span>
-            <span class="btn-arrow">→</span>
+            <span v-if="loading && lastNavAction === 'next'" class="mini-spinner inline"></span>
+            <span v-else class="btn-arrow">→</span>
           </button>
         </div>
 
@@ -223,6 +255,7 @@
         <div class="day-strip-container">
           <div class="day-strip-scroll">
             <button 
+              type="button" 
               v-for="d in dayStripList" 
               :key="d.dateKey" 
               class="day-strip-pill"
@@ -231,6 +264,7 @@
                 'is-today': d.isToday,
                 'has-events': d.slotCount > 0
               }"
+              :disabled="loading"
               @click="goToDay(d.dateKey)"
               :title="`Aller au ${d.dayName} ${d.dayNumber} ${d.monthName}`"
             >
@@ -362,6 +396,7 @@
       <CalendarView 
         :timeslots="calendarSlots" 
         :target-date="calendarTargetDate"
+        :loading="loading"
         :default-view="'week'"
         :hide-view-switchers="true"
         @select-slot="openDetailPanel"
@@ -528,6 +563,7 @@ export default {
       searchQuery: '',
       selectedSlot: null,
       calendarTargetDate: null,
+      lastNavAction: null, // 'prev' | 'next' | 'today' | 'date-input' | 'pill' | null
       countdownText: '',
       countdownTimer: null
     };
@@ -809,22 +845,33 @@ export default {
     if (this.countdownTimer) clearInterval(this.countdownTimer);
     window.removeEventListener('keydown', this.handleKeyDown);
   },
+  watch: {
+    loading(newVal) {
+      if (!newVal) {
+        this.lastNavAction = null;
+      }
+    }
+  },
   methods: {
     goToPreviousDay() {
+      this.lastNavAction = 'prev';
       const d = new Date(this.selectedDayDate);
       d.setDate(d.getDate() - 1);
       this.selectedDayDateStr = this.toDateKey(d);
     },
     goToNextDay() {
+      this.lastNavAction = 'next';
       const d = new Date(this.selectedDayDate);
       d.setDate(d.getDate() + 1);
       this.selectedDayDateStr = this.toDateKey(d);
     },
     goToToday() {
+      this.lastNavAction = 'today';
       this.selectedDayDateStr = this.toDateKey(new Date());
     },
     goToDay(dateKey) {
       if (dateKey) {
+        this.lastNavAction = 'pill';
         this.selectedDayDateStr = dateKey;
       }
     },

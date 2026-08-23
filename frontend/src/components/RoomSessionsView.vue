@@ -51,20 +51,54 @@
       <div class="header-toolbar-row">
         <!-- Date Navigation Controls -->
         <div class="date-nav-group">
-          <button type="button" class="nav-arrow-btn" @click="navigateDate(-1)" title="Période précédente">◄</button>
-          <button type="button" class="today-btn" @click="goToToday" title="Revenir à aujourd'hui">Aujourd'hui</button>
-          <button type="button" class="nav-arrow-btn" @click="navigateDate(1)" title="Période suivante">►</button>
+          <button 
+            type="button" 
+            class="nav-arrow-btn" 
+            :class="{ 'is-loading': roomSessionStore.loading && lastNavAction === 'prev' }"
+            :disabled="roomSessionStore.loading"
+            @click="navigateDate(-1)" 
+            title="Période précédente"
+          >
+            <span v-if="roomSessionStore.loading && lastNavAction === 'prev'" class="mini-spinner"></span>
+            <span v-else>◄</span>
+          </button>
+          <button 
+            type="button" 
+            class="today-btn" 
+            :class="{ 'is-loading': roomSessionStore.loading && lastNavAction === 'today' }"
+            :disabled="roomSessionStore.loading"
+            @click="goToToday" 
+            title="Revenir à aujourd'hui"
+          >
+            <span v-if="roomSessionStore.loading && lastNavAction === 'today'" class="mini-spinner inline"></span>
+            Aujourd'hui
+          </button>
+          <button 
+            type="button" 
+            class="nav-arrow-btn" 
+            :class="{ 'is-loading': roomSessionStore.loading && lastNavAction === 'next' }"
+            :disabled="roomSessionStore.loading"
+            @click="navigateDate(1)" 
+            title="Période suivante"
+          >
+            <span v-if="roomSessionStore.loading && lastNavAction === 'next'" class="mini-spinner"></span>
+            <span v-else>►</span>
+          </button>
           
           <div class="period-title-block">
             <span class="current-period-title">{{ periodTitle }}</span>
-            <span v-if="viewMode === 'week'" class="period-subtitle">{{ weekDaysRangeLabel }}</span>
+            <span v-if="roomSessionStore.loading" class="nav-loading-badge">
+              <span class="pulse-dot"></span> Chargement...
+            </span>
+            <span v-else-if="viewMode === 'week'" class="period-subtitle">{{ weekDaysRangeLabel }}</span>
           </div>
 
           <!-- Date Picker input to jump anywhere -->
-          <div class="direct-date-input-wrapper">
+          <div class="direct-date-input-wrapper" :class="{ 'is-loading': roomSessionStore.loading && lastNavAction === 'date-input' }">
             <input 
               type="date" 
               :value="currentDateStr" 
+              :disabled="roomSessionStore.loading"
               @change="onDirectDateChange" 
               class="direct-date-input" 
               title="Sélectionner une date précise"
@@ -178,14 +212,8 @@
     </div>
 
     <!-- ════════════════ MAIN CONTENT STATES ════════════════ -->
-    <!-- Loading State -->
-    <div v-if="roomSessionStore.loading" class="state-container">
-      <div class="spinner"></div>
-      <p>Chargement des sessions de salle...</p>
-    </div>
-
     <!-- Error State -->
-    <div v-else-if="roomSessionStore.error" class="state-container error">
+    <div v-if="roomSessionStore.error" class="state-container error">
       <span class="error-icon">⚠️</span>
       <p>{{ roomSessionStore.error }}</p>
       <button class="action-btn secondary-btn mt-2" @click="loadDataForCurrentView">Réessayer</button>
@@ -193,6 +221,13 @@
 
     <!-- ════════════════ DND WORKSPACE CONTAINER ════════════════ -->
     <div v-else class="dnd-main-layout" :class="{ 'palette-visible': isPaletteOpen }">
+      <!-- Translucent Canvas Loading Overlay during fetch -->
+      <div v-if="roomSessionStore.loading" class="canvas-loading-overlay">
+        <div class="loading-card-badge">
+          <div class="spinner"></div>
+          <span>Actualisation des ouvertures de salles ({{ periodTitle }})...</span>
+        </div>
+      </div>
       
       <!-- ────────────────── LEFT / CENTER: PLANNING CANVAS ────────────────── -->
       <div class="planning-canvas">
@@ -1720,6 +1755,7 @@ const roomSessionTemplateStore = useRoomSessionTemplateStore();
 const viewMode = ref('week'); // Default to week view as requested
 const currentDate = ref(new Date());
 const weekSubView = ref('kanban'); // 'kanban' | 'matrix'
+const lastNavAction = ref(null); // 'prev' | 'next' | 'today' | 'date-input' | 'view-mode' | null
 const showModal = ref(false);
 const isEditing = ref(false);
 const saving = ref(false);
@@ -2391,10 +2427,12 @@ async function loadDataForCurrentView() {
 
 // NAVIGATION FUNCTIONS
 function setViewMode(mode) {
+  lastNavAction.value = 'view-mode';
   viewMode.value = mode;
 }
 
 function navigateDate(delta) {
+  lastNavAction.value = delta < 0 ? 'prev' : 'next';
   const d = new Date(currentDate.value);
   if (viewMode.value === 'day') {
     d.setDate(d.getDate() + delta);
@@ -2408,22 +2446,31 @@ function navigateDate(delta) {
 }
 
 function goToToday() {
+  lastNavAction.value = 'today';
   currentDate.value = new Date();
   loadDataForCurrentView();
 }
 
 function onDirectDateChange(e) {
   if (e.target.value) {
+    lastNavAction.value = 'date-input';
     currentDate.value = new Date(e.target.value);
     loadDataForCurrentView();
   }
 }
 
 function goToDayView(date) {
+  lastNavAction.value = 'date-input';
   currentDate.value = new Date(date);
   viewMode.value = 'day';
   loadDataForCurrentView();
 }
+
+watch(() => roomSessionStore.loading, (isLoading) => {
+  if (!isLoading) {
+    lastNavAction.value = null;
+  }
+});
 
 // HELPERS
 function getStartOfWeek(d) {
@@ -3059,20 +3106,48 @@ function printPage() {
 }
 
 .nav-arrow-btn, .today-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  color: var(--text-primary, #f8fafc);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
   padding: 0.45rem 0.85rem;
   border-radius: var(--radius-sm, 0.5rem);
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.nav-arrow-btn:hover, .today-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+.nav-arrow-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 0.95rem;
+}
+
+.today-btn {
+  height: 36px;
+  padding: 0 0.9rem;
+  background: rgba(13, 148, 136, 0.2);
+  border-color: rgba(13, 148, 136, 0.45);
+  color: #5eead4;
+}
+
+.nav-arrow-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.today-btn:hover {
+  background: rgba(13, 148, 136, 0.35);
+  border-color: #5eead4;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .period-title-block {
@@ -3082,24 +3157,32 @@ function printPage() {
 }
 
 .current-period-title {
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   font-weight: 700;
-  color: var(--text-primary, #f8fafc);
+  color: #ffffff;
 }
 
 .period-subtitle {
   font-size: 0.75rem;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted, #94a3b8);
+  font-weight: 500;
 }
 
 .direct-date-input {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  color: var(--text-primary, #f8fafc);
-  padding: 0.4rem 0.65rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 0 0.65rem;
+  height: 36px;
   border-radius: var(--radius-sm, 0.5rem);
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.direct-date-input:focus {
+  border-color: #38bdf8;
+  outline: none;
 }
 
 .action-tools-group {
@@ -3244,6 +3327,7 @@ function printPage() {
 
 /* ════════════════ DND WORKSPACE LAYOUT ════════════════ */
 .dnd-main-layout {
+  position: relative;
   display: flex;
   gap: 1.5rem;
   align-items: flex-start;
@@ -4882,12 +4966,40 @@ function printPage() {
 }
 
 .form-input {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.18));
   color: var(--text-primary, #f8fafc);
   padding: 0.6rem 0.85rem;
   border-radius: var(--radius-sm, 0.5rem);
   font-size: 0.9rem;
+  color-scheme: dark;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: #0d9488;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+select.form-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235eead4'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.15rem 1.15rem;
+  padding-right: 2.4rem;
+  cursor: pointer;
+}
+
+select.form-input option,
+select.form-input optgroup {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 10px 14px;
 }
 
 .participants-header-row {
