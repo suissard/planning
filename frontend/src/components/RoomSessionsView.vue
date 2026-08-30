@@ -140,6 +140,17 @@
             👥 Affectation
           </button>
 
+          <button 
+            type="button" 
+            class="tool-btn toggle-parts-btn" 
+            :class="{ active: areAllParticipantsExpanded }"
+            @click="toggleAllParticipants" 
+            :title="areAllParticipantsExpanded ? 'Replier toutes les listes de bénéficiaires' : 'Déplier toutes les listes de bénéficiaires'"
+          >
+            <span class="btn-icon">{{ areAllParticipantsExpanded ? '🔼' : '🔽' }}</span>
+            <span>{{ areAllParticipantsExpanded ? 'Replier inscrits' : 'Déplier inscrits' }}</span>
+          </button>
+
           <button type="button" class="tool-btn print-btn" @click="printPage" title="Imprimer les fiches d'ouverture et d'émargement">
             🖨️ Imprimer
           </button>
@@ -344,14 +355,23 @@
                     getCapacityClass(session),
                     { 
                       'card-conflict': getSessionConflictInfo(session).hasConflict,
-                      'card-drop-active': hoveredDropZone === 'sess-' + (session.documentId || session.id)
+                      'card-drop-active': hoveredDropZone === 'sess-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
+                      'session-already-present': isDraggedPersonInSession(session)
                     }
                   ]"
-                  @dragover.prevent="onDragOver($event, 'any')"
+                  @dragover="onDragOver($event, 'any', session)"
                   @dragenter.prevent="onDragEnter($event, 'sess-' + (session.documentId || session.id))"
                   @dragleave="onDragLeave($event, 'sess-' + (session.documentId || session.id))"
                   @drop="onDropOnSession($event, session)"
                 >
+                  <!-- Orange Banner when dragged person is already in this session -->
+                  <div v-if="isDraggedPersonInSession(session)" class="session-already-present-banner">
+                    <span class="banner-icon">🟠</span>
+                    <span class="banner-text">
+                      {{ activeDragType === 'participant' ? 'Bénéficiaire déjà présent dans cette salle' : 'Référent déjà assigné à cette salle' }}
+                    </span>
+                  </div>
+
                   <!-- Card Top: Room Name & Capacity -->
                   <div class="kcard-header">
                     <div class="kcard-room-info">
@@ -360,8 +380,12 @@
                     </div>
 
                     <div class="kcard-actions no-print">
-                      <button type="button" class="mini-icon-btn edit" @click.stop="editSession(session)" title="Modifier">✏️</button>
-                      <button type="button" class="mini-icon-btn delete" @click.stop="confirmDelete(session)" title="Fermer la salle">🗑️</button>
+                      <button type="button" class="action-icon-btn edit-btn" @click.stop="editSession(session)" title="Modifier cette salle">
+                        <i class="mdi mdi-pencil"></i>
+                      </button>
+                      <button type="button" class="action-icon-btn delete-btn" @click.stop="confirmDelete(session)" title="Fermer la salle">
+                        <i class="mdi mdi-trash-can-outline"></i>
+                      </button>
                     </div>
                   </div>
 
@@ -401,9 +425,10 @@
                       'has-manager': !!session.manager,
                       'no-manager': !session.manager,
                       'manager-unavail': getSessionConflictInfo(session).unavailableManager,
-                      'drop-hover-slot': hoveredDropZone === 'mgr-' + (session.documentId || session.id)
+                      'drop-hover-slot': hoveredDropZone === 'mgr-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
+                      'target-disabled': activeDragType === 'manager' && isDraggedPersonInSession(session)
                     }"
-                    @dragover.prevent.stop="onDragOver($event, 'manager')"
+                    @dragover.stop="onDragOver($event, 'manager', session)"
                     @dragenter.prevent.stop="onDragEnter($event, 'mgr-' + (session.documentId || session.id))"
                     @dragleave.stop="onDragLeave($event, 'mgr-' + (session.documentId || session.id))"
                     @drop.stop="onDropOnSession($event, session, 'manager')"
@@ -427,7 +452,7 @@
                           @click.stop="unassignManagerQuick(session)" 
                           title="Retirer ce gestionnaire référent"
                         >
-                          ✕
+                          <i class="mdi mdi-close"></i>
                         </button>
                       </div>
                     </template>
@@ -439,29 +464,86 @@
                     </template>
                   </div>
 
-                  <!-- 👥 Participants Section (D&D List & Drop Zone) -->
+                  <!-- 👥 Participants Section (D&D List & Drop Zone - Collapsible) -->
                   <div 
                     class="kcard-participants-section"
-                    :class="{ 'drop-hover-parts': hoveredDropZone === 'parts-' + (session.documentId || session.id) }"
-                    @dragover.prevent="onDragOver($event, 'participant')"
+                    :class="{ 
+                      'drop-hover-parts': hoveredDropZone === 'parts-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
+                      'is-collapsed-parts': !isSessionParticipantsExpanded(session)
+                    }"
+                    @dragover="onDragOver($event, 'participant', session)"
                     @dragenter.prevent="onDragEnter($event, 'parts-' + (session.documentId || session.id))"
                     @dragleave="onDragLeave($event, 'parts-' + (session.documentId || session.id))"
                     @drop="onDropOnSession($event, session, 'participant')"
                   >
-                    <div class="parts-header-row">
-                      <span class="parts-title">Bénéficiaires ({{ getParticipantCount(session) }})</span>
-                      <button 
-                        type="button" 
-                        class="mini-link-btn no-print" 
-                        @click.stop="openInlineAddParticipant(session)"
-                        title="Ajouter des participants"
-                      >
-                        ➕
-                      </button>
+                    <div 
+                      class="parts-header-row is-clickable" 
+                      @click="toggleSessionParticipants(session)"
+                      :title="isSessionParticipantsExpanded(session) ? 'Cliquer pour replier la liste' : 'Cliquer pour déplier la liste des bénéficiaires'"
+                    >
+                      <div class="parts-title-wrap">
+                        <span class="chevron-toggle" :class="{ 'is-rotated': isSessionParticipantsExpanded(session) }">▼</span>
+                        <span class="parts-title">Bénéficiaires ({{ getParticipantCount(session) }})</span>
+                      </div>
+                      <div class="parts-header-actions" @click.stop>
+                        <button 
+                          type="button" 
+                          class="mini-link-btn no-print" 
+                          @click.stop="openInlineAddParticipant(session)"
+                          title="Ajouter des participants"
+                        >
+                          ➕
+                        </button>
+                        <button 
+                          type="button" 
+                          class="mini-toggle-pill no-print"
+                          @click.stop="toggleSessionParticipants(session)"
+                          :title="isSessionParticipantsExpanded(session) ? 'Replier la liste' : 'Déplier la liste'"
+                        >
+                          {{ isSessionParticipantsExpanded(session) ? '▲ Réduire' : '▼ Déplier' }}
+                        </button>
+                      </div>
                     </div>
 
-                    <!-- Participant Draggable Chips -->
-                    <div class="parts-chips-container">
+                    <!-- ── A. COLLAPSED VIEW (Compact Summary Preview) ── -->
+                    <div 
+                      v-if="!isSessionParticipantsExpanded(session)" 
+                      class="parts-collapsed-summary"
+                      @click="toggleSessionParticipants(session)"
+                      title="Cliquer pour déplier tous les inscrits"
+                    >
+                      <div v-if="getParticipantCount(session) > 0" class="collapsed-names-preview">
+                        <span 
+                          v-for="p in getParticipants(session).slice(0, 3)" 
+                          :key="p.documentId || p.id" 
+                          class="mini-part-pill"
+                          :class="{ 'pill-unavail': isParticipantUnavailableInSession(p, session) }"
+                          :title="p.lastName + ' ' + p.firstName + (isParticipantUnavailableInSession(p, session) ? ' (Indisponible)' : '')"
+                        >
+                          {{ isParticipantUnavailableInSession(p, session) ? '⚠️' : '👤' }} {{ p.lastName }} {{ p.firstName ? p.firstName[0] + '.' : '' }}
+                        </span>
+                        <span v-if="getParticipantCount(session) > 3" class="more-parts-pill">
+                          +{{ getParticipantCount(session) - 3 }} autre(s)...
+                        </span>
+                      </div>
+
+                      <!-- Quick Drop Box when collapsed -->
+                      <div 
+                        class="participant-drop-target-box compact"
+                        :class="{ 
+                          'target-highlight': activeDragType === 'participant' && !isDraggedPersonInSession(session),
+                          'target-disabled': activeDragType === 'participant' && isDraggedPersonInSession(session)
+                        }"
+                      >
+                        <span class="drop-hint-icon">{{ isDraggedPersonInSession(session) ? '⛔' : '📥' }}</span>
+                        <span class="drop-hint-text">
+                          {{ isDraggedPersonInSession(session) ? 'Déjà présent dans cette salle' : (getParticipantCount(session) === 0 ? 'Glisser des bénéficiaires ici' : '+ Déposer un bénéficiaire') }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- ── B. EXPANDED VIEW (Full Draggable Chips List) ── -->
+                    <div v-show="isSessionParticipantsExpanded(session)" class="parts-chips-container">
                       <div 
                         v-for="p in getParticipants(session)" 
                         :key="p.documentId || p.id"
@@ -480,18 +562,21 @@
                           @click.stop="removeParticipantQuick(session, p)" 
                           title="Retirer ce bénéficiaire"
                         >
-                          ✕
+                          <i class="mdi mdi-close"></i>
                         </button>
                       </div>
 
                       <!-- Empty participant drop zone when room has space -->
                       <div 
                         class="participant-drop-target-box"
-                        :class="{ 'target-highlight': activeDragType === 'participant' }"
+                        :class="{ 
+                          'target-highlight': activeDragType === 'participant' && !isDraggedPersonInSession(session),
+                          'target-disabled': activeDragType === 'participant' && isDraggedPersonInSession(session)
+                        }"
                       >
-                        <span class="drop-hint-icon">📥</span>
+                        <span class="drop-hint-icon">{{ isDraggedPersonInSession(session) ? '⛔' : '📥' }}</span>
                         <span class="drop-hint-text">
-                          {{ getParticipantCount(session) === 0 ? 'Glisser des bénéficiaires ici' : '+ Déposer un bénéficiaire' }}
+                          {{ isDraggedPersonInSession(session) ? 'Déjà présent dans cette salle' : (getParticipantCount(session) === 0 ? 'Glisser des bénéficiaires ici' : '+ Déposer un bénéficiaire') }}
                         </span>
                       </div>
                     </div>
@@ -544,9 +629,10 @@
                     class="matrix-slot-cell"
                     :class="{ 
                       'cell-has-session': !!getSessionForRoomAndDate(loc, day.dateKey),
-                      'cell-drop-hover': hoveredDropZone === 'mat-' + loc.id + '-' + day.dateKey
+                      'cell-drop-hover': hoveredDropZone === 'mat-' + loc.id + '-' + day.dateKey && !isDraggedPersonInSession(getSessionForRoomAndDate(loc, day.dateKey)),
+                      'cell-already-present': isDraggedPersonInSession(getSessionForRoomAndDate(loc, day.dateKey))
                     }"
-                    @dragover.prevent="onDragOver($event, 'any')"
+                    @dragover="onDragOver($event, 'any', getSessionForRoomAndDate(loc, day.dateKey))"
                     @dragenter.prevent="onDragEnter($event, 'mat-' + loc.id + '-' + day.dateKey)"
                     @dragleave="onDragLeave($event, 'mat-' + loc.id + '-' + day.dateKey)"
                     @drop="onMatrixCellDrop($event, loc, day.dateKey)"
@@ -557,7 +643,10 @@
                       class="matrix-session-pill"
                       :class="[
                         getCapacityClass(getSessionForRoomAndDate(loc, day.dateKey)),
-                        { 'matrix-pill-conflict': getSessionConflictInfo(getSessionForRoomAndDate(loc, day.dateKey)).hasConflict }
+                        { 
+                          'matrix-pill-conflict': getSessionConflictInfo(getSessionForRoomAndDate(loc, day.dateKey)).hasConflict,
+                          'matrix-already-present': isDraggedPersonInSession(getSessionForRoomAndDate(loc, day.dateKey))
+                        }
                       ]"
                       @click="editSession(getSessionForRoomAndDate(loc, day.dateKey))"
                     >
@@ -582,8 +671,12 @@
                       </div>
 
                       <div class="matrix-pill-hover-actions no-print" @click.stop>
-                        <button type="button" class="matrix-action-btn edit" @click="editSession(getSessionForRoomAndDate(loc, day.dateKey))" title="Modifier">✏️</button>
-                        <button type="button" class="matrix-action-btn delete" @click="confirmDelete(getSessionForRoomAndDate(loc, day.dateKey))" title="Fermer">🗑️</button>
+                        <button type="button" class="action-icon-btn edit-btn" @click="editSession(getSessionForRoomAndDate(loc, day.dateKey))" title="Modifier cette salle">
+                          <i class="mdi mdi-pencil"></i>
+                        </button>
+                        <button type="button" class="action-icon-btn delete-btn" @click="confirmDelete(getSessionForRoomAndDate(loc, day.dateKey))" title="Fermer la salle">
+                          <i class="mdi mdi-trash-can-outline"></i>
+                        </button>
                       </div>
                     </div>
 
@@ -712,13 +805,22 @@
               :class="{ 
                 'card-overbooked': isOverCapacity(session),
                 'card-has-conflict': getSessionConflictInfo(session).hasConflict,
-                'card-drop-active': hoveredDropZone === 'day-sess-' + (session.documentId || session.id)
+                'card-drop-active': hoveredDropZone === 'day-sess-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
+                'session-already-present': isDraggedPersonInSession(session)
               }"
-              @dragover.prevent="onDragOver($event, 'any')"
+              @dragover="onDragOver($event, 'any', session)"
               @dragenter.prevent="onDragEnter($event, 'day-sess-' + (session.documentId || session.id))"
               @dragleave="onDragLeave($event, 'day-sess-' + (session.documentId || session.id))"
               @drop="onDropOnSession($event, session)"
             >
+              <!-- Orange Banner when dragged person is already in this session (Day View) -->
+              <div v-if="isDraggedPersonInSession(session)" class="session-already-present-banner">
+                <span class="banner-icon">🟠</span>
+                <span class="banner-text">
+                  {{ activeDragType === 'participant' ? 'Bénéficiaire déjà présent dans cette salle' : 'Référent déjà assigné à cette salle' }}
+                </span>
+              </div>
+
               <!-- Card Header -->
               <div class="card-header">
                 <div class="room-title-block">
@@ -779,9 +881,10 @@
                   :class="{ 
                     'manager-unassigned': !session.manager,
                     'manager-banner-unavail': getSessionConflictInfo(session).unavailableManager,
-                    'drop-hover-slot': hoveredDropZone === 'day-mgr-' + (session.documentId || session.id)
+                    'drop-hover-slot': hoveredDropZone === 'day-mgr-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
+                    'target-disabled': activeDragType === 'manager' && isDraggedPersonInSession(session)
                   }"
-                  @dragover.prevent.stop="onDragOver($event, 'manager')"
+                  @dragover.stop="onDragOver($event, 'manager', session)"
                   @dragenter.prevent.stop="onDragEnter($event, 'day-mgr-' + (session.documentId || session.id))"
                   @dragleave.stop="onDragLeave($event, 'day-mgr-' + (session.documentId || session.id))"
                   @drop.stop="onDropOnSession($event, session, 'manager')"
@@ -807,19 +910,19 @@
                     <button 
                       v-if="session.manager"
                       type="button" 
-                      class="mini-icon-btn delete" 
+                      class="action-icon-btn delete-btn" 
                       @click="unassignManagerQuick(session)" 
                       title="Retirer ce référent"
                     >
-                      ✕
+                      <i class="mdi mdi-close"></i>
                     </button>
                     <button 
                       type="button" 
-                      class="quick-swap-mgr-btn" 
+                      class="action-icon-btn edit-btn" 
                       @click="editSession(session)" 
                       title="Changer de gestionnaire"
                     >
-                      🔄
+                      <i class="mdi mdi-pencil"></i>
                     </button>
                   </div>
                 </div>
@@ -844,18 +947,28 @@
                   </div>
                 </div>
 
-                <!-- Beneficiaries / Participants Section with Draggable Chips -->
+                <!-- Beneficiaries / Participants Section with Draggable Chips - Collapsible -->
                 <div 
                   class="participants-section"
-                  :class="{ 'drop-hover-parts': hoveredDropZone === 'day-parts-' + (session.documentId || session.id) }"
-                  @dragover.prevent="onDragOver($event, 'participant')"
+                  :class="{ 
+                    'drop-hover-parts': hoveredDropZone === 'day-parts-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
+                    'is-collapsed-parts': !isSessionParticipantsExpanded(session)
+                  }"
+                  @dragover="onDragOver($event, 'participant', session)"
                   @dragenter.prevent="onDragEnter($event, 'day-parts-' + (session.documentId || session.id))"
                   @dragleave="onDragLeave($event, 'day-parts-' + (session.documentId || session.id))"
                   @drop="onDropOnSession($event, session, 'participant')"
                 >
-                  <div class="section-title-row">
-                    <h4>Bénéficiaires Affectés ({{ getParticipantCount(session) }})</h4>
-                    <div class="inline-actions no-print">
+                  <div 
+                    class="section-title-row is-clickable" 
+                    @click="toggleSessionParticipants(session)"
+                    :title="isSessionParticipantsExpanded(session) ? 'Cliquer pour replier la liste' : 'Cliquer pour déplier les bénéficiaires'"
+                  >
+                    <div class="parts-title-wrap">
+                      <span class="chevron-toggle" :class="{ 'is-rotated': isSessionParticipantsExpanded(session) }">▼</span>
+                      <h4>Bénéficiaires Affectés ({{ getParticipantCount(session) }})</h4>
+                    </div>
+                    <div class="inline-actions no-print" @click.stop>
                       <button 
                         type="button" 
                         class="mini-link-btn highlight-link" 
@@ -864,6 +977,14 @@
                         title="Ajouter plusieurs bénéficiaires en simultané"
                       >
                         ➕ Ajouter des bénéficiaires
+                      </button>
+                      <button 
+                        type="button" 
+                        class="mini-toggle-pill no-print"
+                        @click.stop="toggleSessionParticipants(session)"
+                        :title="isSessionParticipantsExpanded(session) ? 'Replier la liste' : 'Déplier la liste'"
+                      >
+                        {{ isSessionParticipantsExpanded(session) ? '▲ Réduire' : '▼ Déplier' }}
                       </button>
                     </div>
                   </div>
@@ -935,7 +1056,7 @@
                     <div class="inline-participants-checklist">
                       <div 
                         v-for="p in getFilteredInlineParticipants(session)" 
-                        :key="p.documentId || p.id"
+                        :key="p.documentId || p.id" 
                         class="inline-check-card"
                         :class="{ 
                           'checked': inlineSelectedParticipants.includes(p.documentId || p.id),
@@ -981,8 +1102,43 @@
                     </div>
                   </div>
 
-                  <!-- Participants Draggable Chips Grid in Day View -->
-                  <div class="participants-chips-grid">
+                  <!-- ── A. DAY VIEW COLLAPSED SUMMARY ── -->
+                  <div 
+                    v-if="!isSessionParticipantsExpanded(session) && activeInlineAddSessionId !== (session.documentId || session.id)"
+                    class="parts-collapsed-summary day-collapsed-summary"
+                    @click="toggleSessionParticipants(session)"
+                    title="Cliquer pour déplier tous les inscrits"
+                  >
+                    <div v-if="getParticipantCount(session) > 0" class="collapsed-names-preview">
+                      <span 
+                        v-for="p in getParticipants(session).slice(0, 5)" 
+                        :key="p.documentId || p.id" 
+                        class="mini-part-pill"
+                        :class="{ 'pill-unavail': isParticipantUnavailableInSession(p, session) }"
+                      >
+                        {{ isParticipantUnavailableInSession(p, session) ? '⚠️' : '👤' }} {{ p.lastName }} {{ p.firstName }}
+                      </span>
+                      <span v-if="getParticipantCount(session) > 5" class="more-parts-pill">
+                        +{{ getParticipantCount(session) - 5 }} autre(s)...
+                      </span>
+                    </div>
+
+                    <div 
+                      class="participant-drop-target-box day-drop-box compact"
+                      :class="{ 
+                        'target-highlight': activeDragType === 'participant' && !isDraggedPersonInSession(session),
+                        'target-disabled': activeDragType === 'participant' && isDraggedPersonInSession(session)
+                      }"
+                    >
+                      <span class="drop-hint-icon">{{ isDraggedPersonInSession(session) ? '⛔' : '📥' }}</span>
+                      <span class="drop-hint-text">
+                        {{ isDraggedPersonInSession(session) ? 'Déjà présent dans cette salle' : (getParticipantCount(session) === 0 ? 'Glisser des bénéficiaires ici' : '+ Glisser d\'autres bénéficiaires') }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- ── B. DAY VIEW EXPANDED DRAGGABLE CHIPS GRID ── -->
+                  <div v-show="isSessionParticipantsExpanded(session)" class="participants-chips-grid">
                     <div 
                       v-for="p in getParticipants(session)" 
                       :key="p.documentId || p.id" 
@@ -1001,18 +1157,21 @@
                         @click.stop="removeParticipantQuick(session, p)" 
                         title="Retirer ce bénéficiaire"
                       >
-                        ✕
+                        <i class="mdi mdi-close"></i>
                       </button>
                     </div>
 
                     <!-- Drop Target Box inside participants list -->
                     <div 
                       class="participant-drop-target-box day-drop-box"
-                      :class="{ 'target-highlight': activeDragType === 'participant' }"
+                      :class="{ 
+                        'target-highlight': activeDragType === 'participant' && !isDraggedPersonInSession(session),
+                        'target-disabled': activeDragType === 'participant' && isDraggedPersonInSession(session)
+                      }"
                     >
-                      <span class="drop-hint-icon">📥</span>
+                      <span class="drop-hint-icon">{{ isDraggedPersonInSession(session) ? '⛔' : '📥' }}</span>
                       <span class="drop-hint-text">
-                        {{ getParticipantCount(session) === 0 ? 'Glisser des bénéficiaires ici' : '+ Glisser d\'autres bénéficiaires' }}
+                        {{ isDraggedPersonInSession(session) ? 'Déjà présent dans cette salle' : (getParticipantCount(session) === 0 ? 'Glisser des bénéficiaires ici' : '+ Glisser d\'autres bénéficiaires') }}
                       </span>
                     </div>
                   </div>
@@ -1021,14 +1180,17 @@
 
               <!-- Card Footer -->
               <div class="card-footer no-print">
-                <button type="button" class="action-btn secondary-btn" @click="editSession(session)">
-                  ✏️ Modifier la salle
+                <button type="button" class="action-btn edit-btn" @click="editSession(session)">
+                  <i class="mdi mdi-pencil"></i>
+                  <span>Modifier la salle</span>
                 </button>
                 <button type="button" class="action-btn secondary-btn" @click="openDuplicateModal(session)">
-                  📋 Dupliquer
+                  <i class="mdi mdi-content-copy"></i>
+                  <span>Dupliquer</span>
                 </button>
                 <button type="button" class="action-btn danger-btn" @click="confirmDelete(session)">
-                  🗑️ Fermer
+                  <i class="mdi mdi-trash-can-outline"></i>
+                  <span>Fermer la salle</span>
                 </button>
               </div>
             </div>
@@ -1736,6 +1898,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoomSessionStore } from '../stores/roomSessionStore';
 import { useRoomSessionTemplateStore } from '../stores/roomSessionTemplateStore';
+import { useGlobalStore } from '../stores/global';
 import { checkPersonDateAvailability, getEvaluatedPersonsList } from '../utils/availabilityHelper';
 import SearchableSelect from './SearchableSelect.vue';
 
@@ -1750,6 +1913,7 @@ const emit = defineEmits(['navigate-template']);
 
 const roomSessionStore = useRoomSessionStore();
 const roomSessionTemplateStore = useRoomSessionTemplateStore();
+const globalStore = useGlobalStore();
 
 // VIEW STATE
 const viewMode = ref('week'); // Default to week view as requested
@@ -1940,8 +2104,58 @@ const paletteCounts = computed(() => {
 });
 
 // ══════════════════════════════════════════════════════════
-// DRAG AND DROP HANDLERS
+// PARTICIPANTS COLLAPSE / EXPAND STATE (Collapsed by default)
 // ══════════════════════════════════════════════════════════
+const expandedSessionParticipantIds = ref(new Set());
+
+function isSessionParticipantsExpanded(session) {
+  if (!session) return false;
+  const sessionId = String(session.documentId || session.id);
+  return expandedSessionParticipantIds.value.has(sessionId);
+}
+
+function toggleSessionParticipants(session) {
+  if (!session) return;
+  const sessionId = String(session.documentId || session.id);
+  const nextSet = new Set(expandedSessionParticipantIds.value);
+  if (nextSet.has(sessionId)) {
+    nextSet.delete(sessionId);
+  } else {
+    nextSet.add(sessionId);
+  }
+  expandedSessionParticipantIds.value = nextSet;
+}
+
+function expandAllParticipants() {
+  const nextSet = new Set();
+  (sessions.value || []).forEach(s => {
+    nextSet.add(String(s.documentId || s.id));
+  });
+  expandedSessionParticipantIds.value = nextSet;
+}
+
+function collapseAllParticipants() {
+  expandedSessionParticipantIds.value = new Set();
+}
+
+const areAllParticipantsExpanded = computed(() => {
+  const sessList = (sessions.value || []).filter(s => (s.participants || []).length > 0);
+  if (sessList.length === 0) return false;
+  return sessList.every(s => expandedSessionParticipantIds.value.has(String(s.documentId || s.id)));
+});
+
+function toggleAllParticipants() {
+  if (areAllParticipantsExpanded.value) {
+    collapseAllParticipants();
+  } else {
+    expandAllParticipants();
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// DRAG AND DROP HANDLERS (OPTIMIZED O(1) LOOKUPS)
+// ══════════════════════════════════════════════════════════
+const draggedPersonOccupiedSessionIds = ref(new Set());
 
 function onDragStart(e, payload) {
   draggedItem.value = payload;
@@ -1952,20 +2166,53 @@ function onDragStart(e, payload) {
   } catch (err) {
     // ignore serialize issue
   }
+
+  // Precompute Set of session IDs where this person is already assigned (O(1) lookups during drag)
+  const occupied = new Set();
+  if (payload && payload.type === 'participant' && payload.participant) {
+    const partId = String(payload.participant.documentId || payload.participant.id);
+    (sessions.value || []).forEach(s => {
+      const pList = s.participants || [];
+      if (pList.some(p => String(p.documentId || p.id) === partId)) {
+        occupied.add(String(s.documentId || s.id));
+      }
+    });
+  } else if (payload && payload.type === 'manager' && payload.facilitator) {
+    const mgrId = String(payload.facilitator.documentId || payload.facilitator.id);
+    (sessions.value || []).forEach(s => {
+      const curMgrId = s.manager ? String(s.manager.documentId || s.manager.id) : null;
+      if (curMgrId === mgrId) {
+        occupied.add(String(s.documentId || s.id));
+      }
+    });
+  }
+  draggedPersonOccupiedSessionIds.value = occupied;
 }
 
 function onDragEnd() {
   draggedItem.value = null;
   activeDragType.value = null;
   hoveredDropZone.value = null;
+  draggedPersonOccupiedSessionIds.value = new Set();
 }
 
-function onDragOver(e, acceptedType) {
+function isDraggedPersonInSession(session) {
+  if (!session || draggedPersonOccupiedSessionIds.value.size === 0) return false;
+  return draggedPersonOccupiedSessionIds.value.has(String(session.documentId || session.id));
+}
+
+function onDragOver(e, acceptedType, session = null) {
   if (!activeDragType.value) return;
-  if (acceptedType === 'any' || activeDragType.value === acceptedType) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
+  if (acceptedType !== 'any' && activeDragType.value !== acceptedType) {
+    e.dataTransfer.dropEffect = 'none';
+    return;
   }
+  if (session && isDraggedPersonInSession(session)) {
+    e.dataTransfer.dropEffect = 'none';
+    return;
+  }
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
 }
 
 function onDragEnter(e, zoneId) {
@@ -1996,7 +2243,16 @@ async function onDropOnDay(e, dayDateKey) {
 async function onDropOnSession(e, session, targetArea = 'any') {
   e.preventDefault();
   hoveredDropZone.value = null;
-  if (!draggedItem.value) return;
+  if (!draggedItem.value || !session) return;
+
+  if (isDraggedPersonInSession(session)) {
+    const personName = draggedItem.value.type === 'participant'
+      ? `${draggedItem.value.participant?.firstName || ''} ${draggedItem.value.participant?.lastName || ''}`.trim()
+      : `${draggedItem.value.facilitator?.firstName || ''} ${draggedItem.value.facilitator?.lastName || ''}`.trim();
+    globalStore.addWarning(`${draggedItem.value.type === 'participant' ? 'Le bénéficiaire' : 'Le référent'} "${personName}" est déjà présent dans cette salle.`, 'Déjà présent');
+    onDragEnd();
+    return;
+  }
 
   const sessionId = session.documentId || session.id;
 
@@ -2010,10 +2266,19 @@ async function onDropOnSession(e, session, targetArea = 'any') {
     const partId = draggedItem.value.participant?.documentId || draggedItem.value.participant?.id;
     if (partId) {
       if (draggedItem.value.fromSessionId) {
+        if (draggedItem.value.fromSessionId === sessionId) {
+          onDragEnd();
+          return;
+        }
         await roomSessionStore.moveParticipantBetweenSessions(draggedItem.value.fromSessionId, sessionId, partId);
       } else {
         await roomSessionStore.addParticipantToSession(sessionId, partId);
       }
+      // Auto-expand this session's participants so the user sees the dropped person
+      const nextSet = new Set(expandedSessionParticipantIds.value);
+      nextSet.add(String(sessionId));
+      expandedSessionParticipantIds.value = nextSet;
+
       await loadDataForCurrentView();
     }
   }
@@ -2027,6 +2292,15 @@ async function onMatrixCellDrop(e, location, dayDateKey) {
 
   const existingSession = getSessionForRoomAndDate(location, dayDateKey);
   const locId = location.documentId || location.id;
+
+  if (existingSession && isDraggedPersonInSession(existingSession)) {
+    const personName = draggedItem.value.type === 'participant'
+      ? `${draggedItem.value.participant?.firstName || ''} ${draggedItem.value.participant?.lastName || ''}`.trim()
+      : `${draggedItem.value.facilitator?.firstName || ''} ${draggedItem.value.facilitator?.lastName || ''}`.trim();
+    globalStore.addWarning(`${draggedItem.value.type === 'participant' ? 'Le bénéficiaire' : 'Le référent'} "${personName}" est déjà présent dans cette salle.`, 'Déjà présent');
+    onDragEnd();
+    return;
+  }
 
   if (draggedItem.value.type === 'room') {
     await roomSessionStore.openRoomForDate(locId, dayDateKey);
@@ -4134,10 +4408,129 @@ function printPage() {
   padding: 0.25rem;
 }
 
-.parts-header-row {
+.parts-header-row,
+.section-title-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  user-select: none;
+}
+
+.parts-header-row.is-clickable,
+.section-title-row.is-clickable {
+  cursor: pointer;
+  border-radius: var(--radius-sm, 0.4rem);
+  padding: 0.15rem 0.25rem;
+  transition: background 0.15s ease;
+}
+
+.parts-header-row.is-clickable:hover,
+.section-title-row.is-clickable:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.parts-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.chevron-toggle {
+  display: inline-block;
+  font-size: 0.6rem;
+  color: var(--text-muted, #64748b);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: rotate(-90deg);
+}
+
+.chevron-toggle.is-rotated {
+  transform: rotate(0deg);
+  color: #5eead4;
+}
+
+.parts-header-actions,
+.section-title-row .inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mini-toggle-pill {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mini-toggle-pill:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary, #f8fafc);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Collapsed Summary Preview */
+.parts-collapsed-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.collapsed-names-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0;
+}
+
+.mini-part-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary, #cbd5e1);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-part-pill.pill-unavail {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.more-parts-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #5eead4;
+  background: rgba(13, 148, 136, 0.15);
+  border: 1px solid rgba(13, 148, 136, 0.3);
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+}
+
+.participant-drop-target-box.compact {
+  padding: 0.3rem 0.45rem;
+  font-size: 0.68rem;
+}
+
+.tool-btn.toggle-parts-btn.active {
+  background: rgba(13, 148, 136, 0.25);
+  border-color: #0d9488;
+  color: #5eead4;
 }
 
 .parts-title {
@@ -4235,6 +4628,68 @@ function printPage() {
   border-color: #5eead4;
   color: #5eead4;
   background: rgba(13, 148, 136, 0.1);
+}
+
+/* ──────────────── ALREADY PRESENT IN SESSION (ORANGE HIGHLIGHT & DISABLED DROP) ──────────────── */
+.kanban-session-card.session-already-present,
+.session-card.session-already-present {
+  border-color: #f97316 !important;
+  border-left: 5px solid #ea580c !important;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.18) 0%, rgba(234, 88, 12, 0.1) 100%) !important;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.45), 0 6px 18px rgba(234, 88, 12, 0.22) !important;
+  cursor: not-allowed !important;
+}
+
+.matrix-slot-cell.cell-already-present,
+.matrix-session-pill.matrix-already-present {
+  border-color: #f97316 !important;
+  background: rgba(249, 115, 22, 0.22) !important;
+  box-shadow: 0 0 0 2px #ea580c !important;
+  cursor: not-allowed !important;
+}
+
+.session-already-present-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(249, 115, 22, 0.25);
+  border: 1.5px solid #f97316;
+  border-radius: var(--radius-sm, 0.5rem);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fdba74;
+  margin-bottom: 0.4rem;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+  animation: pulse-orange-glow 1.8s infinite alternate;
+  z-index: 2;
+}
+
+@keyframes pulse-orange-glow {
+  from {
+    background-color: rgba(249, 115, 22, 0.2);
+    border-color: #f97316;
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.3);
+  }
+  to {
+    background-color: rgba(234, 88, 12, 0.35);
+    border-color: #ea580c;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.25);
+  }
+}
+
+.session-already-present-banner .banner-icon {
+  font-size: 0.9rem;
+}
+
+.participant-drop-target-box.target-disabled,
+.kcard-manager-slot.target-disabled,
+.manager-banner.target-disabled {
+  border-color: #f97316 !important;
+  background: rgba(249, 115, 22, 0.14) !important;
+  color: #fdba74 !important;
+  cursor: not-allowed !important;
+  font-weight: 700 !important;
 }
 
 /* ════════════════ 2. VUE JOUR STYLES ════════════════ */

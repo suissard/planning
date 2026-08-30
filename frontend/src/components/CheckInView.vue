@@ -542,7 +542,7 @@
                             @click="clearDeparture(passage)"
                             title="Annuler l'heure de départ (toujours sur place)"
                           >
-                            ✕
+                            <i class="mdi mdi-close"></i>
                           </button>
                         </div>
                       </div>
@@ -554,7 +554,7 @@
                         @click="deletePassage(passage)"
                         title="Supprimer ce passage"
                       >
-                        🗑️
+                        <i class="mdi mdi-trash-can-outline"></i>
                       </button>
                     </div>
 

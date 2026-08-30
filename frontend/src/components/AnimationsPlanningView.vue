@@ -389,13 +389,22 @@
                     'is-over-max': isOverMaxParticipants(slot),
                     'is-full': isFullParticipants(slot),
                     'highlighted-card': highlightedSlotId === (slot.documentId || slot.id),
-                    'is-participant-mode': isPlacingParticipants
+                    'is-participant-mode': isPlacingParticipants,
+                    'is-already-present-slot': isDraggedPersonInSlot(slot)
                   }"
                   :id="'slot-card-' + (slot.documentId || slot.id)"
-                  @dragover.prevent="onDragOver($event, ['activity', 'facilitator', 'participant', 'location'])"
+                  @dragover.prevent="onDragOver($event, ['activity', 'facilitator', 'participant', 'location'], slot)"
                   @dragleave="onDragLeave($event)"
                   @drop.prevent="onDropOnCard($event, slot)"
                 >
+                  <!-- Orange Banner when dragged person is already in this slot -->
+                  <div v-if="isDraggedPersonInSlot(slot)" class="already-present-banner">
+                    <span class="already-present-icon">🟠</span>
+                    <span class="already-present-text">
+                      {{ activeDragType === 'participant' ? 'Bénéficiaire déjà inscrit sur ce créneau' : 'Animateur déjà assigné à ce créneau' }}
+                    </span>
+                  </div>
+
                   <!-- Background Watermark / Ghost Activity when in Participant Placement Mode -->
                   <div v-if="isPlacingParticipants" class="room-slot-activity-watermark" :title="'Animation programmée : ' + (slot.activityTemplate?.name || 'Activité')">
                     <span class="watermark-icon">🎯</span>
@@ -426,19 +435,19 @@
                         </button>
                         <button 
                           type="button" 
-                          class="card-action-btn edit-btn" 
+                          class="action-icon-btn edit-btn" 
                           @click="openEditModal(slot)" 
                           title="Modifier l'animation"
                         >
-                          ✏️
+                          <i class="mdi mdi-pencil"></i>
                         </button>
                         <button 
                           type="button" 
-                          class="card-action-btn delete-btn" 
+                          class="action-icon-btn delete-btn" 
                           @click="confirmDeleteSlot(slot)" 
                           title="Supprimer l'animation"
                         >
-                          🗑️
+                          <i class="mdi mdi-trash-can-outline"></i>
                         </button>
                       </div>
                     </div>
@@ -477,7 +486,7 @@
                     </div>
 
                     <!-- Direct Drop Hint when dragging participant -->
-                    <div class="room-placement-drop-hint" v-if="activeDragType === 'participant'">
+                    <div class="room-placement-drop-hint" v-if="activeDragType === 'participant' && !isDraggedPersonInSlot(slot)">
                       <span>📥 Glisser le bénéficiaire ici pour l'inscrire dans cette salle</span>
                     </div>
                   </template>
@@ -562,8 +571,11 @@
                     <!-- ──────── FACILITATORS (ANIMATEURS) TARGET ──────── -->
                     <div 
                       class="anim-section facilitators-section"
-                      :class="{ 'drop-target-active': activeDragType === 'facilitator' }"
-                      @dragover.prevent="onDragOver($event, ['facilitator'])"
+                      :class="{ 
+                        'drop-target-active': activeDragType === 'facilitator' && !isDraggedPersonInSlot(slot),
+                        'drop-target-disabled': activeDragType === 'facilitator' && isDraggedPersonInSlot(slot)
+                      }"
+                      @dragover.prevent="onDragOver($event, ['facilitator'], slot)"
                       @dragleave="onDragLeave($event)"
                       @drop.prevent="onDropOnSlot($event, slot, 'facilitator')"
                     >
@@ -594,7 +606,7 @@
                             class="remove-chip-btn no-print" 
                             @click.stop="removeFacilitator(slot, fac)" 
                             title="Désaffecter"
-                          >✕</button>
+                          ><i class="mdi mdi-close"></i></button>
                         </div>
                       </div>
 
@@ -607,8 +619,11 @@
                     <!-- ──────── PARTICIPANTS (BÉNÉFICIAIRES) TARGET ──────── -->
                     <div 
                       class="anim-section participants-section"
-                      :class="{ 'drop-target-active': activeDragType === 'participant' }"
-                      @dragover.prevent="onDragOver($event, ['participant'])"
+                      :class="{ 
+                        'drop-target-active': activeDragType === 'participant' && !isDraggedPersonInSlot(slot),
+                        'drop-target-disabled': activeDragType === 'participant' && isDraggedPersonInSlot(slot)
+                      }"
+                      @dragover.prevent="onDragOver($event, ['participant'], slot)"
                       @dragleave="onDragLeave($event)"
                       @drop.prevent="onDropOnSlot($event, slot, 'participant')"
                     >
@@ -726,12 +741,21 @@
                 'is-under-min': isUnderMinParticipants(slot),
                 'is-over-max': isOverMaxParticipants(slot),
                 'is-full': isFullParticipants(slot),
-                'is-participant-mode': isPlacingParticipants
+                'is-participant-mode': isPlacingParticipants,
+                'is-already-present-slot': isDraggedPersonInSlot(slot)
               }"
-              @dragover.prevent="onDragOver($event, ['activity', 'facilitator', 'participant', 'location'])"
+              @dragover.prevent="onDragOver($event, ['activity', 'facilitator', 'participant', 'location'], slot)"
               @dragleave="onDragLeave($event)"
               @drop.prevent="onDropOnCard($event, slot)"
             >
+              <!-- Orange Banner when dragged person is already in this slot (Day View) -->
+              <div v-if="isDraggedPersonInSlot(slot)" class="already-present-banner">
+                <span class="already-present-icon">🟠</span>
+                <span class="already-present-text">
+                  {{ activeDragType === 'participant' ? 'Bénéficiaire déjà inscrit sur ce créneau' : 'Animateur déjà assigné à ce créneau' }}
+                </span>
+              </div>
+
               <!-- Background Watermark / Ghost Activity in Day View -->
               <div v-if="isPlacingParticipants" class="room-slot-activity-watermark" :title="'Animation programmée : ' + (slot.activityTemplate?.name || 'Activité')">
                 <span class="watermark-icon">🎯</span>
@@ -793,16 +817,14 @@
                 </div>
 
                 <div class="card-actions-top no-print">
-                  <button 
-                    type="button" 
-                    class="tool-btn toggle-day-slot-btn" 
-                    @click.stop="toggleSlotExpand(slot, $event)"
-                    :title="isSlotExpanded(slot) ? 'Réduire les détails' : 'Déplier les détails'"
-                  >
-                    <span>{{ isSlotExpanded(slot) ? '▲ Réduire' : '▼ Déplier' }}</span>
+                  <button type="button" class="action-btn edit-btn" @click="openEditModal(slot)">
+                    <i class="mdi mdi-pencil"></i>
+                    <span>Modifier</span>
                   </button>
-                  <button type="button" class="tool-btn" @click="openEditModal(slot)">✏️ Modifier</button>
-                  <button type="button" class="tool-btn danger-tool-btn" @click="confirmDeleteSlot(slot)">🗑️ Supprimer</button>
+                  <button type="button" class="action-btn danger-btn" @click="confirmDeleteSlot(slot)">
+                    <i class="mdi mdi-trash-can-outline"></i>
+                    <span>Supprimer</span>
+                  </button>
                 </div>
               </div>
 
@@ -819,10 +841,13 @@
                     @drop.prevent="onDropOnSlot($event, slot, 'location')"
                   >
                     <span class="box-title">📍 Salle / Lieu</span>
-                    <div v-if="slot.location" class="location-chip large">
-                      <strong>{{ slot.location.name }}</strong>
-                      <span v-if="slot.location.capacity" class="cap-text">Capacité: {{ slot.location.capacity }}</span>
-                      <button type="button" class="remove-chip-btn no-print" @click="clearSlotLocation(slot)">✕</button>
+                    <div class="location-content" v-if="slot.location">
+                      <strong class="loc-name">{{ slot.location.name }}</strong>
+                      <span class="loc-desc" v-if="slot.location.description">{{ slot.location.description }}</span>
+                      <span class="loc-cap" v-if="slot.location.capacity">Capacité : {{ slot.location.capacity }} pers.</span>
+                      <button type="button" class="remove-chip-btn no-print" @click.stop="removeLocation(slot)" title="Retirer la salle">
+                        <i class="mdi mdi-close"></i>
+                      </button>
                     </div>
                     <div v-else class="empty-drop-slot">
                       <span>👉 Glisser une salle ici</span>
@@ -832,13 +857,19 @@
                   <!-- Facilitators Target -->
                   <div 
                     class="facilitators-box"
-                    :class="{ 'drop-target-active': activeDragType === 'facilitator' }"
-                    @dragover.prevent="onDragOver($event, ['facilitator'])"
+                    :class="{ 
+                      'drop-target-active': activeDragType === 'facilitator' && !isDraggedPersonInSlot(slot),
+                      'drop-target-disabled': activeDragType === 'facilitator' && isDraggedPersonInSlot(slot)
+                    }"
+                    @dragover.prevent="onDragOver($event, ['facilitator'], slot)"
                     @dragleave="onDragLeave($event)"
                     @drop.prevent="onDropOnSlot($event, slot, 'facilitator')"
                   >
-                    <span class="box-title">👨‍🏫 Animateur(s) ({{ (slot.facilitators || []).length }})</span>
-                    <div class="facilitators-chips-list" v-if="slot.facilitators && slot.facilitators.length > 0">
+                    <div class="box-title-row">
+                      <span class="box-title">👨‍🏫 Animateurs</span>
+                      <span class="count-badge">{{ (slot.facilitators || []).length }}</span>
+                    </div>
+                    <div class="facilitators-chips-grid" v-if="slot.facilitators && slot.facilitators.length > 0">
                       <div 
                         v-for="fac in slot.facilitators" 
                         :key="fac.documentId || fac.id" 
@@ -849,7 +880,9 @@
                       >
                         <span class="person-name">{{ fac.firstName }} {{ fac.lastName }}</span>
                         <span v-if="getPersonSlotConflict(fac, slot, 'facilitator')" class="conflict-warn-dot" :title="getPersonSlotConflict(fac, slot, 'facilitator')">⚠️</span>
-                        <button type="button" class="remove-chip-btn no-print" @click.stop="removeFacilitator(slot, fac)">✕</button>
+                        <button type="button" class="remove-chip-btn no-print" @click.stop="removeFacilitator(slot, fac)" title="Désaffecter">
+                          <i class="mdi mdi-close"></i>
+                        </button>
                       </div>
                     </div>
                     <div v-else class="empty-drop-slot">
@@ -861,8 +894,11 @@
                 <!-- Participants Section -->
                 <div 
                   class="expanded-participants-section"
-                  :class="{ 'drop-target-active': activeDragType === 'participant' }"
-                  @dragover.prevent="onDragOver($event, ['participant'])"
+                  :class="{ 
+                    'drop-target-active': activeDragType === 'participant' && !isDraggedPersonInSlot(slot),
+                    'drop-target-disabled': activeDragType === 'participant' && isDraggedPersonInSlot(slot)
+                  }"
+                  @dragover.prevent="onDragOver($event, ['participant'], slot)"
                   @dragleave="onDragLeave($event)"
                   @drop.prevent="onDropOnSlot($event, slot, 'participant')"
                 >
@@ -891,7 +927,9 @@
                       <span class="person-avatar">👤</span>
                       <span class="person-name">{{ part.firstName }} {{ part.lastName }}</span>
                       <span v-if="getPersonSlotConflict(part, slot, 'participant')" class="conflict-warn-dot" :title="getPersonSlotConflict(part, slot, 'participant')">⚠️</span>
-                      <button type="button" class="remove-chip-btn no-print" @click.stop="removeParticipant(slot, part)">✕</button>
+                      <button type="button" class="remove-chip-btn no-print" @click.stop="removeParticipant(slot, part)" title="Désinscrire">
+                        <i class="mdi mdi-close"></i>
+                      </button>
                     </div>
                   </div>
 
@@ -2109,24 +2147,51 @@ export default {
       return props.locations.filter(l => (l.name || '').toLowerCase().includes(q));
     });
 
-    // ──────────────── DRAG AND DROP HANDLERS ────────────────
+    // ──────────────── DRAG AND DROP HANDLERS (OPTIMIZED O(1) LOOKUPS) ────────────────
+    const draggedPersonOccupiedSlotIds = ref(new Set());
+
     function onDragStart(event, payload) {
       activeDragType.value = payload.type;
       draggedItem.value = payload;
       event.dataTransfer.effectAllowed = 'copyMove';
       event.dataTransfer.setData('application/json', JSON.stringify(payload));
+
+      // Precompute set of slot IDs where this person is already assigned (O(1) lookups during drag)
+      const occupied = new Set();
+      if (payload && (payload.type === 'participant' || payload.type === 'facilitator') && payload.data) {
+        const personId = String(payload.data.documentId || payload.data.id);
+        const isPart = payload.type === 'participant';
+        (currentPeriodSlots.value || []).forEach(s => {
+          const list = isPart ? (s.participants || []) : (s.facilitators || []);
+          if (list.some(item => String(item.documentId || item.id) === personId)) {
+            occupied.add(String(s.documentId || s.id));
+          }
+        });
+      }
+      draggedPersonOccupiedSlotIds.value = occupied;
     }
 
     function onDragEnd() {
       activeDragType.value = null;
       draggedItem.value = null;
       isTrashHovered.value = false;
+      draggedPersonOccupiedSlotIds.value = new Set();
       document.querySelectorAll('.drop-hover').forEach(el => el.classList.remove('drop-hover'));
     }
 
-    function onDragOver(event, acceptedTypes = []) {
+    function isDraggedPersonInSlot(slot) {
+      if (!slot || draggedPersonOccupiedSlotIds.value.size === 0) return false;
+      return draggedPersonOccupiedSlotIds.value.has(String(slot.documentId || slot.id));
+    }
+
+    function onDragOver(event, acceptedTypes = [], slot = null) {
       if (!activeDragType.value) return;
       if (acceptedTypes.length > 0 && !acceptedTypes.includes(activeDragType.value)) {
+        event.dataTransfer.dropEffect = 'none';
+        return;
+      }
+      // If the person is already in this slot, block drop
+      if (slot && isDraggedPersonInSlot(slot)) {
         event.dataTransfer.dropEffect = 'none';
         return;
       }
@@ -2201,6 +2266,13 @@ export default {
       const { type, data, fromSlotId } = draggedItem.value;
       const slotId = slot.documentId || slot.id;
 
+      // Prevent adding person if already in slot
+      if (isDraggedPersonInSlot(slot)) {
+        const personName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+        globalStore.addWarning(`${type === 'participant' ? 'Le bénéficiaire' : 'L\'animateur'} "${personName}" est déjà inscrit sur ce créneau.`, 'Déjà présent');
+        return;
+      }
+
       if (type === 'activity') {
         const curName = slot.activityTemplate?.name || 'Activité actuelle';
         const newName = data.name || 'Nouvelle activité';
@@ -2242,6 +2314,13 @@ export default {
       if (!draggedItem.value) return;
       const { type, data, fromSlotId } = draggedItem.value;
       const slotId = slot.documentId || slot.id;
+
+      // Prevent adding person if already in slot
+      if (isDraggedPersonInSlot(slot)) {
+        const personName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+        globalStore.addWarning(`${type === 'participant' ? 'Le bénéficiaire' : 'L\'animateur'} "${personName}" est déjà inscrit sur ce créneau.`, 'Déjà présent');
+        return;
+      }
 
       try {
         if (type === 'facilitator') {
@@ -2597,6 +2676,7 @@ export default {
       filteredPaletteParticipants,
       filteredPaletteLocations,
       activeDragType,
+      isDraggedPersonInSlot,
       isTrashHovered,
       showSlotModal,
       editingSlotId,
@@ -3466,6 +3546,67 @@ export default {
 .day-slot-expanded-card.is-participant-mode:hover {
   border-color: #0284c7;
   box-shadow: 0 6px 18px rgba(2, 132, 199, 0.16);
+}
+
+/* ──────────────── ALREADY PRESENT IN SLOT (ORANGE HIGHLIGHT & NO-DROP) ──────────────── */
+.animation-card.is-already-present-slot,
+.day-slot-expanded-card.is-already-present-slot {
+  border-color: #f97316 !important;
+  border-left: 5px solid #ea580c !important;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%) !important;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35), 0 4px 14px rgba(234, 88, 12, 0.18) !important;
+  cursor: not-allowed !important;
+  opacity: 0.92;
+}
+
+.animation-card.is-already-present-slot:hover,
+.day-slot-expanded-card.is-already-present-slot:hover {
+  border-color: #ea580c !important;
+  box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.45), 0 6px 18px rgba(234, 88, 12, 0.22) !important;
+}
+
+.already-present-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fff7ed;
+  border: 1.5px solid #f97316;
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #c2410c;
+  margin-top: 0.2rem;
+  margin-bottom: 0.4rem;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.18);
+  animation: pulse-orange 1.8s infinite alternate;
+  z-index: 2;
+}
+
+@keyframes pulse-orange {
+  from {
+    background-color: #fff7ed;
+    border-color: #f97316;
+  }
+  to {
+    background-color: #ffedd5;
+    border-color: #ea580c;
+  }
+}
+
+.already-present-icon {
+  font-size: 0.9rem;
+}
+
+.already-present-text {
+  line-height: 1.25;
+}
+
+.drop-target-disabled {
+  border-color: #f97316 !important;
+  background: rgba(249, 115, 22, 0.1) !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
 }
 
 /* Subtle transparent watermark of activity in background */

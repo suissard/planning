@@ -665,8 +665,12 @@
                   <div style="display: flex; justify-content: space-between; width: 100%;">
                     <h3>🎯 {{ act.name }}</h3>
                     <div v-if="appSettingsStore.isAdminMode" class="card-actions" style="display: flex; gap: 0.5rem;">
-                      <button class="icon-btn edit-btn" @click.stop="openActivityModal(act)" title="Modifier">✏️</button>
-                      <button class="icon-btn delete-btn" @click.stop="deleteActivity(act.documentId)" title="Supprimer">🗑️</button>
+                      <button class="action-icon-btn edit-btn" @click.stop="openActivityModal(act)" title="Modifier">
+                        <i class="mdi mdi-pencil"></i>
+                      </button>
+                      <button class="action-icon-btn delete-btn" @click.stop="deleteActivity(act.documentId)" title="Supprimer">
+                        <i class="mdi mdi-trash-can-outline"></i>
+                      </button>
                     </div>
                   </div>
                   <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-top: 0.4rem;">
@@ -784,8 +788,12 @@
                         <span class="email-text">✉️ {{ fac.email }}</span>
                       </div>
                       <div v-if="appSettingsStore.isAdminMode" class="card-actions" style="display: flex; gap: 0.4rem;">
-                        <button class="icon-btn edit-btn" @click.stop="openFacilitatorModal(fac)" title="Modifier cet animateur">✏️</button>
-                        <button class="icon-btn delete-btn" @click.stop="deleteFacilitator(fac.documentId)" title="Supprimer">🗑️</button>
+                        <button class="action-icon-btn edit-btn" @click.stop="openFacilitatorModal(fac)" title="Modifier cet animateur">
+                          <i class="mdi mdi-pencil"></i>
+                        </button>
+                        <button class="action-icon-btn delete-btn" @click.stop="deleteFacilitator(fac.documentId)" title="Supprimer">
+                          <i class="mdi mdi-trash-can-outline"></i>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -875,8 +883,12 @@
                       <span class="email-text">✉️ {{ part.email }}</span>
                     </div>
                     <div v-if="appSettingsStore.isAdminMode" class="card-actions" style="display: flex; gap: 0.4rem;">
-                      <button class="icon-btn edit-btn" @click.stop="openParticipantModal(part)" title="Modifier ce participant">✏️</button>
-                      <button class="icon-btn delete-btn" @click.stop="deleteParticipant(part.documentId)" title="Supprimer">🗑️</button>
+                      <button class="action-icon-btn edit-btn" @click.stop="openParticipantModal(part)" title="Modifier ce participant">
+                        <i class="mdi mdi-pencil"></i>
+                      </button>
+                      <button class="action-icon-btn delete-btn" @click.stop="deleteParticipant(part.documentId)" title="Supprimer">
+                        <i class="mdi mdi-trash-can-outline"></i>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1371,7 +1383,9 @@
                     <span style="font-size: 0.75rem; color: var(--text-secondary);">au</span>
                     <input type="datetime-local" v-model="unavail.endDate" class="form-input" style="font-size: 0.78rem; padding: 0.3rem 0.5rem; min-width: 170px;" />
                     <input type="text" v-model="unavail.reason" placeholder="Motif (ex: Congés, Formation)" class="form-input" style="font-size: 0.78rem; padding: 0.3rem 0.5rem; flex: 1; min-width: 140px;" />
-                    <button type="button" class="icon-btn delete-btn" @click="removeFacilitatorUnavailability(index)" title="Supprimer">🗑️</button>
+                    <button type="button" class="action-icon-btn delete-btn" @click="removeFacilitatorUnavailability(index)" title="Supprimer">
+                      <i class="mdi mdi-trash-can-outline"></i>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1473,7 +1487,9 @@
                     <span style="font-size: 0.75rem; color: var(--text-secondary);">au</span>
                     <input type="datetime-local" v-model="unavail.endDate" class="form-input" style="font-size: 0.78rem; padding: 0.3rem 0.5rem; min-width: 170px;" />
                     <input type="text" v-model="unavail.reason" placeholder="Motif (ex: Vacances en famille, Soins)" class="form-input" style="font-size: 0.78rem; padding: 0.3rem 0.5rem; flex: 1; min-width: 140px;" />
-                    <button type="button" class="icon-btn delete-btn" @click="removeParticipantUnavailability(index)" title="Supprimer">🗑️</button>
+                    <button type="button" class="action-icon-btn delete-btn" @click="removeParticipantUnavailability(index)" title="Supprimer">
+                      <i class="mdi mdi-trash-can-outline"></i>
+                    </button>
                   </div>
                 </div>
               </div>

@@ -4,6 +4,9 @@ import App from './App.vue';
 import router from './router';
 import './index.css';
 import vuetify from './plugins/vuetify';
+import { initGlobalDragAutoScroll } from './utils/dragAutoScroll';
+
+initGlobalDragAutoScroll();
 
 const app = createApp(App);
 app.use(createPinia());

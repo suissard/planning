@@ -235,8 +235,9 @@
                   <span>👨‍💼 {{ getFacilitatorName(participantDayRoomSession.manager) }}</span>
                 </div>
               </div>
-              <button class="action-link-btn no-print" @click="openQuickRoomAssignModal">
-                ✏️ Modifier
+              <button class="action-btn edit-btn btn-sm no-print" @click="openQuickRoomAssignModal" title="Modifier la salle">
+                <i class="mdi mdi-pencil"></i>
+                <span>Modifier</span>
               </button>
             </div>
             <div class="room-assignment-box warning" v-else>
@@ -244,7 +245,8 @@
                 ⚠️ Ce bénéficiaire n'est pas encore inscrit dans une salle pour le {{ formatDate(selectedDate) }}.
               </div>
               <button class="action-btn primary-btn btn-sm no-print" @click="openQuickRoomAssignModal">
-                ➕ Affecter à une salle
+                <i class="mdi mdi-plus"></i>
+                <span>Affecter à une salle</span>
               </button>
             </div>
 
@@ -253,7 +255,8 @@
               <div class="section-title-row">
                 <h4>🎯 Programme des Activités de la Journée ({{ participantDayActivities.length }})</h4>
                 <button class="action-btn secondary-btn btn-sm no-print" @click="openQuickSlotAssignModal">
-                  ➕ Inscrire à une activité
+                  <i class="mdi mdi-plus"></i>
+                  <span>Inscrire à une activité</span>
                 </button>
               </div>
 
@@ -290,8 +293,12 @@
                   </div>
 
                   <div class="act-actions no-print">
-                    <button class="icon-btn edit-btn" @click="openEditSlotModal(act)" title="Modifier ce créneau">✏️</button>
-                    <button class="icon-btn delete-btn" @click="removeParticipantFromSlot(act, selectedParticipantId)" title="Désinscrire de ce créneau">❌</button>
+                    <button class="action-icon-btn edit-btn" @click="openEditSlotModal(act)" title="Modifier ce créneau">
+                      <i class="mdi mdi-pencil"></i>
+                    </button>
+                    <button class="action-icon-btn delete-btn" @click="removeParticipantFromSlot(act, selectedParticipantId)" title="Désinscrire de ce créneau">
+                      <i class="mdi mdi-close"></i>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -481,8 +488,9 @@
                 <div v-for="s in managerDayRoomSessions" :key="s.documentId || s.id" class="room-summary-chip">
                   <strong>📍 {{ s.location?.name }}</strong>
                   <span>(Capacité: {{ (s.participants || []).length }}/{{ s.location?.capacity || 10 }})</span>
-                  <button class="action-btn secondary-btn btn-xs no-print ml-2" @click="openEditSessionModal(s)">
-                    ✏️ Modifier
+                  <button class="action-btn edit-btn btn-xs no-print ml-2" @click="openEditSessionModal(s)" title="Modifier cette session">
+                    <i class="mdi mdi-pencil"></i>
+                    <span>Modifier</span>
                   </button>
                 </div>
               </div>
@@ -496,7 +504,8 @@
               <div class="section-title-row">
                 <h4>👥 Bénéficiaires sous votre responsabilité ({{ managerDayParticipants.length }})</h4>
                 <button class="action-btn secondary-btn btn-sm no-print" @click="openBatchAssignToManagerRoomModal" v-if="managerDayRoomSessions.length > 0">
-                  ➕ Ajouter des bénéficiaires
+                  <i class="mdi mdi-plus"></i>
+                  <span>Ajouter des bénéficiaires</span>
                 </button>
               </div>
 
@@ -511,7 +520,9 @@
                     <strong>{{ p.firstName }} {{ p.lastName }}</strong>
                     <span class="p-email">{{ p.email || 'Bénéficiaire' }}</span>
                   </div>
-                  <button class="icon-btn delete-btn no-print" @click="removeParticipantFromManagerRoom(p)" title="Retirer de la salle">❌</button>
+                  <button class="action-icon-btn delete-btn no-print" @click="removeParticipantFromManagerRoom(p)" title="Retirer de la salle">
+                    <i class="mdi mdi-close"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -563,7 +574,9 @@
                         </div>
                       </td>
                       <td class="no-print">
-                        <button class="icon-btn edit-btn" @click="openEditSlotModal(act)" title="Modifier">✏️</button>
+                        <button class="action-icon-btn edit-btn" @click="openEditSlotModal(act)" title="Modifier ce créneau">
+                          <i class="mdi mdi-pencil"></i>
+                        </button>
                       </td>
                     </tr>
                   </tbody>
@@ -815,11 +828,13 @@
 
               <!-- Room Footer Actions -->
               <div class="room-card-footer no-print">
-                <button class="action-btn secondary-btn btn-sm" @click="openEditSessionModal(session)">
-                  ✏️ Modifier la session
+                <button class="action-btn edit-btn btn-sm" @click="openEditSessionModal(session)">
+                  <i class="mdi mdi-pencil"></i>
+                  <span>Modifier la session</span>
                 </button>
                 <button class="action-btn danger-btn btn-sm" @click="confirmDeleteSession(session)">
-                  🗑️ Fermer la salle
+                  <i class="mdi mdi-trash-can-outline"></i>
+                  <span>Fermer la salle</span>
                 </button>
               </div>
             </div>
