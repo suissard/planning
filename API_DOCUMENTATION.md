@@ -20,6 +20,7 @@ Cette documentation fournit une référence exhaustive et détaillée pour l'API
    - [4.6. Sessions d'Ouverture de Salle (`/api/room-sessions`)](#46-sessions-douverture-de-salle-apiroom-sessions)
    - [4.7. Trames Hebdomadaires Récurrentes (`/api/room-session-templates`)](#47-trames-hebdomadaires-récurrentes-apiroom-session-templates)
    - [4.8. Authentification & Utilisateurs (`/api/auth` & `/api/users`)](#48-authentification--utilisateurs-apiauth--apiusers)
+   - [4.9. Pointages & Émargements (`/api/check-ins`)](#49-pointages--émargements-apicheck-ins)
 5. [Spécifications des Formats JSON Complexes](#5-spécifications-des-formats-json-complexes)
    - [5.1. Disponibilités Hebdomadaires (`weeklyAvailabilities`)](#51-disponibilités-hebdomadaires-weeklyavailabilities)
    - [5.2. Indisponibilités Ponctuelles & Congés (`specificUnavailabilities`)](#52-indisponibilités-ponctuelles--congés-specificunavailabilities)
@@ -559,6 +560,73 @@ Permet de définir la **semaine type** (gabarit récurrent) pour préconfigurer 
 | `POST` | `/api/auth/local/register` | Inscription d'un nouveau compte | `username`, `email`, `password` |
 | `GET` | `/api/users/me` | Profil de l'utilisateur connecté | Header `Authorization: Bearer <TOKEN>` requis |
 | `PUT` | `/api/users/:id` | Modifier les données d'un profil | Champs utilisateur modifiables |
+
+---
+
+### 4.9. Pointages & Émargements (`/api/check-ins`)
+
+L'entité `check-in` enregistre la présence réelle des bénéficiaires/participants aux animations programmées (créneaux horaires `time-slot`), leurs heures d'arrivée et de départ (permettant les allers-retours / passages multiples en cours de journée), ainsi que les observations et remarques qualitatives de l'équipe d'animation.
+
+#### 🏗️ Structure des Données
+
+| Champ | Type | Obligatoire | Description |
+|---|---|---|---|
+| `isPresent` | `Boolean` | Oui (défaut: `true`) | Indique si le participant était effectivement présent ou absent à l'animation. |
+| `checkInTime` | `DateTime` | Non | Heure d'arrivée / début de présence du passage. |
+| `checkOutTime` | `DateTime` | Non | Heure de départ / fin de présence du passage (permet de noter le départ puis de créer un nouveau passage lors d'un retour). |
+| `comment` | `Text` | Non | Observation comportementale, réaction ou note libre sur le participant pendant le passage. |
+| `timeSlot` | `Relation (ManyToOne)` | Oui | Créneau horaire (`time-slot`) de l'animation concernée. |
+| `participant` | `Relation (ManyToOne)` | Oui | Bénéficiaire / participant (`participant`) concerné. |
+
+#### 🛣️ Endpoints disponibles
+
+| Méthode | Route | Description |
+|---|---|---|
+| `GET` | `/api/check-ins` | Liste paginée des pointages (avec filtres par créneau, date ou participant). |
+| `GET` | `/api/check-ins/:documentId` | Détail d'un pointage unitaire. |
+| `POST` | `/api/check-ins` | Créer un nouveau pointage / passage d'émargement. |
+| `PUT` | `/api/check-ins/:documentId` | Mettre à jour un pointage existant (arrivée, départ, commentaire). |
+| `DELETE` | `/api/check-ins/:documentId` | Supprimer un enregistrement de pointage. |
+
+#### 📦 Exemples de Payloads
+
+**1. Enregistrement d'une arrivée (`POST /api/check-ins`) :**
+```json
+{
+  "data": {
+    "isPresent": true,
+    "checkInTime": "2026-08-30T09:15:00.000Z",
+    "checkOutTime": null,
+    "comment": "Très bonne participation, très souriant(e) dès le début de l'atelier.",
+    "timeSlot": "s1a2b3c4d5e6f7a8",
+    "participant": "p9z8y7x6w5v4u3t2"
+  }
+}
+```
+
+**2. Enregistrement d'un départ (`PUT /api/check-ins/:documentId`) :**
+```json
+{
+  "data": {
+    "checkOutTime": "2026-08-30T11:30:00.000Z",
+    "comment": "Parti(e) à 11h30 pour son rendez-vous extérieur."
+  }
+}
+```
+
+**3. Enregistrement d'un retour / 2nd passage le même jour (`POST /api/check-ins`) :**
+```json
+{
+  "data": {
+    "isPresent": true,
+    "checkInTime": "2026-08-30T14:00:00.000Z",
+    "checkOutTime": "2026-08-30T16:30:00.000Z",
+    "comment": "De retour pour l'activité de l'après-midi, très en forme.",
+    "timeSlot": "s1a2b3c4d5e6f7a8",
+    "participant": "p9z8y7x6w5v4u3t2"
+  }
+}
+```
 
 ---
 

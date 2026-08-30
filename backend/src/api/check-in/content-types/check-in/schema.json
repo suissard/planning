@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "check_ins",
+  "info": {
+    "singularName": "check-in",
+    "pluralName": "check-ins",
+    "displayName": "CheckIn",
+    "description": "Participant attendance check-in & check-out records and comments"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "isPresent": {
+      "type": "boolean",
+      "default": true,
+      "required": true
+    },
+    "checkInTime": {
+      "type": "datetime"
+    },
+    "checkOutTime": {
+      "type": "datetime"
+    },
+    "comment": {
+      "type": "text"
+    },
+    "timeSlot": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::time-slot.time-slot",
+      "inversedBy": "checkIns"
+    },
+    "participant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::participant.participant",
+      "inversedBy": "checkIns"
+    }
+  }
+}

@@ -48,6 +48,12 @@
       "relation": "manyToOne",
       "target": "api::room-session.room-session",
       "inversedBy": "timeSlots"
+    },
+    "checkIns": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::check-in.check-in",
+      "mappedBy": "timeSlot"
     }
   }
 }

@@ -497,6 +497,48 @@ export interface ApiActivityTemplateActivityTemplate
   };
 }
 
+export interface ApiCheckInCheckIn extends Struct.CollectionTypeSchema {
+  collectionName: 'check_ins';
+  info: {
+    description: 'Participant attendance check-in & check-out records and comments';
+    displayName: 'CheckIn';
+    pluralName: 'check-ins';
+    singularName: 'check-in';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    checkInTime: Schema.Attribute.DateTime;
+    checkOutTime: Schema.Attribute.DateTime;
+    comment: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    isPresent: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::check-in.check-in'
+    > &
+      Schema.Attribute.Private;
+    participant: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::participant.participant'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    timeSlot: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::time-slot.time-slot'
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiFacilitatorFacilitator extends Struct.CollectionTypeSchema {
   collectionName: 'facilitators';
   info: {
@@ -607,6 +649,7 @@ export interface ApiParticipantParticipant extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    checkIns: Schema.Attribute.Relation<'oneToMany', 'api::check-in.check-in'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -741,6 +784,7 @@ export interface ApiTimeSlotTimeSlot extends Struct.CollectionTypeSchema {
       'manyToOne',
       'api::activity-template.activity-template'
     >;
+    checkIns: Schema.Attribute.Relation<'oneToMany', 'api::check-in.check-in'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1284,6 +1328,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::activity-template.activity-template': ApiActivityTemplateActivityTemplate;
+      'api::check-in.check-in': ApiCheckInCheckIn;
       'api::facilitator.facilitator': ApiFacilitatorFacilitator;
       'api::location.location': ApiLocationLocation;
       'api::participant.participant': ApiParticipantParticipant;

@@ -26,7 +26,7 @@ module.exports = {
           .findOne({ where: { type: roleType } });
 
          if (role) {
-            const collections = ['activity-template', 'facilitator', 'location', 'participant', 'time-slot', 'room-session', 'room-session-template'];
+            const collections = ['activity-template', 'facilitator', 'location', 'participant', 'time-slot', 'room-session', 'room-session-template', 'check-in'];
             const crudActions = ['find', 'findOne', 'create', 'update', 'delete'];
 
             let requiredActions = [];

@@ -35,6 +35,12 @@
       "relation": "manyToMany",
       "target": "api::time-slot.time-slot",
       "mappedBy": "participants"
+    },
+    "checkIns": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::check-in.check-in",
+      "mappedBy": "participant"
     }
   }
 }

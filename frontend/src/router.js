@@ -122,6 +122,20 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/check-in',
+    name: 'check-in',
+    component: MainApp,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/checkin',
+    redirect: '/check-in'
+  },
+  {
+    path: '/presences',
+    redirect: '/check-in'
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: MainApp,

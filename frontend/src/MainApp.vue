@@ -308,6 +308,17 @@
             </button>
 
             <button 
+              class="nav-item dedicated-nav-item" 
+              :class="{ active: currentPage === 'check-in' }"
+              @click="navigateTo('check-in')"
+              title="Feuilles d'émargement et pointage des présences aux animations"
+            >
+              <span class="nav-icon">✅</span>
+              <span class="nav-label">Pointage & Check-In</span>
+              <span class="nav-badge-pill checkin-nav-pill">✨ Présences</span>
+            </button>
+
+            <button 
               class="nav-item" 
               :class="{ active: currentPage === 'week-template' }"
               @click="navigateTo('week-template')"
@@ -396,11 +407,8 @@
 
         <!-- Main Content Area -->
         <main class="app-content">
-          <!-- User Mode Notification Banner (compact) -->
-          <!-- Removed intrusive banner — mode is visible via sidebar/header toggle -->
-
           <!-- Search & Info Bar (Admin Mode only) -->
-          <div class="content-header" v-if="appSettingsStore.isAdminMode && !error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots'">
+          <div class="content-header" v-if="appSettingsStore.isAdminMode && !error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots' && currentPage !== 'check-in'">
             <div class="search-wrapper">
               <span class="search-icon">🔍</span>
               <input 
@@ -444,7 +452,7 @@
                 Toutes
               </button>
               <button 
-                type="button"
+                type="button" 
                 v-for="tag in allAvailableTags" 
                 :key="tag" 
                 class="tag-filter-pill" 
@@ -457,13 +465,13 @@
           </div>
 
           <!-- Loading State (Admin Mode) -->
-          <div class="loading-state" v-if="loading && appSettingsStore.isAdminMode && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots'">
+          <div class="loading-state" v-if="loading && appSettingsStore.isAdminMode && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots' && currentPage !== 'check-in'">
             <div class="spinner"></div>
             <p>Chargement des données depuis Strapi...</p>
           </div>
 
           <!-- Error State -->
-          <div class="error-state" v-else-if="error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots'">
+          <div class="error-state" v-else-if="error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots' && currentPage !== 'check-in'">
             <span class="error-icon">⚠️</span>
             <h3>Impossible de contacter l'API Strapi</h3>
             <p>{{ error }}</p>
@@ -502,6 +510,18 @@
               :locations="locations"
               :activities="activities"
               :timeslots="timeslots"
+              @refresh-data="fetchData"
+            />
+
+            <!-- TAB: CHECK-IN / POINTAGE -->
+            <CheckInView 
+              v-if="currentPage === 'check-in'" 
+              :locations="locations" 
+              :activities="activities" 
+              :facilitators="facilitators" 
+              :participants="participants" 
+              :timeslots="timeslots"
+              @navigate="navigateTo"
               @refresh-data="fetchData"
             />
 
@@ -1764,6 +1784,7 @@ import RoomSessionsView from './components/RoomSessionsView.vue';
 import WeekTemplateView from './components/WeekTemplateView.vue';
 import ExtractionsView from './components/ExtractionsView.vue';
 import AnimationsPlanningView from './components/AnimationsPlanningView.vue';
+import CheckInView from './components/CheckInView.vue';
 import CalendarView from './components/CalendarView.vue';
 import ClientPlanningView from './views/ClientPlanningView.vue';
 import SearchableSelect from './components/SearchableSelect.vue';
@@ -1788,6 +1809,7 @@ export default {
     WeekTemplateView,
     ExtractionsView,
     AnimationsPlanningView,
+    CheckInView,
     CalendarView,
     ClientPlanningView,
     SearchableSelect
@@ -2581,6 +2603,8 @@ export default {
         this.currentPage = 'room-sessions';
       } else if (path.startsWith('/extractions')) {
         this.currentPage = 'extractions';
+      } else if (path.startsWith('/check-in') || path.startsWith('/checkin') || path.startsWith('/presences')) {
+        this.currentPage = 'check-in';
       } else if (path.startsWith('/profile')) {
         this.currentPage = 'profile';
         if (this.user) {
@@ -4633,6 +4657,23 @@ export default {
 .dedicated-nav-item:hover .nav-badge-pill.dnd-pill {
   background: rgba(99, 102, 241, 0.35);
   color: #a5b4fc;
+}
+
+.nav-badge-pill.checkin-nav-pill {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.nav-item.active .nav-badge-pill.checkin-nav-pill {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+}
+
+.dedicated-nav-item:hover .nav-badge-pill.checkin-nav-pill {
+  background: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
 }
 
 .nav-footer {

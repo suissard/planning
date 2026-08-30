@@ -144,6 +144,10 @@
             🚪 Ouverture Salles
           </button>
 
+          <button type="button" class="tool-btn checkin-shortcut-btn" @click="$emit('navigate', 'check-in')" title="Accéder au pointage et à la feuille d'émargement">
+            ✅ Pointage & Émargement
+          </button>
+
           <button type="button" class="tool-btn print-btn" @click="printPage" title="Imprimer le planning et les fiches d'animation">
             🖨️ Imprimer
           </button>
