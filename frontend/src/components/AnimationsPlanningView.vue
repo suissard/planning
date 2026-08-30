@@ -120,6 +120,18 @@
             <span>{{ areAllSlotsExpanded ? 'Tout réduire' : 'Tout déplier' }}</span>
           </button>
 
+          <!-- Toggle Participant Placement Mode Button -->
+          <button 
+            type="button" 
+            class="tool-btn participant-mode-toggle-btn"
+            :class="{ active: isPlacingParticipants }"
+            @click="toggleParticipantMode"
+            title="Afficher les créneaux de salle au premier plan et les animations en transparence"
+          >
+            <span class="btn-icon">👥</span>
+            <span>{{ isPlacingParticipants ? 'Mode Salle & Bénéficiaires' : 'Placer des Bénéficiaires' }}</span>
+          </button>
+
           <!-- Toggle Side Palette Button -->
           <button 
             type="button" 
@@ -376,57 +388,99 @@
                     'is-under-min': isUnderMinParticipants(slot),
                     'is-over-max': isOverMaxParticipants(slot),
                     'is-full': isFullParticipants(slot),
-                    'highlighted-card': highlightedSlotId === (slot.documentId || slot.id)
+                    'highlighted-card': highlightedSlotId === (slot.documentId || slot.id),
+                    'is-participant-mode': isPlacingParticipants
                   }"
                   :id="'slot-card-' + (slot.documentId || slot.id)"
                   @dragover.prevent="onDragOver($event, ['activity', 'facilitator', 'participant', 'location'])"
                   @dragleave="onDragLeave($event)"
                   @drop.prevent="onDropOnCard($event, slot)"
                 >
-                  <!-- Card Header: Time, Title, Tag & Actions -->
-                  <div class="anim-card-header is-clickable" @click="toggleSlotExpand(slot, $event)">
-                    <div class="time-and-tag">
-                      <span class="time-chip" title="Horaire de l'animation">
-                        🕒 {{ formatSlotTimeRange(slot.startDate, slot.endDate) }}
-                      </span>
-                      <span v-if="getActivityTag(slot)" class="category-tag-chip">
-                        {{ getActivityTag(slot) }}
-                      </span>
-                    </div>
-
-                    <div class="card-quick-actions no-print" @click.stop>
-                      <button 
-                        type="button" 
-                        class="card-action-btn toggle-card-btn" 
-                        @click.stop="toggleSlotExpand(slot, $event)"
-                        :title="isSlotExpanded(slot) ? 'Réduire cette animation' : 'Déplier les détails'"
-                      >
-                        <span class="chevron-icon" :class="{ 'is-rotated': isSlotExpanded(slot) }">▼</span>
-                      </button>
-                      <button 
-                        type="button" 
-                        class="card-action-btn edit-btn" 
-                        @click="openEditModal(slot)" 
-                        title="Modifier l'animation"
-                      >
-                        ✏️
-                      </button>
-                      <button 
-                        type="button" 
-                        class="card-action-btn delete-btn" 
-                        @click="confirmDeleteSlot(slot)" 
-                        title="Supprimer l'animation"
-                      >
-                        🗑️
-                      </button>
-                    </div>
+                  <!-- Background Watermark / Ghost Activity when in Participant Placement Mode -->
+                  <div v-if="isPlacingParticipants" class="room-slot-activity-watermark" :title="'Animation programmée : ' + (slot.activityTemplate?.name || 'Activité')">
+                    <span class="watermark-icon">🎯</span>
+                    <span class="watermark-text">{{ slot.activityTemplate?.name || 'Activité' }}</span>
                   </div>
 
-                  <!-- Activity Name & Duration -->
-                  <div class="anim-title-row is-clickable" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier/réduire">
-                    <span class="anim-icon">🎯</span>
-                    <strong class="anim-name">{{ slot.activityTemplate?.name || 'Activité sans nom' }}</strong>
-                  </div>
+                  <!-- ─── STANDARD ANIMATION HEADER ─── -->
+                  <template v-if="!isPlacingParticipants">
+                    <!-- Card Header: Time, Title, Tag & Actions -->
+                    <div class="anim-card-header is-clickable" @click="toggleSlotExpand(slot, $event)">
+                      <div class="time-and-tag">
+                        <span class="time-chip" title="Horaire de l'animation">
+                          🕒 {{ formatSlotTimeRange(slot.startDate, slot.endDate) }}
+                        </span>
+                        <span v-if="getActivityTag(slot)" class="category-tag-chip">
+                          {{ getActivityTag(slot) }}
+                        </span>
+                      </div>
+
+                      <div class="card-quick-actions no-print" @click.stop>
+                        <button 
+                          type="button" 
+                          class="card-action-btn toggle-card-btn" 
+                          @click.stop="toggleSlotExpand(slot, $event)"
+                          :title="isSlotExpanded(slot) ? 'Réduire cette animation' : 'Déplier les détails'"
+                        >
+                          <span class="chevron-icon" :class="{ 'is-rotated': isSlotExpanded(slot) }">▼</span>
+                        </button>
+                        <button 
+                          type="button" 
+                          class="card-action-btn edit-btn" 
+                          @click="openEditModal(slot)" 
+                          title="Modifier l'animation"
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          type="button" 
+                          class="card-action-btn delete-btn" 
+                          @click="confirmDeleteSlot(slot)" 
+                          title="Supprimer l'animation"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Activity Name & Duration -->
+                    <div class="anim-title-row is-clickable" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier/réduire">
+                      <span class="anim-icon">🎯</span>
+                      <strong class="anim-name">{{ slot.activityTemplate?.name || 'Activité sans nom' }}</strong>
+                    </div>
+                  </template>
+
+                  <!-- ─── ROOM TIME SLOT HEADER (Participant Placement Focus) ─── -->
+                  <template v-else>
+                    <div class="room-placement-card-header is-clickable" @click="toggleSlotExpand(slot, $event)">
+                      <div class="room-placement-primary">
+                        <div class="room-placement-time">
+                          <span class="time-chip room-time-chip">
+                            🕒 {{ formatSlotTimeRange(slot.startDate, slot.endDate) }}
+                          </span>
+                        </div>
+                        <div class="room-placement-title">
+                          <strong class="room-name-primary">📍 {{ slot.location ? slot.location.name : 'Créneau sans salle' }}</strong>
+                        </div>
+                      </div>
+                      <div class="room-placement-badges">
+                        <span class="summary-badge part-badge" :class="getCapacityClass(slot)">
+                          👥 {{ (slot.participants || []).length }}/{{ slot.location?.capacity || getMaxParticipants(slot) }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Ghost activity indicator in background -->
+                    <div class="room-placement-ghost-activity">
+                      <span class="ghost-tag">🎯 Activité :</span>
+                      <span class="ghost-name">{{ slot.activityTemplate?.name || 'Animation' }}</span>
+                    </div>
+
+                    <!-- Direct Drop Hint when dragging participant -->
+                    <div class="room-placement-drop-hint" v-if="activeDragType === 'participant'">
+                      <span>📥 Glisser le bénéficiaire ici pour l'inscrire dans cette salle</span>
+                    </div>
+                  </template>
 
                   <!-- Conflict Warning Alert Banner -->
                   <div v-if="slotConflicts(slot).length > 0" class="slot-conflict-alert" :title="slotConflicts(slot).join('\n')">
@@ -436,8 +490,9 @@
                   <!-- ════════ COLLAPSED SUMMARY VIEW ════════ -->
                   <div v-if="!isSlotExpanded(slot)" class="anim-collapsed-summary" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier les détails">
                     <div class="collapsed-badges-row">
-                      <!-- Location pill -->
+                      <!-- Location pill (standard mode only) -->
                       <span 
+                        v-if="!isPlacingParticipants"
                         class="summary-badge loc-badge" 
                         :class="{ 'badge-empty': !slot.location }" 
                         :title="slot.location ? ('Salle : ' + slot.location.name) : 'Aucune salle assignée'"
@@ -454,13 +509,22 @@
                         👨‍🏫 {{ getFacilitatorsSummaryText(slot) }}
                       </span>
 
-                      <!-- Participants pill -->
+                      <!-- Participants pill (standard mode only) -->
                       <span 
+                        v-if="!isPlacingParticipants"
                         class="summary-badge part-badge" 
                         :class="getCapacityClass(slot)" 
                         :title="'Bénéficiaires : ' + (slot.participants || []).length + ' / ' + getMaxParticipants(slot)"
                       >
                         👥 {{ (slot.participants || []).length }}/{{ getMaxParticipants(slot) }}
+                      </span>
+
+                      <!-- Preview of participants list in participant placement mode -->
+                      <span 
+                        v-if="isPlacingParticipants && (slot.participants || []).length > 0" 
+                        class="participant-preview-names"
+                      >
+                        👥 {{ (slot.participants || []).map(p => p.firstName).join(', ') }}
                       </span>
                     </div>
                   </div>
@@ -661,9 +725,19 @@
                 'has-conflict': slotConflicts(slot).length > 0,
                 'is-under-min': isUnderMinParticipants(slot),
                 'is-over-max': isOverMaxParticipants(slot),
-                'is-full': isFullParticipants(slot)
+                'is-full': isFullParticipants(slot),
+                'is-participant-mode': isPlacingParticipants
               }"
+              @dragover.prevent="onDragOver($event, ['activity', 'facilitator', 'participant', 'location'])"
+              @dragleave="onDragLeave($event)"
+              @drop.prevent="onDropOnCard($event, slot)"
             >
+              <!-- Background Watermark / Ghost Activity in Day View -->
+              <div v-if="isPlacingParticipants" class="room-slot-activity-watermark" :title="'Animation programmée : ' + (slot.activityTemplate?.name || 'Activité')">
+                <span class="watermark-icon">🎯</span>
+                <span class="watermark-text">{{ slot.activityTemplate?.name || 'Activité' }}</span>
+              </div>
+
               <div class="card-main-info">
                 <div class="time-badge-large is-clickable" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier/réduire">
                   <span class="time-clock">🕒</span>
@@ -671,7 +745,8 @@
                   <span class="duration-pill">{{ getSlotDurationMinutes(slot) }} min</span>
                 </div>
 
-                <div class="title-and-tags-large is-clickable" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier/réduire">
+                <!-- STANDARD HEADER (Day View) -->
+                <div v-if="!isPlacingParticipants" class="title-and-tags-large is-clickable" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier/réduire">
                   <h3 class="anim-heading">{{ slot.activityTemplate?.name || 'Activité' }}</h3>
                   <div class="tags-row">
                     <span v-if="getActivityTag(slot)" class="category-tag-chip">{{ getActivityTag(slot) }}</span>
@@ -688,6 +763,31 @@
                     </span>
                     <span class="summary-badge part-badge" :class="getCapacityClass(slot)">
                       👥 {{ (slot.participants || []).length }} / {{ getMaxParticipants(slot) }} inscrits
+                    </span>
+                  </div>
+                </div>
+
+                <!-- PARTICIPANT PLACEMENT HEADER (Day View) -->
+                <div v-else class="title-and-tags-large is-clickable" @click="toggleSlotExpand(slot, $event)" title="Cliquer pour déplier/réduire">
+                  <div class="room-placement-primary">
+                    <h3 class="room-name-primary">📍 {{ slot.location ? slot.location.name : 'Créneau sans salle assignée' }}</h3>
+                  </div>
+                  
+                  <div class="room-placement-ghost-activity">
+                    <span class="ghost-tag">🎯 Activité prévue :</span>
+                    <span class="ghost-name">{{ slot.activityTemplate?.name || 'Animation' }}</span>
+                  </div>
+
+                  <!-- Collapsed summary badges for day view (Participant mode) -->
+                  <div v-if="!isSlotExpanded(slot)" class="day-collapsed-badges-row">
+                    <span class="summary-badge part-badge" :class="getCapacityClass(slot)">
+                      👥 {{ (slot.participants || []).length }} / {{ slot.location?.capacity || getMaxParticipants(slot) }} inscrits
+                    </span>
+                    <span class="summary-badge fac-badge" :class="{ 'badge-empty': !(slot.facilitators && slot.facilitators.length > 0) }">
+                      👨‍🏫 {{ getFacilitatorsSummaryText(slot) }}
+                    </span>
+                    <span v-if="(slot.participants || []).length > 0" class="participant-preview-names">
+                      👥 {{ (slot.participants || []).map(p => p.firstName).join(', ') }}
                     </span>
                   </div>
                 </div>
@@ -1208,8 +1308,8 @@
             </div>
           </div>
 
-          <!-- Participants Multi-select -->
-          <div class="form-group">
+          <!-- Participants Multi-select (création uniquement) -->
+          <div class="form-group" v-if="!editingSlotId">
             <div class="label-with-actions">
               <label>👥 Bénéficiaires inscrits ({{ slotForm.participants.length }})</label>
               <div class="quick-links">
@@ -1226,6 +1326,12 @@
                 />
                 <span>{{ part.firstName }} {{ part.lastName }}</span>
               </label>
+            </div>
+          </div>
+          <div class="form-group" v-else>
+            <label>👥 Bénéficiaires du créneau ({{ slotForm.participants.length }})</label>
+            <div class="slot-inherited-info">
+              <span>ℹ️ Les bénéficiaires sont automatiquement rattachés au créneau horaire et à l'ouverture de salle.</span>
             </div>
           </div>
 
@@ -1380,6 +1486,20 @@ export default {
     const isPaletteOpen = ref(true);
     const paletteTab = ref('activities'); // 'activities' | 'facilitators' | 'participants' | 'locations'
     const highlightedSlotId = ref(null);
+    const isParticipantPlacementMode = ref(false);
+
+    const isPlacingParticipants = computed(() => {
+      return isParticipantPlacementMode.value || activeDragType.value === 'participant' || (isPaletteOpen.value && paletteTab.value === 'participants');
+    });
+
+    function toggleParticipantMode() {
+      isParticipantPlacementMode.value = !isParticipantPlacementMode.value;
+      if (isParticipantPlacementMode.value) {
+        isPaletteOpen.value = true;
+        paletteTab.value = 'participants';
+        globalStore.addInfo('Mode Salle & Bénéficiaires : Les créneaux de salle sont mis au premier plan et les animations passent en transparence.', 'Créneaux de Salle');
+      }
+    }
 
     // Collapse / Expand state (Collapsed by default)
     const expandedSlotIds = ref(new Set());
@@ -2368,13 +2488,14 @@ export default {
           endDate: end.toISOString(),
           activityTemplate: slotForm.value.activityTemplate,
           location: slotForm.value.location || null,
-          facilitators: slotForm.value.facilitators,
-          participants: slotForm.value.participants
+          facilitators: slotForm.value.facilitators
         };
 
         if (editingSlotId.value) {
+          // Lors de la modification de l'activité, on ne touche pas aux participants (ils héritent du créneau)
           await schedulerStore.updateSlot(editingSlotId.value, payload);
         } else {
+          payload.participants = slotForm.value.participants || [];
           await schedulerStore.createSlot(payload);
         }
 
@@ -2462,6 +2583,9 @@ export default {
       isPaletteOpen,
       paletteTab,
       highlightedSlotId,
+      isParticipantPlacementMode,
+      isPlacingParticipants,
+      toggleParticipantMode,
       activitySearchQuery,
       facilitatorSearchQuery,
       participantSearchQuery,
@@ -3327,6 +3451,170 @@ export default {
 
 .chevron-icon.is-rotated {
   transform: rotate(0deg);
+}
+
+/* ──────────────── ROOM SLOT / PARTICIPANT PLACEMENT MODE ──────────────── */
+.animation-card.is-participant-mode,
+.day-slot-expanded-card.is-participant-mode {
+  border-color: #38bdf8;
+  border-left: 4px solid #0284c7;
+  background: linear-gradient(135deg, rgba(240, 249, 255, 0.95) 0%, rgba(224, 242, 254, 0.6) 100%);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.08);
+}
+
+.animation-card.is-participant-mode:hover,
+.day-slot-expanded-card.is-participant-mode:hover {
+  border-color: #0284c7;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.16);
+}
+
+/* Subtle transparent watermark of activity in background */
+.room-slot-activity-watermark {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(15, 23, 42, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  max-width: 65%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.watermark-icon {
+  font-size: 0.85rem;
+  opacity: 0.35;
+}
+
+.watermark-text {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Room placement header in card */
+.room-placement-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  z-index: 1;
+}
+
+.room-placement-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.room-placement-time {
+  display: flex;
+  align-items: center;
+}
+
+.room-time-chip {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 700;
+  border-color: #bae6fd;
+}
+
+.room-name-primary {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.room-placement-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Ghost activity banner in background */
+.room-placement-ghost-activity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px dashed rgba(2, 132, 199, 0.35);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.76rem;
+  color: #475569;
+  z-index: 1;
+  backdrop-filter: blur(2px);
+}
+
+.ghost-tag {
+  color: #0284c7;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.ghost-name {
+  font-weight: 600;
+  color: #334155;
+  opacity: 0.85;
+}
+
+/* Drop hint when dragging participant */
+.room-placement-drop-hint {
+  background: rgba(14, 165, 233, 0.15);
+  border: 1.5px dashed #0284c7;
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0369a1;
+  text-align: center;
+  animation: pulse-drop-glow 1.5s infinite alternate;
+  z-index: 1;
+}
+
+@keyframes pulse-drop-glow {
+  from { background: rgba(14, 165, 233, 0.1); border-color: #38bdf8; }
+  to { background: rgba(14, 165, 233, 0.22); border-color: #0284c7; }
+}
+
+.participant-preview-names {
+  font-size: 0.72rem;
+  color: #0369a1;
+  font-weight: 600;
+  background: rgba(224, 242, 254, 0.8);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.participant-mode-toggle-btn {
+  background: rgba(2, 132, 199, 0.1);
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.35);
+  font-weight: 600;
+}
+
+.participant-mode-toggle-btn:hover {
+  background: rgba(2, 132, 199, 0.2);
+  border-color: #0284c7;
+  color: #0369a1;
+}
+
+.participant-mode-toggle-btn.active {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border-color: #0369a1;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
 }
 
 /* Collapsed Summary Badges */
@@ -4576,6 +4864,18 @@ export default {
 
 .checkbox-item:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+.slot-inherited-info {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px dashed rgba(59, 130, 246, 0.35);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #93c5fd;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .label-with-actions {

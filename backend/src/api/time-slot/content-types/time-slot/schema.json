@@ -25,11 +25,11 @@
       "target": "api::location.location",
       "inversedBy": "timeSlots"
     },
-    "activityTemplate": {
+    "scheduledActivities": {
       "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::activity-template.activity-template",
-      "inversedBy": "timeSlots"
+      "relation": "oneToMany",
+      "target": "api::scheduled-activity.scheduled-activity",
+      "mappedBy": "timeSlot"
     },
     "participants": {
       "type": "relation",

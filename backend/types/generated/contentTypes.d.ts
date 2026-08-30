@@ -487,10 +487,6 @@ export interface ApiActivityTemplateActivityTemplate
         number
       >;
     tags: Schema.Attribute.JSON;
-    timeSlots: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::time-slot.time-slot'
-    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -768,6 +764,53 @@ export interface ApiRoomSessionRoomSession extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiScheduledActivityScheduledActivity
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'scheduled_activities';
+  info: {
+    description: 'Effective scheduled activity occurrences happening within a room time slot';
+    displayName: 'ScheduledActivity';
+    pluralName: 'scheduled-activities';
+    singularName: 'scheduled-activity';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    activityTemplate: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::activity-template.activity-template'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    endDate: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    facilitators: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::facilitator.facilitator'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::scheduled-activity.scheduled-activity'
+    > &
+      Schema.Attribute.Private;
+    location: Schema.Attribute.Relation<'manyToOne', 'api::location.location'>;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    startDate: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    tags: Schema.Attribute.JSON;
+    timeSlot: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::time-slot.time-slot'
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiTimeSlotTimeSlot extends Struct.CollectionTypeSchema {
   collectionName: 'time_slots';
   info: {
@@ -780,10 +823,6 @@ export interface ApiTimeSlotTimeSlot extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
-    activityTemplate: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::activity-template.activity-template'
-    >;
     checkIns: Schema.Attribute.Relation<'oneToMany', 'api::check-in.check-in'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -808,6 +847,10 @@ export interface ApiTimeSlotTimeSlot extends Struct.CollectionTypeSchema {
     roomSession: Schema.Attribute.Relation<
       'manyToOne',
       'api::room-session.room-session'
+    >;
+    scheduledActivities: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::scheduled-activity.scheduled-activity'
     >;
     startDate: Schema.Attribute.DateTime & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
@@ -1334,6 +1377,7 @@ declare module '@strapi/strapi' {
       'api::participant.participant': ApiParticipantParticipant;
       'api::room-session-template.room-session-template': ApiRoomSessionTemplateRoomSessionTemplate;
       'api::room-session.room-session': ApiRoomSessionRoomSession;
+      'api::scheduled-activity.scheduled-activity': ApiScheduledActivityScheduledActivity;
       'api::time-slot.time-slot': ApiTimeSlotTimeSlot;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;

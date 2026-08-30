@@ -35,12 +35,6 @@
       "target": "api::facilitator.facilitator",
       "inversedBy": "authorizedActivities"
     },
-    "timeSlots": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::time-slot.time-slot",
-      "mappedBy": "activityTemplate"
-    },
     "tags": {
       "type": "json"
     }

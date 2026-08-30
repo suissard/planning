@@ -43,12 +43,28 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
             const facs = (t._facilitators || []).map(email => this.facilitators.find(f => f.email === email)).filter(Boolean);
             const parts = (t._participants || []).map(email => this.participants.find(p => p.email === email)).filter(Boolean);
 
+            const schActs = [
+              {
+                documentId: `sch_act_${i}_0`,
+                id: `sch_act_${i}_0`,
+                name: act ? act.name : "Animation & Convivialité",
+                startDate: t.startDate,
+                endDate: t.endDate,
+                description: act?.description || "Atelier d'animation en salle",
+                activityTemplate: act,
+                facilitators: facs,
+                location: loc
+              }
+            ];
+
             return {
                 documentId: `slot_${i}`,
+                id: `slot_${i}`,
                 startDate: t.startDate,
                 endDate: t.endDate,
                 location: loc,
-                activityTemplate: act,
+                activityTemplate: act, // legacy fallback if referenced
+                scheduledActivities: schActs,
                 facilitators: facs,
                 participants: parts
             };
@@ -70,13 +86,33 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
     // SLOTS
     async createSlot(form) {
       await new Promise(resolve => setTimeout(resolve, 200));
+      const act = this.activities.find(a => a.documentId === form.activityTemplate) || form.activityTemplate;
+      const loc = this.locations.find(l => l.documentId === form.location) || form.location;
+      const facs = (form.facilitators || []).map(id => this.facilitators.find(f => f.documentId === id) || id);
+
+      const schActs = form.scheduledActivities || [
+        {
+          documentId: `sch_act_${Date.now()}_0`,
+          id: `sch_act_${Date.now()}_0`,
+          name: act?.name || 'Animation en salle',
+          startDate: new Date(form.startDate).toISOString(),
+          endDate: new Date(form.endDate).toISOString(),
+          description: act?.description || '',
+          activityTemplate: act,
+          facilitators: facs,
+          location: loc
+        }
+      ];
+
       const newSlot = {
         documentId: `slot_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        id: `slot_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
         startDate: new Date(form.startDate).toISOString(),
         endDate: new Date(form.endDate).toISOString(),
-        location: this.locations.find(l => l.documentId === form.location) || form.location,
-        activityTemplate: this.activities.find(a => a.documentId === form.activityTemplate) || form.activityTemplate,
-        facilitators: (form.facilitators || []).map(id => this.facilitators.find(f => f.documentId === id) || id),
+        location: loc,
+        activityTemplate: act,
+        scheduledActivities: schActs,
+        facilitators: facs,
         participants: (form.participants || []).map(id => this.participants.find(p => p.documentId === id) || id)
       };
 
@@ -95,12 +131,41 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
         const facs = form.facilitators ? form.facilitators.map(id => this.facilitators.find(f => f.documentId === id || f.id === id) || id) : this.timeslots[idx].facilitators;
         const parts = form.participants ? form.participants.map(id => this.participants.find(p => p.documentId === id || p.id === id) || id) : this.timeslots[idx].participants;
 
+        const sDate = form.startDate ? new Date(form.startDate).toISOString() : this.timeslots[idx].startDate;
+        const eDate = form.endDate ? new Date(form.endDate).toISOString() : this.timeslots[idx].endDate;
+
+        let schActs = this.timeslots[idx].scheduledActivities || [];
+        if (schActs.length > 0) {
+          schActs = schActs.map(sa => ({
+            ...sa,
+            name: act ? act.name : sa.name,
+            startDate: sDate,
+            endDate: eDate,
+            activityTemplate: act || sa.activityTemplate,
+            facilitators: facs,
+            location: loc
+          }));
+        } else if (act) {
+          schActs = [{
+            documentId: `sch_act_${Date.now()}_0`,
+            id: `sch_act_${Date.now()}_0`,
+            name: act.name,
+            startDate: sDate,
+            endDate: eDate,
+            description: act.description || '',
+            activityTemplate: act,
+            facilitators: facs,
+            location: loc
+          }];
+        }
+
         this.timeslots[idx] = {
           ...this.timeslots[idx],
-          startDate: form.startDate ? new Date(form.startDate).toISOString() : this.timeslots[idx].startDate,
-          endDate: form.endDate ? new Date(form.endDate).toISOString() : this.timeslots[idx].endDate,
+          startDate: sDate,
+          endDate: eDate,
           location: loc,
           activityTemplate: act,
+          scheduledActivities: schActs,
           facilitators: facs,
           participants: parts
         };

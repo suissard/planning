@@ -28,7 +28,7 @@ export const useSchedulerStore = defineStore('scheduler', {
           api.get('/activity-templates?populate=*&pagination[pageSize]=5000'),
           api.get('/facilitators?sort=lastName:asc,firstName:asc&populate=*&pagination[pageSize]=5000'),
           api.get('/participants?populate=*&pagination[pageSize]=5000'),
-          api.get('/time-slots?populate[location]=true&populate[activityTemplate]=true&populate[facilitators]=true&populate[participants]=true&pagination[pageSize]=5000')
+          api.get('/time-slots?populate[location]=true&populate[scheduledActivities][populate]=*&populate[facilitators]=true&populate[participants]=true&populate[checkIns]=true&pagination[pageSize]=5000')
         ]);
 
         this.locations = resLocations.data.data || [];
@@ -36,9 +36,22 @@ export const useSchedulerStore = defineStore('scheduler', {
         this.facilitators = resFacilitators.data.data || [];
         this.participants = resParticipants.data.data || [];
         
-        // Sort time slots chronologically
-        const slots = resTimeSlots.data.data || [];
-        this.timeslots = slots.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+        // Sort and normalize time slots chronologically
+        const rawSlots = resTimeSlots.data.data || [];
+        this.timeslots = rawSlots
+          .map(slot => {
+            const firstSchAct = (slot.scheduledActivities || [])[0];
+            const fallbackTemplate = firstSchAct?.activityTemplate 
+              || (firstSchAct ? { name: firstSchAct.name, tags: firstSchAct.tags, description: firstSchAct.description } : null) 
+              || slot.activityTemplate 
+              || null;
+
+            return {
+              ...slot,
+              activityTemplate: fallbackTemplate
+            };
+          })
+          .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
         this.isConnected = true;
       } catch (err) {
@@ -57,7 +70,6 @@ export const useSchedulerStore = defineStore('scheduler', {
           startDate: new Date(form.startDate).toISOString(),
           endDate: new Date(form.endDate).toISOString(),
           location: form.location,
-          activityTemplate: form.activityTemplate,
           facilitators: form.facilitators,
           participants: form.participants
         }
@@ -65,8 +77,35 @@ export const useSchedulerStore = defineStore('scheduler', {
 
       try {
         const res = await api.post('/time-slots', payload);
+        const createdSlot = res.data?.data;
+
+        // If activityTemplate is specified, create associated scheduled-activity
+        if (createdSlot && form.activityTemplate) {
+          const actTemplateId = typeof form.activityTemplate === 'object' 
+            ? (form.activityTemplate.documentId || form.activityTemplate.id) 
+            : form.activityTemplate;
+          const actObj = this.activities.find(a => (a.documentId || a.id) === actTemplateId);
+          const actName = actObj?.name || 'Animation programmée';
+
+          try {
+            await api.post('/scheduled-activities', {
+              data: {
+                name: actName,
+                startDate: createdSlot.startDate,
+                endDate: createdSlot.endDate,
+                timeSlot: createdSlot.documentId || createdSlot.id,
+                activityTemplate: actTemplateId || null,
+                location: form.location || null,
+                facilitators: form.facilitators || []
+              }
+            });
+          } catch (actErr) {
+            console.warn('Could not auto-create scheduled-activity:', actErr);
+          }
+        }
+
         await this.fetchData();
-        return res.data?.data;
+        return createdSlot;
       } catch (err) {
         console.error(err);
         const errMsg = err.response?.data?.error?.message || err.message || 'Erreur lors de la planification.';
@@ -81,14 +120,63 @@ export const useSchedulerStore = defineStore('scheduler', {
       if (form.startDate) payload.data.startDate = new Date(form.startDate).toISOString();
       if (form.endDate) payload.data.endDate = new Date(form.endDate).toISOString();
       if (form.location !== undefined) payload.data.location = form.location;
-      if (form.activityTemplate !== undefined) payload.data.activityTemplate = form.activityTemplate;
       if (form.facilitators !== undefined) payload.data.facilitators = form.facilitators;
       if (form.participants !== undefined) payload.data.participants = form.participants;
 
+      const currentSlot = this.timeslots.find(t => t.documentId === documentId || t.id === documentId);
+
       try {
         const res = await api.put(`/time-slots/${documentId}`, payload);
+        const updatedSlot = res.data?.data;
+
+        // Synchronize or update scheduled activity
+        if (form.activityTemplate !== undefined || payload.data.startDate || payload.data.endDate || payload.data.location !== undefined || payload.data.facilitators !== undefined) {
+          const actTemplateId = form.activityTemplate !== undefined
+            ? (typeof form.activityTemplate === 'object' ? (form.activityTemplate?.documentId || form.activityTemplate?.id) : form.activityTemplate)
+            : (currentSlot?.scheduledActivities?.[0]?.activityTemplate?.documentId || currentSlot?.scheduledActivities?.[0]?.activityTemplate?.id);
+          
+          const actObj = actTemplateId ? this.activities.find(a => (a.documentId || a.id) === actTemplateId) : null;
+          const actName = actObj?.name || currentSlot?.scheduledActivities?.[0]?.name || 'Animation programmée';
+
+          const existingSchActs = currentSlot?.scheduledActivities || [];
+          if (existingSchActs.length > 0) {
+            const firstSchAct = existingSchActs[0];
+            const schDocId = firstSchAct.documentId || firstSchAct.id;
+            try {
+              await api.put(`/scheduled-activities/${schDocId}`, {
+                data: {
+                  name: actName,
+                  startDate: payload.data.startDate || currentSlot.startDate,
+                  endDate: payload.data.endDate || currentSlot.endDate,
+                  activityTemplate: actTemplateId || null,
+                  location: payload.data.location !== undefined ? payload.data.location : (currentSlot.location?.documentId || currentSlot.location?.id || null),
+                  facilitators: payload.data.facilitators !== undefined ? payload.data.facilitators : (currentSlot.facilitators || []).map(f => f.documentId || f.id)
+                }
+              });
+            } catch (schErr) {
+              console.warn('Could not update scheduled-activity:', schErr);
+            }
+          } else if (actTemplateId) {
+            try {
+              await api.post('/scheduled-activities', {
+                data: {
+                  name: actName,
+                  startDate: payload.data.startDate || currentSlot?.startDate || new Date().toISOString(),
+                  endDate: payload.data.endDate || currentSlot?.endDate || new Date().toISOString(),
+                  timeSlot: documentId,
+                  activityTemplate: actTemplateId,
+                  location: payload.data.location !== undefined ? payload.data.location : (currentSlot?.location?.documentId || currentSlot?.location?.id || null),
+                  facilitators: payload.data.facilitators !== undefined ? payload.data.facilitators : (currentSlot?.facilitators || []).map(f => f.documentId || f.id)
+                }
+              });
+            } catch (schErr) {
+              console.warn('Could not create scheduled-activity on updateSlot:', schErr);
+            }
+          }
+        }
+
         await this.fetchData();
-        return res.data?.data;
+        return updatedSlot;
       } catch (err) {
         console.error(err);
         const errMsg = err.response?.data?.error?.message || err.message || 'Erreur lors de la modification.';

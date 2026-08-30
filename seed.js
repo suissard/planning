@@ -69,14 +69,21 @@ async function apiRequest(endpoint, { method = 'GET', body } = {}) {
 // ─── Nettoyage des données existantes ────────────────────────────────────────
 async function cleanCollection(apiPath, label) {
   try {
-    const res = await apiRequest(`/api/${apiPath}?pagination[pageSize]=100`);
-    const items = res.data || [];
-    if (items.length === 0) return;
+    let totalDeleted = 0;
+    while (true) {
+      const res = await apiRequest(`/api/${apiPath}?pagination[pageSize]=100`);
+      const items = res.data || [];
+      if (items.length === 0) break;
 
-    log('🧹', `${C.dim}Suppression de ${items.length} ${label}...${C.reset}`);
-    for (const item of items) {
-      const docId = item.documentId || item.id;
-      await apiRequest(`/api/${apiPath}/${docId}`, { method: 'DELETE' });
+      for (const item of items) {
+        const docId = item.documentId || item.id;
+        await apiRequest(`/api/${apiPath}/${docId}`, { method: 'DELETE' });
+        totalDeleted++;
+      }
+      if (items.length < 100) break;
+    }
+    if (totalDeleted > 0) {
+      log('🧹', `${C.dim}Suppression de ${totalDeleted} ${label}...${C.reset}`);
     }
   } catch (err) {
     log('⚠️', `${C.yellow}Nettoyage ${label} ignoré: ${err.message}${C.reset}`);
@@ -244,7 +251,9 @@ async function seedRoomSessionTemplates(locationsMap, facilitatorsMap, participa
 async function seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, participantsMap, roomSessionsMap) {
   const slots = loadJSON('time-slots.json');
   let count = 0;
+  let scheduledActCount = 0;
   let errors = 0;
+  const createdSlots = [];
 
   for (const slot of slots) {
     const { _activity, _location, _facilitators, _participants, ...dates } = slot;
@@ -268,27 +277,115 @@ async function seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, parti
     const roomSessionId = dateStr ? roomSessionsMap[`${dateStr}|${locationId}`] : null;
 
     try {
-      await apiRequest('/api/time-slots', {
+      // 1. Créer le créneau de salle (time-slot)
+      const resSlot = await apiRequest('/api/time-slots', {
         method: 'POST',
         body: {
           data: {
             ...dates,
             location: locationId,
-            activityTemplate: activityId,
             facilitators: facilitatorIds,
             participants: participantIds,
             ...(roomSessionId ? { roomSession: roomSessionId } : {}),
           },
         },
       });
+
+      const slotDocId = resSlot.data.documentId;
+      createdSlots.push({
+        documentId: slotDocId,
+        startDate: dates.startDate,
+        endDate: dates.endDate,
+        locationId,
+        activityId,
+        activityName: _activity,
+        facilitatorIds,
+        participantIds
+      });
       count++;
+
+      // 2. Créer l'activité programmée (scheduled-activity) dans ce créneau
+      try {
+        await apiRequest('/api/scheduled-activities', {
+          method: 'POST',
+          body: {
+            data: {
+              name: _activity,
+              startDate: dates.startDate,
+              endDate: dates.endDate,
+              timeSlot: slotDocId,
+              activityTemplate: activityId,
+              location: locationId,
+              facilitators: facilitatorIds
+            }
+          }
+        });
+        scheduledActCount++;
+      } catch (actErr) {
+        log('⚠️', `${C.yellow}Activité programmée non créée pour ${_activity}: ${actErr.message}${C.reset}`);
+      }
+
     } catch (err) {
       errors++;
       log('❌', `${C.red}${_activity} @ ${_location}: ${err.message}${C.reset}`);
     }
   }
 
-  log('📅', `${C.green}${count} créneaux créés${C.reset}${errors ? ` ${C.yellow}(${errors} erreur(s))${C.reset}` : ''}`);
+  log('📅', `${C.green}${count} créneaux et ${scheduledActCount} activités programmées créés${C.reset}${errors ? ` ${C.yellow}(${errors} erreur(s))${C.reset}` : ''}`);
+  return createdSlots;
+}
+
+async function seedCheckIns(createdSlots) {
+  let count = 0;
+  // Générer des pointages réalistes pour les créneaux du 1er au 3 septembre (ou premiers créneaux)
+  const targetSlots = createdSlots.filter(s => s.participantIds.length > 0).slice(0, 15);
+
+  const sampleComments = [
+    'Arrivé par transport VSL',
+    'En forme et très participatif',
+    'Léger retard dû au transport',
+    'A apprécié l’atelier',
+    'Départ anticipé pour visite médicale',
+    'Bonne humeur ce matin'
+  ];
+
+  for (const slot of targetSlots) {
+    const startDt = new Date(slot.startDate);
+    const endDt = new Date(slot.endDate);
+
+    for (let i = 0; i < slot.participantIds.length; i++) {
+      const partId = slot.participantIds[i];
+      // 85% de présence, 15% d'absence
+      const isPresent = i % 7 !== 0;
+
+      const checkInOffsetMin = (i * 3) % 20; // 0..20 min après début
+      const checkInTime = new Date(startDt.getTime() + checkInOffsetMin * 60000).toISOString();
+      const hasDeparted = isPresent && (i % 3 === 0);
+      const checkOutTime = hasDeparted ? new Date(endDt.getTime() - 5 * 60000).toISOString() : null;
+      const comment = (i % 2 === 0) ? sampleComments[i % sampleComments.length] : '';
+
+      try {
+        await apiRequest('/api/check-ins', {
+          method: 'POST',
+          body: {
+            data: {
+              isPresent,
+              checkInTime: isPresent ? checkInTime : null,
+              checkOutTime,
+              comment,
+              timeSlot: slot.documentId,
+              participant: partId
+            }
+          }
+        });
+        count++;
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
+  log('✍️', `${C.green}${count} émargements/pointages de test créés${C.reset}`);
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -313,6 +410,8 @@ async function main() {
 
   // 2. Nettoyage (ordre inverse des dépendances)
   log('🧹', `${C.yellow}Nettoyage des collections existantes...${C.reset}`);
+  await cleanCollection('check-ins', 'pointages');
+  await cleanCollection('scheduled-activities', 'activités programmées');
   await cleanCollection('time-slots', 'créneaux');
   await cleanCollection('room-sessions', 'sessions de salle');
   await cleanCollection('room-session-templates', 'modèles semaine type');
@@ -331,7 +430,8 @@ async function main() {
   const activitiesMap = await seedActivityTemplates(facilitatorsMap);
   const roomSessionsMap = await seedRoomSessions(locationsMap, facilitatorsMap, participantsMap);
   await seedRoomSessionTemplates(locationsMap, facilitatorsMap, participantsMap);
-  await seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, participantsMap, roomSessionsMap);
+  const createdSlots = await seedTimeSlots(locationsMap, activitiesMap, facilitatorsMap, participantsMap, roomSessionsMap);
+  await seedCheckIns(createdSlots);
 
   console.log('');
   console.log(`${C.cyan}──────────────────────────────────────────────────${C.reset}`);

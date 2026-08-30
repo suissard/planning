@@ -1,0 +1,54 @@
+{
+  "kind": "collectionType",
+  "collectionName": "scheduled_activities",
+  "info": {
+    "singularName": "scheduled-activity",
+    "pluralName": "scheduled-activities",
+    "displayName": "ScheduledActivity",
+    "description": "Effective scheduled activity occurrences happening within a room time slot"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "startDate": {
+      "type": "datetime",
+      "required": true
+    },
+    "endDate": {
+      "type": "datetime",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "timeSlot": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::time-slot.time-slot",
+      "inversedBy": "scheduledActivities"
+    },
+    "activityTemplate": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::activity-template.activity-template"
+    },
+    "facilitators": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::facilitator.facilitator"
+    },
+    "location": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::location.location"
+    },
+    "tags": {
+      "type": "json"
+    }
+  }
+}

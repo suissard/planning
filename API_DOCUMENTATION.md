@@ -21,6 +21,7 @@ Cette documentation fournit une référence exhaustive et détaillée pour l'API
    - [4.7. Trames Hebdomadaires Récurrentes (`/api/room-session-templates`)](#47-trames-hebdomadaires-récurrentes-apiroom-session-templates)
    - [4.8. Authentification & Utilisateurs (`/api/auth` & `/api/users`)](#48-authentification--utilisateurs-apiauth--apiusers)
    - [4.9. Pointages & Émargements (`/api/check-ins`)](#49-pointages--émargements-apicheck-ins)
+   - [4.10. Activités Programmées dans un Créneau (`/api/scheduled-activities`)](#410-activités-programmées-dans-un-créneau-apischeduled-activities)
 5. [Spécifications des Formats JSON Complexes](#5-spécifications-des-formats-json-complexes)
    - [5.1. Disponibilités Hebdomadaires (`weeklyAvailabilities`)](#51-disponibilités-hebdomadaires-weeklyavailabilities)
    - [5.2. Indisponibilités Ponctuelles & Congés (`specificUnavailabilities`)](#52-indisponibilités-ponctuelles--congés-specificunavailabilities)
@@ -624,6 +625,51 @@ L'entité `check-in` enregistre la présence réelle des bénéficiaires/partici
     "comment": "De retour pour l'activité de l'après-midi, très en forme.",
     "timeSlot": "s1a2b3c4d5e6f7a8",
     "participant": "p9z8y7x6w5v4u3t2"
+  }
+```
+
+---
+
+### 4.10. Activités Programmées dans un Créneau (`/api/scheduled-activities`)
+
+L'entité `scheduled-activity` représente les activités réelles et effectives qui se déroulent dans une salle durant un créneau horaire donné (`time-slot`). Les bénéficiaires inscrits sur le créneau de salle participent automatiquement aux activités programmées qui s'y déroulent.
+
+#### 🏗️ Structure des Données
+
+| Champ | Type | Obligatoire | Description |
+|---|---|---|---|
+| `name` | `String` | Oui | Nom de l'activité (ex: *"Gym Douce & Équilibre"*, *"Atelier Mémoire"*). |
+| `startDate` | `DateTime` | Oui | Date et heure de début de l'activité. |
+| `endDate` | `DateTime` | Oui | Date et heure de fin de l'activité. |
+| `description` | `Text` | Non | Descriptif, matériel nécessaire, consignes. |
+| `timeSlot` | `Relation (ManyToOne)` | Oui | Créneau horaire de salle (`time-slot`) parent. |
+| `activityTemplate` | `Relation (ManyToOne)` | Non | Modèle d'activité source (optionnel). |
+| `facilitators` | `Relation (ManyToMany)` | Non | Animateur(s) spécifique(s) animant cette session. |
+| `location` | `Relation (ManyToOne)` | Non | Salle où se déroule l'activité (héritée du créneau). |
+| `tags` | `JSON` | Non | Mots-clés et catégories. |
+
+#### 🛣️ Endpoints disponibles
+
+| Méthode | Route | Description |
+|---|---|---|
+| `GET` | `/api/scheduled-activities` | Liste des activités programmées (filtres, relations). |
+| `GET` | `/api/scheduled-activities/:documentId` | Détail d'une activité programmée. |
+| `POST` | `/api/scheduled-activities` | Programmer une nouvelle activité dans un créneau. |
+| `PUT` | `/api/scheduled-activities/:documentId` | Modifier une activité programmée. |
+| `DELETE` | `/api/scheduled-activities/:documentId` | Supprimer une activité programmée. |
+
+#### 📦 Exemple de Payload (Programmation d'une activité dans un créneau) :
+```json
+POST /api/scheduled-activities
+{
+  "data": {
+    "name": "Gym Douce & Équilibre",
+    "startDate": "2026-08-30T10:30:00.000Z",
+    "endDate": "2026-08-30T11:30:00.000Z",
+    "description": "Exercices doux de motricité et travail d'équilibre avec ballons souples.",
+    "timeSlot": "s1a2b3c4d5e6f7a8",
+    "activityTemplate": "m5p4n8x2lkjhgf99",
+    "facilitators": ["f7b1c2d3e4f5a6b7"]
   }
 }
 ```

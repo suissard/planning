@@ -4,15 +4,15 @@
     <div class="view-header no-print">
       <div class="header-main">
         <div class="header-title-wrapper">
-          <div class="header-icon-box">✅</div>
+          <div class="header-icon-box">🏛️</div>
           <div>
             <div class="title-with-pill">
-              <h2>Pointage & Émargement des Animations</h2>
+              <h2>Pointage & Émargement des Salles et Créneaux</h2>
               <span class="mode-tag-pill">Admin</span>
-              <span class="checkin-badge-pill">✨ Arrivées, Départs & Retours</span>
+              <span class="checkin-badge-pill">✨ Salles, Créneaux & Activités</span>
             </div>
             <p class="subtitle">
-              Validez la présence des bénéficiaires, enregistrez les heures d'arrivée et de départ (gestion des allers-retours multiples) et notez vos observations.
+              Chaque salle dispose de créneaux d'accueil (ex: 10h–17h). Les bénéficiaires sont inscrits sur le créneau de salle et participent à ses activités programmées.
             </p>
           </div>
         </div>
@@ -61,7 +61,7 @@
           
           <div class="period-title-block">
             <span class="current-period-title">{{ formattedSelectedDate }}</span>
-            <span class="period-subtitle">{{ daySlots.length }} animation(s) programmée(s)</span>
+            <span class="period-subtitle">{{ daySlots.length }} créneau(x) de salle actif(s)</span>
           </div>
 
           <!-- Date Picker input to jump anywhere -->
@@ -82,7 +82,7 @@
             <input 
               type="text" 
               v-model="searchQuery" 
-              placeholder="Rechercher un participant ou une animation..." 
+              placeholder="Rechercher une salle, un participant ou une activité..." 
               class="search-input-field"
             />
             <button v-if="searchQuery" class="clear-search-btn" @click="searchQuery = ''">✕</button>
@@ -136,9 +136,9 @@
       <!-- ════════════════ SUMMARY KPI STATS CARDS ════════════════ -->
       <div class="kpi-grid-wrapper">
         <div class="kpi-card">
-          <div class="kpi-icon-box blue">🎯</div>
+          <div class="kpi-icon-box blue">🏛️</div>
           <div class="kpi-content">
-            <span class="kpi-label">Animations du Jour</span>
+            <span class="kpi-label">Salles & Créneaux</span>
             <strong class="kpi-value">{{ daySlots.length }}</strong>
             <span class="kpi-sub">{{ dayLocationsCount }} salle(s) mobilisée(s)</span>
           </div>
@@ -147,7 +147,7 @@
         <div class="kpi-card">
           <div class="kpi-icon-box purple">👥</div>
           <div class="kpi-content">
-            <span class="kpi-label">Bénéficiaires Attendus</span>
+            <span class="kpi-label">Bénéficiaires Inscrits</span>
             <strong class="kpi-value">{{ totalParticipantsCount }}</strong>
             <span class="kpi-sub">sur les créneaux du jour</span>
           </div>
@@ -158,16 +158,16 @@
           <div class="kpi-content">
             <span class="kpi-label">Actuellement Sur Place</span>
             <strong class="kpi-value highlight-green">{{ totalCurrentlyOnSiteCount }}</strong>
-            <span class="kpi-sub">{{ totalDepartedCount }} parti(s) • {{ totalPresentCount }} venu(s) au total</span>
+            <span class="kpi-sub">{{ totalDepartedCount }} parti(s) • {{ totalPresentCount }} venus au total</span>
           </div>
         </div>
 
         <div class="kpi-card">
-          <div class="kpi-icon-box amber">📝</div>
+          <div class="kpi-icon-box amber">🎯</div>
           <div class="kpi-content">
-            <span class="kpi-label">Total Passages & Notes</span>
-            <strong class="kpi-value highlight-amber">{{ totalPassagesCount }}</strong>
-            <span class="kpi-sub">{{ totalCommentsCount }} observation(s) saisie(s)</span>
+            <span class="kpi-label">Activités Programmées</span>
+            <strong class="kpi-value highlight-amber">{{ totalScheduledActivitiesCount }}</strong>
+            <span class="kpi-sub">{{ totalPassagesCount }} pointage(s) enregistré(s)</span>
           </div>
         </div>
 
@@ -184,15 +184,15 @@
               ></div>
             </div>
             <span class="gauge-sub">
-              {{ totalPresentCount }} bénéficiaire(s) ayant participé sur {{ totalParticipantsCount }} inscrits ({{ totalAbsentCount }} absents notifiés)
+              {{ totalPresentCount }} bénéficiaire(s) ayant émargé sur {{ totalParticipantsCount }} inscrits ({{ totalAbsentCount }} notifiés absents)
             </span>
           </div>
         </div>
       </div>
 
-      <!-- ════════════════ ANIMATION FILTER TABS ════════════════ -->
+      <!-- ════════════════ TIME-SLOT / ROOM FILTER TABS ════════════════ -->
       <div class="slot-filter-chips-row" v-if="daySlots.length > 0">
-        <span class="chips-label">🎯 Choisir une animation :</span>
+        <span class="chips-label">🏛️ Filtrer par salle / créneau :</span>
         <div class="chips-scrollable">
           <button 
             type="button" 
@@ -200,7 +200,7 @@
             :class="{ active: selectedSlotFilterId === null }" 
             @click="selectedSlotFilterId = null"
           >
-            🌟 Toutes les animations ({{ daySlots.length }})
+            🌟 Tous les créneaux ({{ daySlots.length }})
           </button>
           <button 
             type="button" 
@@ -211,7 +211,7 @@
             @click="selectedSlotFilterId = (slot.documentId || slot.id)"
           >
             <span class="chip-time">{{ formatSlotTimeRange(slot) }}</span>
-            <span class="chip-name">{{ slot.activityTemplate?.name || 'Animation' }}</span>
+            <span class="chip-name">{{ getSlotDisplayName(slot) }}</span>
             <span class="chip-badge" :class="getSlotBadgeClass(slot)">
               {{ checkInStore.getSlotStats(slot).present }}/{{ (slot.participants || []).length }}
             </span>
@@ -225,38 +225,38 @@
       <div class="print-brand-row">
         <div class="print-brand-info">
           <h1>🌿 EHPAD Les Écrivains — Accueil de Jour</h1>
-          <p>Feuille d'Émargement, Arrivées & Départs des Bénéficiaires</p>
+          <p>Feuille d'Émargement des Créneaux de Salle & Activités Programmées</p>
         </div>
         <div class="print-date-badge">
           <strong>{{ formattedSelectedDate }}</strong>
         </div>
       </div>
       <div class="print-kpi-summary">
-        <span>Animations : <strong>{{ daySlots.length }}</strong></span> | 
+        <span>Créneaux : <strong>{{ daySlots.length }}</strong></span> | 
         <span>Inscrits totaux : <strong>{{ totalParticipantsCount }}</strong></span> | 
         <span>Total Présents : <strong>{{ totalPresentCount }}</strong></span> | 
         <span>Taux de présence : <strong>{{ overallAttendanceRate }}%</strong></span>
       </div>
     </div>
 
-    <!-- ════════════════ MAIN CONTENT: LIST OF ANIMATIONS & CHECKINS ════════════════ -->
+    <!-- ════════════════ MAIN CONTENT: LIST OF ROOM SLOTS & CHECKINS ════════════════ -->
     <div class="checkin-content-area">
       <!-- Loading State -->
       <div v-if="checkInStore.loading" class="loading-state-box">
         <span class="big-spinner"></span>
-        <p>Chargement des feuilles d'émargement et des pointages...</p>
+        <p>Chargement des feuilles d'émargement et des créneaux...</p>
       </div>
 
-      <!-- Empty State: No Animations on this date -->
+      <!-- Empty State: No Time Slots on this date -->
       <div v-else-if="daySlots.length === 0" class="empty-state-box">
         <span class="empty-icon">📅</span>
-        <h3>Aucune animation programmée pour le {{ formattedSelectedDate }}</h3>
+        <h3>Aucun créneau horaire de salle programmé pour le {{ formattedSelectedDate }}</h3>
         <p>
-          Il n'y a aucun créneau horaire d'animation planifié à cette date. Vous pouvez naviguer vers un autre jour ou programmer de nouvelles animations dans le planning.
+          Il n'y a aucun créneau de salle planifié à cette date. Vous pouvez naviguer vers un autre jour ou programmer des créneaux d'ouverture de salle dans le planning.
         </p>
         <div class="empty-actions">
           <button type="button" class="action-btn primary-btn" @click="$emit('navigate', 'timeslots')">
-            🎯 Aller au Planning des Animations
+            🎯 Aller au Planning des Créneaux
           </button>
           <button type="button" class="tool-btn" @click="goToToday">
             📆 Revenir à Aujourd'hui
@@ -272,7 +272,7 @@
           class="slot-checkin-card"
           :class="{ 'is-focused': selectedSlotFilterId === (slot.documentId || slot.id) }"
         >
-          <!-- ─── CARD HEADER ─── -->
+          <!-- ─── CARD HEADER (ROOM & TIME SLOT) ─── -->
           <div class="slot-card-header">
             <div class="slot-header-left">
               <div class="slot-time-badge">
@@ -280,16 +280,18 @@
                 <strong>{{ formatSlotTimeRange(slot) }}</strong>
               </div>
               <div class="slot-title-group">
-                <h3 class="slot-activity-name">{{ slot.activityTemplate?.name || 'Animation sans nom' }}</h3>
+                <h3 class="slot-activity-name">
+                  🏛️ {{ slot.location?.name || 'Salle Principale' }}
+                </h3>
                 <div class="slot-meta-tags">
-                  <span class="meta-tag loc-tag" v-if="slot.location">
-                    📍 {{ slot.location.name }}
-                  </span>
                   <span class="meta-tag fac-tag" v-if="slot.facilitators && slot.facilitators.length">
-                    👨‍🏫 {{ slot.facilitators.map(f => f.firstName + ' ' + f.lastName).join(', ') }}
+                    👨‍🏫 Encadrement : {{ slot.facilitators.map(f => f.firstName + ' ' + f.lastName).join(', ') }}
                   </span>
-                  <span class="meta-tag cap-tag" v-if="slot.activityTemplate?.maxParticipants">
-                    Capacité max : {{ slot.activityTemplate.maxParticipants }} pers.
+                  <span class="meta-tag cap-tag" v-if="slot.location?.capacity">
+                    Capacité salle : {{ slot.location.capacity }} pers.
+                  </span>
+                  <span class="meta-tag enrolled-tag">
+                    Inscrits sur ce créneau : {{ (slot.participants || []).length }} pers.
                   </span>
                 </div>
               </div>
@@ -301,7 +303,7 @@
               <div class="slot-progress-wrapper">
                 <div class="slot-progress-labels">
                   <span class="prog-text">
-                    <strong>{{ checkInStore.getSlotStats(slot).currentlyOnSite }}</strong> sur place ({{ checkInStore.getSlotStats(slot).present }}/{{ (slot.participants || []).length }} venus)
+                    <strong>{{ checkInStore.getSlotStats(slot).currentlyOnSite }}</strong> sur place ({{ checkInStore.getSlotStats(slot).present }}/{{ (slot.participants || []).length }} émargés)
                   </span>
                   <span class="prog-pct" :style="{ color: getAttendanceColor(checkInStore.getSlotStats(slot).rate) }">
                     {{ checkInStore.getSlotStats(slot).rate }}%
@@ -321,7 +323,7 @@
                   type="button" 
                   class="slot-btn mark-all-present-btn" 
                   @click="markAllSlotParticipants(slot, true)"
-                  title="Pointer tous les bénéficiaires de cette animation comme arrivés / présents"
+                  title="Pointer tous les bénéficiaires de ce créneau comme arrivés / présents"
                 >
                   ✅ Tout Présent
                 </button>
@@ -337,7 +339,7 @@
                   type="button" 
                   class="slot-btn reset-slot-btn" 
                   @click="resetSlotCheckIns(slot)"
-                  title="Réinitialiser les pointages pour cette animation"
+                  title="Réinitialiser les pointages pour ce créneau"
                 >
                   🔄 Reset
                 </button>
@@ -345,20 +347,73 @@
                   type="button" 
                   class="slot-btn add-extra-btn" 
                   @click="openAddWalkInModal(slot)"
-                  title="Ajouter un participant non prévu initialement"
+                  title="Inscrire un participant supplémentaire à ce créneau de salle"
                 >
-                  ➕ Ajouter un participant
+                  ➕ Inscrire un participant
                 </button>
               </div>
             </div>
           </div>
 
+          <!-- ─── PROGRAMME DES ACTIVITÉS DU CRÉNEAU ─── -->
+          <div class="slot-scheduled-activities-section">
+            <div class="scheduled-activities-header">
+              <div class="activities-header-title">
+                <span class="sec-icon">🎯</span>
+                <span class="sec-title">Programme des activités de ce créneau de salle :</span>
+                <span class="act-count-pill">{{ getSlotActivities(slot).length }} activité(s)</span>
+              </div>
+              <button 
+                type="button" 
+                class="add-act-btn no-print" 
+                @click="openAddActivityModal(slot)"
+                title="Ajouter une activité spécifique se déroulant dans ce créneau"
+              >
+                ➕ Programmer une activité
+              </button>
+            </div>
+
+            <!-- List of Scheduled Activities in this Slot -->
+            <div class="scheduled-activities-list" v-if="getSlotActivities(slot).length > 0">
+              <div 
+                v-for="act in getSlotActivities(slot)" 
+                :key="act.documentId || act.id" 
+                class="scheduled-act-card"
+              >
+                <div class="act-time-badge">
+                  ⏱️ {{ formatTimeRangeFromDates(act.startDate, act.endDate) }}
+                </div>
+                <div class="act-info">
+                  <strong class="act-name">{{ act.name }}</strong>
+                  <span class="act-desc" v-if="act.description">{{ act.description }}</span>
+                </div>
+                <div class="act-facilitators" v-if="act.facilitators && act.facilitators.length">
+                  <span class="fac-chip" v-for="f in act.facilitators" :key="f.documentId || f.id">
+                    👤 {{ f.firstName }} {{ f.lastName }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="no-activities-inline">
+              <em>Aucune activité spécifique n'est encore programmée dans ce créneau. Les participants inscrits sont accueillis dans la salle.</em>
+            </div>
+          </div>
+
           <!-- ─── PARTICIPANTS CHECKIN LIST / MULTI-PASSAGES ─── -->
           <div class="slot-card-body">
+            <div class="participants-section-header">
+              <div class="section-title-wrapper">
+                <h4>👥 Émargement des Bénéficiaires du Créneau ({{ getFilteredSlotParticipants(slot).length }})</h4>
+                <p class="section-sub">
+                  Les participants inscrits sont présents dans la salle et participent aux activités programmées ci-dessus.
+                </p>
+              </div>
+            </div>
+
             <!-- No participants scheduled on slot -->
             <div v-if="(slot.participants || []).length === 0" class="no-participants-box">
               <span class="empty-icon">👥</span>
-              <p>Aucun bénéficiaire n'est actuellement inscrit sur ce créneau d'animation.</p>
+              <p>Aucun bénéficiaire n'est actuellement inscrit sur ce créneau de salle.</p>
               <button 
                 type="button" 
                 class="action-btn secondary-btn" 
@@ -549,12 +604,82 @@
           <!-- Print-Only Footer for Each Slot Sheet -->
           <div class="print-only print-slot-sign-row">
             <div class="sign-block">
-              <span>Visa de l'Animateur : ___________________________</span>
+              <span>Visa de l'Animateur Référent : ___________________________</span>
             </div>
             <div class="sign-block">
-              <span>Signature Responsable : ___________________________</span>
+              <span>Signature Responsable d'Accueil : ___________________________</span>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════ ADD SCHEDULED ACTIVITY MODAL ════════════════ -->
+    <div class="modal-overlay" v-if="isAddActivityModalOpen" @click.self="isAddActivityModalOpen = false">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>🎯 Programmer une Activité dans ce Créneau</h3>
+          <button class="modal-close-btn" @click="isAddActivityModalOpen = false">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-desc">
+            Créneau : <strong>{{ targetSlotForActivity?.location?.name || 'Salle' }}</strong> ({{ formatSlotTimeRange(targetSlotForActivity) }})
+          </p>
+
+          <div class="form-group">
+            <label>Choisir un modèle d'activité (optionnel) :</label>
+            <select v-model="newActivityTemplateId" @change="onSelectActivityTemplate" class="form-select">
+              <option value="">-- Saisie libre ou sélectionner un modèle --</option>
+              <option v-for="tpl in activities" :key="tpl.documentId || tpl.id" :value="tpl.documentId || tpl.id">
+                {{ tpl.name }} ({{ tpl.standardDuration }} min)
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group mt-3">
+            <label>Nom de l'activité * :</label>
+            <input type="text" v-model="newActivityName" placeholder="Ex: Gym Douce & Équilibre" class="form-input" />
+          </div>
+
+          <div class="form-row mt-3">
+            <div class="form-group half">
+              <label>Heure de début :</label>
+              <input type="time" v-model="newActivityStartTime" class="form-input" />
+            </div>
+            <div class="form-group half">
+              <label>Heure de fin :</label>
+              <input type="time" v-model="newActivityEndTime" class="form-input" />
+            </div>
+          </div>
+
+          <div class="form-group mt-3">
+            <label>Animateur(s) encadrant l'activité :</label>
+            <select multiple v-model="newActivityFacilitatorIds" class="form-select multiple-select">
+              <option v-for="f in facilitators" :key="f.documentId || f.id" :value="f.documentId || f.id">
+                {{ f.firstName }} {{ f.lastName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group mt-3">
+            <label>Description / Remarques :</label>
+            <input type="text" v-model="newActivityDescription" placeholder="Ex: Matériel ballons souples..." class="form-input" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="tool-btn" @click="isAddActivityModalOpen = false">
+            Annuler
+          </button>
+          <button 
+            type="button" 
+            class="action-btn primary-btn" 
+            :disabled="!newActivityName.trim()" 
+            @click="confirmAddScheduledActivity"
+          >
+            Enregistrer l'Activité
+          </button>
         </div>
       </div>
     </div>
@@ -563,13 +688,13 @@
     <div class="modal-overlay" v-if="isAddWalkInModalOpen" @click.self="isAddWalkInModalOpen = false">
       <div class="modal-card">
         <div class="modal-header">
-          <h3>➕ Ajouter un Participant Non Prévu</h3>
+          <h3>➕ Inscrire un Bénéficiaire au Créneau de Salle</h3>
           <button class="modal-close-btn" @click="isAddWalkInModalOpen = false">✕</button>
         </div>
 
         <div class="modal-body">
           <p class="modal-desc">
-            Sélectionnez un bénéficiaire à intégrer à l'animation <strong>{{ targetSlotForWalkIn?.activityTemplate?.name }}</strong> de <strong>{{ formatSlotTimeRange(targetSlotForWalkIn) }}</strong>.
+            Sélectionnez un bénéficiaire à inscrire au créneau <strong>{{ targetSlotForWalkIn?.location?.name }}</strong> de <strong>{{ formatSlotTimeRange(targetSlotForWalkIn) }}</strong>.
           </p>
 
           <div class="form-group">
@@ -640,6 +765,8 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import api from '../services/api';
+import { useAppSettingsStore } from '../stores/appSettings';
 import { useCheckInStore } from '../stores/checkInStore';
 import { useActiveSchedulerStore } from '../stores/activeScheduler';
 import { useGlobalStore } from '../stores/global';
@@ -658,6 +785,16 @@ const checkInStore = useCheckInStore();
 const schedulerStore = useActiveSchedulerStore();
 const globalStore = useGlobalStore();
 
+// Helper: Format Date to YYYY-MM-DD using local time
+function formatDateStr(d) {
+  if (!d) return '';
+  const dateObj = typeof d === 'string' ? new Date(d) : d;
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Selected Date (YYYY-MM-DD)
 const selectedDate = ref(checkInStore.selectedDate || formatDateStr(new Date()));
 const selectedSlotFilterId = ref(null);
@@ -673,6 +810,16 @@ const targetSlotForWalkIn = ref(null);
 const selectedWalkInParticipantId = ref('');
 const walkInIsPresent = ref(true);
 const walkInComment = ref('Ajout ponctuel');
+
+// Add Scheduled Activity modal state
+const isAddActivityModalOpen = ref(false);
+const targetSlotForActivity = ref(null);
+const newActivityTemplateId = ref('');
+const newActivityName = ref('');
+const newActivityStartTime = ref('10:30');
+const newActivityEndTime = ref('11:30');
+const newActivityFacilitatorIds = ref([]);
+const newActivityDescription = ref('');
 
 // Debounce timer for saving comments
 let commentSaveTimeout = null;
@@ -702,6 +849,15 @@ const daySlots = computed(() => {
   }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 });
 
+// Helper: Get display name for slot chip (Room name)
+function getSlotDisplayName(slot) {
+  if (!slot) return 'Créneau';
+  if (slot.location?.name) return slot.location.name;
+  if (slot.scheduledActivities && slot.scheduledActivities[0]?.name) return slot.scheduledActivities[0].name;
+  if (slot.activityTemplate?.name) return slot.activityTemplate.name;
+  return 'Salle';
+}
+
 // Slots after applying search and specific slot tab filter
 const filteredDaySlots = computed(() => {
   let list = daySlots.value;
@@ -713,19 +869,38 @@ const filteredDaySlots = computed(() => {
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase().trim();
     list = list.filter(slot => {
-      const actName = (slot.activityTemplate?.name || '').toLowerCase();
       const locName = (slot.location?.name || '').toLowerCase();
+      const hasActMatch = (getSlotActivities(slot) || []).some(a => (a.name || '').toLowerCase().includes(q));
       const hasPartMatch = (slot.participants || []).some(p => 
         (p.firstName || '').toLowerCase().includes(q) || 
         (p.lastName || '').toLowerCase().includes(q) ||
         (p.email || '').toLowerCase().includes(q)
       );
-      return actName.includes(q) || locName.includes(q) || hasPartMatch;
+      return locName.includes(q) || hasActMatch || hasPartMatch;
     });
   }
 
   return list;
 });
+
+// Get scheduled activities inside a slot
+function getSlotActivities(slot) {
+  if (!slot) return [];
+  if (slot.scheduledActivities && slot.scheduledActivities.length > 0) {
+    return [...slot.scheduledActivities].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+  }
+  if (slot.activityTemplate?.name) {
+    return [{
+      documentId: `legacy_${slot.documentId || slot.id}`,
+      name: slot.activityTemplate.name,
+      startDate: slot.startDate,
+      endDate: slot.endDate,
+      description: slot.activityTemplate.description || '',
+      facilitators: slot.facilitators || []
+    }];
+  }
+  return [];
+}
 
 // Total count of scheduled participants across all slots today
 const totalParticipantsCount = computed(() => {
@@ -790,11 +965,11 @@ const totalPassagesCount = computed(() => {
   return count;
 });
 
-// Total comments count today
-const totalCommentsCount = computed(() => {
+// Total scheduled activities count today
+const totalScheduledActivitiesCount = computed(() => {
   let count = 0;
   for (const slot of daySlots.value) {
-    count += checkInStore.getSlotStats(slot).commentsCount;
+    count += getSlotActivities(slot).length;
   }
   return count;
 });
@@ -846,16 +1021,6 @@ const availableParticipantsForWalkIn = computed(() => {
   return (props.participants || []).filter(p => !currentSlotPartIds.has(p.documentId || p.id));
 });
 
-// Helper: Format Date to YYYY-MM-DD using local time
-function formatDateStr(d) {
-  if (!d) return '';
-  const dateObj = typeof d === 'string' ? new Date(d) : d;
-  const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const day = String(dateObj.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 // ─── ACTIONS & HELPERS ────────────────────────────────────────────────────────
 function navigateDate(days) {
   const curStr = selectedDate.value || formatDateStr(new Date());
@@ -876,6 +1041,13 @@ function formatSlotTimeRange(slot) {
   const start = new Date(slot.startDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   const end = slot.endDate ? new Date(slot.endDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
   return end ? `${start} – ${end}` : start;
+}
+
+function formatTimeRangeFromDates(startIso, endIso) {
+  if (!startIso) return '';
+  const s = new Date(startIso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const e = endIso ? new Date(endIso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+  return e ? `${s} – ${e}` : s;
 }
 
 function formatTimeOnly(isoStr) {
@@ -991,7 +1163,7 @@ async function markAllSlotParticipants(slot, isPresent) {
 
 // Reset check-ins for a slot
 async function resetSlotCheckIns(slot) {
-  if (!confirm(`Voulez-vous vraiment réinitialiser les pointages pour l'animation "${slot.activityTemplate?.name || 'Animation'}" ?`)) {
+  if (!confirm(`Voulez-vous vraiment réinitialiser les pointages pour le créneau "${slot.location?.name || 'Créneau'}" ?`)) {
     return;
   }
   await checkInStore.resetSlotCheckIns({
@@ -1071,7 +1243,83 @@ async function confirmAddWalkInParticipant() {
   });
 
   isAddWalkInModalOpen.value = false;
-  globalStore.addSuccess(`${p.firstName} ${p.lastName} ajouté(e) avec succès à l'animation.`, 'Participant ajouté');
+  globalStore.addSuccess(`${p.firstName} ${p.lastName} ajouté(e) avec succès au créneau.`, 'Participant ajouté');
+}
+
+// ─── ADD SCHEDULED ACTIVITY IN SLOT MODAL ───
+function openAddActivityModal(slot) {
+  targetSlotForActivity.value = slot;
+  newActivityTemplateId.value = '';
+  newActivityName.value = '';
+  newActivityStartTime.value = slot?.startDate ? toTimeInputValue(slot.startDate) : '10:30';
+  newActivityEndTime.value = slot?.endDate ? toTimeInputValue(slot.endDate) : '11:30';
+  newActivityFacilitatorIds.value = (slot?.facilitators || []).map(f => f.documentId || f.id);
+  newActivityDescription.value = '';
+  isAddActivityModalOpen.value = true;
+}
+
+function onSelectActivityTemplate() {
+  if (!newActivityTemplateId.value) return;
+  const tpl = props.activities.find(a => (a.documentId || a.id) === newActivityTemplateId.value);
+  if (tpl) {
+    newActivityName.value = tpl.name;
+    if (tpl.description) newActivityDescription.value = tpl.description;
+  }
+}
+
+async function confirmAddScheduledActivity() {
+  if (!targetSlotForActivity.value || !newActivityName.value.trim()) return;
+
+  const slot = targetSlotForActivity.value;
+  const [y, mon, d] = (selectedDate.value || formatDateStr(new Date())).split('-').map(Number);
+
+  const [sh, sm] = newActivityStartTime.value.split(':').map(Number);
+  const [eh, em] = newActivityEndTime.value.split(':').map(Number);
+
+  const startDt = new Date(y, mon - 1, d, sh, sm, 0, 0);
+  const endDt = new Date(y, mon - 1, d, eh, em, 0, 0);
+
+  const newActivityObj = {
+    documentId: `sch_act_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+    id: `sch_act_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+    name: newActivityName.value.trim(),
+    startDate: startDt.toISOString(),
+    endDate: endDt.toISOString(),
+    description: newActivityDescription.value,
+    facilitators: newActivityFacilitatorIds.value.map(id => props.facilitators.find(f => (f.documentId || f.id) === id)).filter(Boolean)
+  };
+
+  const appSettings = useAppSettingsStore();
+  if (!appSettings.useMockData) {
+    try {
+      const res = await api.post('/scheduled-activities', {
+        data: {
+          name: newActivityName.value.trim(),
+          startDate: startDt.toISOString(),
+          endDate: endDt.toISOString(),
+          description: newActivityDescription.value,
+          timeSlot: slot.documentId || slot.id,
+          activityTemplate: newActivityTemplateId.value || null,
+          location: slot.location?.documentId || slot.location?.id || null,
+          facilitators: newActivityFacilitatorIds.value
+        }
+      });
+      if (res.data?.data) {
+        newActivityObj.documentId = res.data.data.documentId || res.data.data.id;
+        newActivityObj.id = res.data.data.id;
+      }
+    } catch (e) {
+      console.warn('Erreur lors de la persistance de l’activité programmée dans Strapi:', e);
+    }
+  }
+
+  if (!slot.scheduledActivities) {
+    slot.scheduledActivities = [];
+  }
+  slot.scheduledActivities.push(newActivityObj);
+
+  isAddActivityModalOpen.value = false;
+  globalStore.addSuccess(`Activité "${newActivityName.value}" programmée dans le créneau.`, 'Activité ajoutée');
 }
 
 // Print attendance sheet
@@ -1137,13 +1385,13 @@ onMounted(async () => {
   width: 3rem;
   height: 3rem;
   border-radius: 0.85rem;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.4));
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.4));
+  border: 1px solid rgba(59, 130, 246, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.6rem;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
 }
 
 .title-with-pill {
@@ -1301,8 +1549,8 @@ onMounted(async () => {
 
 .search-input-field:focus {
   outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
   width: 300px;
 }
 
@@ -1478,7 +1726,7 @@ onMounted(async () => {
   color: #94a3b8;
 }
 
-/* ════════════════ ANIMATION FILTER CHIPS ════════════════ */
+/* ════════════════ CHIPS ════════════════ */
 .slot-filter-chips-row {
   display: flex;
   align-items: center;
@@ -1523,15 +1771,15 @@ onMounted(async () => {
 }
 
 .slot-chip.active {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: rgba(16, 185, 129, 0.5);
-  color: #34d399;
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
   font-weight: 600;
 }
 
 .chip-time {
   font-weight: 700;
-  color: #93c5fd;
+  color: #67e8f9;
 }
 
 .chip-badge {
@@ -1549,7 +1797,7 @@ onMounted(async () => {
 .slots-checkin-list {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
 .slot-checkin-card {
@@ -1564,8 +1812,8 @@ onMounted(async () => {
 }
 
 .slot-checkin-card.is-focused {
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
 }
 
 /* Card Header */
@@ -1600,7 +1848,7 @@ onMounted(async () => {
 }
 
 .slot-activity-name {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #f8fafc;
   margin: 0;
@@ -1623,8 +1871,9 @@ onMounted(async () => {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.loc-tag { color: #5eead4; background: rgba(20, 184, 166, 0.15); border-color: rgba(20, 184, 166, 0.3); }
 .fac-tag { color: #fcd34d; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); }
+.cap-tag { color: #5eead4; background: rgba(20, 184, 166, 0.15); border-color: rgba(20, 184, 166, 0.3); }
+.enrolled-tag { color: #c084fc; background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.3); }
 
 /* Slot Header Right & Actions */
 .slot-header-right {
@@ -1719,12 +1968,150 @@ onMounted(async () => {
   color: #ffffff;
 }
 
-/* ════════════════ PARTICIPANTS MULTI-PASSAGES LAYOUT ════════════════ */
+/* ════════════════ SCHEDULED ACTIVITIES SECTION ════════════════ */
+.slot-scheduled-activities-section {
+  background: rgba(15, 23, 42, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.scheduled-activities-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.activities-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sec-icon {
+  font-size: 1.1rem;
+}
+
+.sec-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.act-count-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.add-act-btn {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-act-btn:hover {
+  background: rgba(59, 130, 246, 0.3);
+  color: #ffffff;
+}
+
+.scheduled-activities-list {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.scheduled-act-card {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 3px solid #38bdf8;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 220px;
+  flex-shrink: 0;
+}
+
+.act-time-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.act-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.act-name {
+  font-size: 0.88rem;
+  color: #f8fafc;
+}
+
+.act-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.act-facilitators {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  margin-top: 0.2rem;
+}
+
+.fac-chip {
+  font-size: 0.7rem;
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.15);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.3rem;
+}
+
+.no-activities-inline {
+  font-size: 0.8rem;
+  color: #64748b;
+  padding: 0.25rem 0;
+}
+
+/* ════════════════ PARTICIPANTS SECTION ════════════════ */
+.participants-section-header {
+  padding: 0 0 0.5rem 0;
+}
+
+.section-title-wrapper h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.section-sub {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0.2rem 0 0 0;
+}
+
 .checkin-participants-wrapper {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1.25rem;
+  padding: 1rem 0;
 }
 
 .participant-checkin-block {
@@ -2088,7 +2475,7 @@ onMounted(async () => {
 }
 
 .primary-btn {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: #ffffff;
   border: none;
   padding: 0.55rem 1.25rem;
@@ -2099,7 +2486,7 @@ onMounted(async () => {
 }
 
 .primary-btn:hover {
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
   transform: translateY(-1px);
 }
 
@@ -2148,7 +2535,7 @@ onMounted(async () => {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 520px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
@@ -2192,6 +2579,15 @@ onMounted(async () => {
   gap: 0.4rem;
 }
 
+.form-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.form-group.half {
+  flex: 1;
+}
+
 .form-group label {
   font-size: 0.8rem;
   font-weight: 600;
@@ -2205,6 +2601,10 @@ onMounted(async () => {
   padding: 0.6rem 0.85rem;
   border-radius: 0.5rem;
   font-size: 0.9rem;
+}
+
+.form-select.multiple-select {
+  height: 80px;
 }
 
 .modal-footer {

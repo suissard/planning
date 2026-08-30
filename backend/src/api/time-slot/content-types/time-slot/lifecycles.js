@@ -100,14 +100,29 @@ async function resolveRelation(uid, val, currentItems = []) {
  * Validates all constraints before creating/updating a TimeSlot in Strapi 5.
  */
 async function validateTimeSlot(data, currentId) {
-  require('fs').writeFileSync('data.log', JSON.stringify({ data, currentId }, null, 2));
   // 1. Resolve current values if this is an update and some fields are omitted
-  const currentSlot = currentId 
-    ? await strapi.documents('api::time-slot.time-slot').findOne({
-        documentId: currentId,
-        populate: ['location', 'activityTemplate', 'participants', 'facilitators']
-      })
-    : null;
+  let currentSlot = null;
+  let resolvedDocId = null;
+  let resolvedNumId = null;
+
+  if (currentId) {
+    if (typeof currentId === 'number' || /^\d+$/.test(currentId)) {
+      resolvedNumId = parseInt(currentId, 10);
+      const res = await strapi.documents('api::time-slot.time-slot').findMany({
+        filters: { id: resolvedNumId },
+        populate: ['location', 'participants', 'facilitators']
+      });
+      currentSlot = res[0] || null;
+      resolvedDocId = currentSlot?.documentId || null;
+    } else {
+      resolvedDocId = currentId;
+      currentSlot = await strapi.documents('api::time-slot.time-slot').findOne({
+        documentId: resolvedDocId,
+        populate: ['location', 'participants', 'facilitators']
+      });
+      resolvedNumId = currentSlot?.id || null;
+    }
+  }
 
   const startDate = new Date(data.startDate !== undefined ? data.startDate : currentSlot?.startDate);
   const endDate = new Date(data.endDate !== undefined ? data.endDate : currentSlot?.endDate);
@@ -123,35 +138,21 @@ async function validateTimeSlot(data, currentId) {
   const locationIds = await resolveRelation('api::location.location', data.location, currentSlot?.location ? [currentSlot.location] : []);
   const locationId = locationIds[0];
 
-  const activityTemplateIds = await resolveRelation('api::activity-template.activity-template', data.activityTemplate, currentSlot?.activityTemplate ? [currentSlot.activityTemplate] : []);
-  const activityTemplateId = activityTemplateIds[0];
-
   const participantIds = await resolveRelation('api::participant.participant', data.participants, currentSlot?.participants || []);
   const facilitatorIds = await resolveRelation('api::facilitator.facilitator', data.facilitators, currentSlot?.facilitators || []);
 
   if (!locationId) throw new ValidationError("Validation Error: A location is required for the time slot.");
-  if (!activityTemplateId) throw new ValidationError("Validation Error: An activity template is required for the time slot.");
 
   // Fetch full records for checks using Strapi 5 Documents API
   const location = await strapi.documents('api::location.location').findOne({
     documentId: locationId
   });
-  const activityTemplate = await strapi.documents('api::activity-template.activity-template').findOne({
-    documentId: activityTemplateId,
-    populate: ['authorizedFacilitators']
-  });
 
   if (!location) throw new ValidationError("Validation Error: Specified location not found.");
-  if (!activityTemplate) throw new ValidationError("Validation Error: Specified activity template not found.");
 
   // --- CONSTRAINT 1: Space Constraint (Location Capacity) ---
   if (participantIds.length > location.capacity) {
     throw new ValidationError(`Space Constraint Violated: Assigned participants (${participantIds.length}) exceeds location capacity (${location.capacity}).`);
-  }
-
-  // --- CONSTRAINT 2: Activity Capacity Constraint (Max limit) ---
-  if (participantIds.length > activityTemplate.maxParticipants) {
-    throw new ValidationError(`Activity Capacity Violated: Registered participants (${participantIds.length}) exceeds standard maximum (${activityTemplate.maxParticipants}).`);
   }
 
   // (Contraintes assouplies : le minimum de participants, la durée minimale standard et la restriction exclusive des compétences d'animateurs ne bloquent plus la création/mise à jour)
@@ -182,17 +183,9 @@ async function validateTimeSlot(data, currentId) {
   }
 
   // --- CONSTRAINT 6: Human Availability Constraints & Overlaps ---
-  // A. Participants check
-  for (const pid of participantIds) {
-    const participant = await strapi.documents('api::participant.participant').findOne({ documentId: pid });
-    if (!participant) continue;
+  // (Participants : aucun blocage en base de données, ils héritent de leur créneau / session)
 
-    const pName = `${participant.firstName} ${participant.lastName}`;
-    checkWeeklyAvailability(pName, 'Participant', participant.weeklyAvailabilities, startDate, endDate);
-    checkSpecificUnavailability(pName, 'Participant', participant.specificUnavailabilities, startDate, endDate);
-  }
-
-  // B. Facilitators check
+  // Facilitators check
   for (const fid of facilitatorIds) {
     const facilitator = await strapi.documents('api::facilitator.facilitator').findOne({ documentId: fid });
     if (!facilitator) continue;
@@ -202,30 +195,25 @@ async function validateTimeSlot(data, currentId) {
     checkSpecificUnavailability(fName, 'Facilitator', facilitator.specificUnavailabilities, startDate, endDate);
   }
 
-  // C. Double Booking Overlap query
+  // Double Booking Overlap query for facilitators
+  const notCurrentFilter = [];
+  if (resolvedDocId) notCurrentFilter.push({ documentId: { $ne: resolvedDocId } });
+  if (resolvedNumId) notCurrentFilter.push({ id: { $ne: resolvedNumId } });
+
   const overlappingSlots = await strapi.documents('api::time-slot.time-slot').findMany({
     filters: {
       $and: [
         { startDate: { $lt: endDate.toISOString() } },
         { endDate: { $gt: startDate.toISOString() } },
-        currentId ? { documentId: { $ne: currentId } } : {}
+        ...notCurrentFilter
       ]
     },
-    populate: ['participants', 'facilitators']
+    populate: ['facilitators']
   });
 
   for (const slot of overlappingSlots) {
-    // Overlapping participant conflict
-    const slotPartIds = slot.participants.map(p => p.documentId);
-    for (const pid of participantIds) {
-      if (slotPartIds.includes(pid)) {
-        const participant = await strapi.documents('api::participant.participant').findOne({ documentId: pid });
-        throw new ValidationError(`Human Availability Violated: Participant "${participant.firstName} ${participant.lastName}" is already booked in another slot (${slot.startDate} - ${slot.endDate}).`);
-      }
-    }
-
     // Overlapping facilitator conflict
-    const slotFacIds = slot.facilitators.map(f => f.documentId);
+    const slotFacIds = (slot.facilitators || []).map(f => f.documentId);
     for (const fid of facilitatorIds) {
       if (slotFacIds.includes(fid)) {
         const facilitator = await strapi.documents('api::facilitator.facilitator').findOne({ documentId: fid });
