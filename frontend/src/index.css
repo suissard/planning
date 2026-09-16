@@ -8,6 +8,8 @@
   --panel-bg: rgba(15, 23, 42, 0.75);
   --panel-bg-solid: #0f172a;
   --panel-bg-subtle: rgba(255, 255, 255, 0.03);
+  --card-bg: #0f172a;
+  --card-bg-subtle: #1e293b;
   --border-color: rgba(255, 255, 255, 0.09);
   --border-color-subtle: rgba(255, 255, 255, 0.05);
   --border-color-hover: rgba(255, 255, 255, 0.2);
@@ -80,6 +82,16 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* Global Form Dark Mode Controls */
+input, select, textarea {
+  color-scheme: dark;
+}
+
+option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
 }
 
 /* ════════════════ VUETIFY OVERRIDES ════════════════ */
@@ -310,6 +322,11 @@ label.form-label {
 .modal-header h3 {
   color: #ffffff !important;
   font-weight: 700 !important;
+}
+
+.modal-footer,
+.modal-actions {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 /* ════════════════ SCROLLBARS ════════════════ */
