@@ -84,8 +84,8 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
     },
 
     // SLOTS
-    async createSlot(form) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+    async createSlot(form, silent = false) {
+      await new Promise(resolve => setTimeout(resolve, 50));
       const act = this.activities.find(a => a.documentId === form.activityTemplate) || form.activityTemplate;
       const loc = this.locations.find(l => l.documentId === form.location) || form.location;
       const facs = (form.facilitators || []).map(id => this.facilitators.find(f => f.documentId === id) || id);
@@ -94,7 +94,7 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
         {
           documentId: `sch_act_${Date.now()}_0`,
           id: `sch_act_${Date.now()}_0`,
-          name: act?.name || 'Animation en salle',
+          name: act?.name || 'Animation',
           startDate: new Date(form.startDate).toISOString(),
           endDate: new Date(form.endDate).toISOString(),
           description: act?.description || '',
@@ -118,7 +118,9 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
 
       this.timeslots.push(newSlot);
       this.timeslots.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-      useGlobalStore().addSuccess('Créneau horaire planifié avec succès !', 'Créneau planifié');
+      if (!silent) {
+        useGlobalStore().addSuccess('Créneau horaire planifié avec succès !', 'Créneau planifié');
+      }
       return newSlot;
     },
 
@@ -501,8 +503,8 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
         name: locationData.name,
         address: locationData.address || '',
         capacity: locationData.capacity || 1,
-        globalOpeningStart: locationData.globalOpeningStart || '08:00:00.000',
-        globalOpeningEnd: locationData.globalOpeningEnd || '18:00:00.000',
+        globalOpeningStart: locationData.globalOpeningStart || '2026-01-01',
+        globalOpeningEnd: locationData.globalOpeningEnd || '2026-12-31',
         weeklyClosures: locationData.weeklyClosures || [],
         specificClosures: locationData.specificClosures || []
       };
@@ -520,8 +522,8 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
           name: locationData.name,
           address: locationData.address || '',
           capacity: locationData.capacity || 1,
-          globalOpeningStart: locationData.globalOpeningStart || '08:00:00.000',
-          globalOpeningEnd: locationData.globalOpeningEnd || '18:00:00.000',
+          globalOpeningStart: locationData.globalOpeningStart || '2026-01-01',
+          globalOpeningEnd: locationData.globalOpeningEnd || '2026-12-31',
           weeklyClosures: locationData.weeklyClosures || [],
           specificClosures: locationData.specificClosures || []
         };
@@ -536,6 +538,65 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
       await new Promise(resolve => setTimeout(resolve, 200));
       this.locations = this.locations.filter(l => l.documentId !== documentId);
       useGlobalStore().addSuccess('Lieu supprimé avec succès !', 'Lieu supprimé');
+    },
+
+    async createRecurringSlots(payload, onProgress = null) {
+      const {
+        dates = [],
+        startTime = '10:00',
+        endTime = '11:30',
+        activityTemplate,
+        location = null,
+        facilitators = [],
+        participants = []
+      } = payload;
+
+      this.loading = true;
+      const created = [];
+
+      try {
+        for (let i = 0; i < dates.length; i++) {
+          const dateStr = dates[i];
+          const [y, m, d] = dateStr.split('-').map(Number);
+          const [sh, sm] = startTime.split(':').map(Number);
+          const [eh, em] = endTime.split(':').map(Number);
+
+          const start = new Date(y, m - 1, d, sh, sm, 0);
+          const end = new Date(y, m - 1, d, eh, em, 0);
+
+          const slotData = {
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
+            activityTemplate,
+            location: location || null,
+            facilitators: facilitators || [],
+            participants: participants || []
+          };
+
+          const newSlot = await this.createSlot(slotData, true);
+          created.push(newSlot);
+
+          if (typeof onProgress === 'function') {
+            try {
+              onProgress({
+                current: i + 1,
+                total: dates.length,
+                date: dateStr
+              });
+            } catch (cbErr) {
+              console.error('Error in onProgress callback:', cbErr);
+            }
+          }
+        }
+
+        useGlobalStore().addSuccess(
+          `${created.length} créneau(x) d'animation programmés avec succès sur ${dates.length} date(s) !`,
+          'Animations programmées'
+        );
+        return created;
+      } finally {
+        this.loading = false;
+      }
     }
   }
 });

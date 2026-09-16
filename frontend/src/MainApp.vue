@@ -36,15 +36,16 @@
         <!-- LOGIN FORM -->
         <form v-if="authTab === 'login'" @submit.prevent="handleLogin" class="auth-form">
           <div class="form-group">
-            <label for="loginIdentifier">Email ou Nom d'utilisateur</label>
+            <label for="loginEmail">Adresse email</label>
             <div class="input-wrapper">
-              <span class="input-icon">👤</span>
+              <span class="input-icon">✉️</span>
               <input 
-                type="text" 
-                id="loginIdentifier" 
-                v-model="loginForm.identifier" 
+                type="email" 
+                id="loginEmail" 
+                v-model="loginForm.email" 
                 required 
-                placeholder="Entrez votre identifiant"
+                autocomplete="email"
+                placeholder="Ex: jean.dupont@mail.com"
                 class="form-input"
               />
             </div>
@@ -1785,7 +1786,7 @@
 
 <script>
 import { storeToRefs } from 'pinia';
-import { computed } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from './stores/auth';
 import { useAppSettingsStore } from './stores/appSettings';
@@ -1794,16 +1795,17 @@ import { useActivityStore } from './stores/activityStore';
 import { useFacilitatorStore } from './stores/admin/facilitatorStore';
 import { useParticipantStore } from './stores/participantStore';
 import { useGlobalStore } from './stores/global';
-import LocationsList from './views/locations/LocationsList.vue';
-import FacilitatorsList from './views/admin/FacilitatorsList.vue';
-import RoomSessionsView from './components/RoomSessionsView.vue';
-import WeekTemplateView from './components/WeekTemplateView.vue';
-import ExtractionsView from './components/ExtractionsView.vue';
-import AnimationsPlanningView from './components/AnimationsPlanningView.vue';
-import CheckInView from './components/CheckInView.vue';
-import CalendarView from './components/CalendarView.vue';
-import ClientPlanningView from './views/ClientPlanningView.vue';
 import SearchableSelect from './components/SearchableSelect.vue';
+
+const LocationsList = defineAsyncComponent(() => import('./views/locations/LocationsList.vue'));
+const FacilitatorsList = defineAsyncComponent(() => import('./views/admin/FacilitatorsList.vue'));
+const RoomSessionsView = defineAsyncComponent(() => import('./components/RoomSessionsView.vue'));
+const WeekTemplateView = defineAsyncComponent(() => import('./components/WeekTemplateView.vue'));
+const ExtractionsView = defineAsyncComponent(() => import('./components/ExtractionsView.vue'));
+const AnimationsPlanningView = defineAsyncComponent(() => import('./components/AnimationsPlanningView.vue'));
+const CheckInView = defineAsyncComponent(() => import('./components/CheckInView.vue'));
+const CalendarView = defineAsyncComponent(() => import('./components/CalendarView.vue'));
+const ClientPlanningView = defineAsyncComponent(() => import('./views/ClientPlanningView.vue'));
 
 
 const DAYS_FR = {
@@ -1903,6 +1905,7 @@ export default {
       authTab: 'login',
       localAuthError: '',
       loginForm: {
+        email: '',
         identifier: '',
         password: ''
       },
@@ -2682,8 +2685,13 @@ export default {
     // Auth Methods
     async handleLogin() {
       this.localAuthError = '';
+      const email = (this.loginForm.email || this.loginForm.identifier || '').trim();
+      if (!email) {
+        this.localAuthError = 'Veuillez saisir votre adresse email.';
+        return;
+      }
       try {
-        await this.authStore.login(this.loginForm.identifier, this.loginForm.password);
+        await this.authStore.login(email, this.loginForm.password);
         this.showToast('Connexion réussie !');
       } catch (err) {
         this.localAuthError = err.message;
@@ -4121,20 +4129,27 @@ export default {
 
 .input-wrapper {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .input-icon {
   position: absolute;
-  left: 0.85rem;
+  left: 0.9rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-secondary);
   pointer-events: none;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  line-height: 1;
+  z-index: 2;
+  user-select: none;
 }
 
-.auth-form .form-input {
-  padding-left: 2.25rem;
+.auth-form .form-input,
+.auth-form input.form-input,
+.input-wrapper .form-input {
+  padding-left: 2.75rem !important;
 }
 
 /* User Profiling in Header */

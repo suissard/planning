@@ -2,9 +2,19 @@ import { defineStore } from 'pinia';
 import api from '../services/api';
 import { useAppSettingsStore } from './appSettings';
 
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    localStorage.removeItem('user');
+    return null;
+  }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: JSON.parse(localStorage.getItem('user')) || null,
+    user: getStoredUser(),
     token: localStorage.getItem('token') || null,
     loading: false,
     error: null
@@ -28,13 +38,22 @@ export const useAuthStore = defineStore('auth', {
     }
   },
   actions: {
-    async login(identifier, password) {
+    async login(emailOrIdentifier, password) {
       this.loading = true;
       this.error = null;
       try {
+        const identifier = (
+          typeof emailOrIdentifier === 'string'
+            ? emailOrIdentifier
+            : (emailOrIdentifier?.email || emailOrIdentifier?.identifier)
+        )?.trim();
+        const pwd = typeof emailOrIdentifier === 'object' && !password
+          ? emailOrIdentifier.password
+          : password;
+
         const res = await api.post(`/auth/local`, {
           identifier,
-          password
+          password: pwd
         });
         this.token = res.data.jwt;
         this.user = res.data.user;
@@ -43,7 +62,15 @@ export const useAuthStore = defineStore('auth', {
         return this.user;
       } catch (err) {
         console.error(err);
-        this.error = err.response?.data?.error?.message || 'Identifiant ou mot de passe incorrect.';
+        const backendMessage = err.response?.data?.error?.message;
+        if (
+          backendMessage === 'Invalid identifier or password' ||
+          backendMessage === 'Invalid credentials'
+        ) {
+          this.error = 'Email ou mot de passe incorrect.';
+        } else {
+          this.error = backendMessage || 'Email ou mot de passe incorrect.';
+        }
         throw new Error(this.error);
       } finally {
         this.loading = false;

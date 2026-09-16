@@ -514,6 +514,106 @@ export const useRoomSessionStore = defineStore('roomSession', {
       }
     },
 
+    async openRoomForDateRange(payload, onProgress = null) {
+      const {
+        dates = [],
+        location,
+        manager = null,
+        participants = [],
+        overwrite = false
+      } = payload;
+
+      this.loading = true;
+      try {
+        const appSettings = useAppSettingsStore();
+        let createdCount = 0;
+        let updatedCount = 0;
+        let skippedCount = 0;
+
+        for (let i = 0; i < dates.length; i++) {
+          const targetDate = dates[i];
+
+          let existingSession = null;
+          if (appSettings.useMockData) {
+            this.initMockSessions();
+            existingSession = this.mockSessions.find(
+              s => s.date === targetDate && (s.location?.documentId === location || s.location?.id === location)
+            );
+          } else {
+            try {
+              const checkRes = await api.get('/room-sessions', {
+                params: {
+                  'filters[date][$eq]': targetDate,
+                  'populate[0]': 'location'
+                }
+              });
+              const list = checkRes.data?.data || [];
+              existingSession = list.find(
+                s => (s.location?.documentId === location || s.location?.id === location)
+              );
+            } catch (checkErr) {
+              console.warn('Erreur vérification session existante:', checkErr);
+            }
+          }
+
+          const sessionPayload = {
+            date: targetDate,
+            location,
+            manager: manager || null,
+            participants: (participants || []).filter(Boolean)
+          };
+
+          if (existingSession) {
+            if (overwrite) {
+              const existingId = existingSession.documentId || existingSession.id;
+              await this.updateSession(existingId, sessionPayload, true);
+              updatedCount++;
+            } else {
+              skippedCount++;
+            }
+          } else {
+            await this.createSession(sessionPayload, true);
+            createdCount++;
+          }
+
+          if (typeof onProgress === 'function') {
+            try {
+              onProgress({
+                current: i + 1,
+                total: dates.length,
+                date: targetDate,
+                created: createdCount,
+                updated: updatedCount,
+                skipped: skippedCount
+              });
+            } catch (cbErr) {
+              console.error('Error in onProgress callback:', cbErr);
+            }
+          }
+        }
+
+        let summaryMsg = `${createdCount} ouverture(s) créée(s)`;
+        if (updatedCount > 0) summaryMsg += `, ${updatedCount} mise(s) à jour`;
+        if (skippedCount > 0) summaryMsg += ` (${skippedCount} déjà ouverte(s) ignorée(s))`;
+        summaryMsg += ` sur ${dates.length} date(s).`;
+
+        useGlobalStore().addSuccess(summaryMsg, 'Ouvertures créées');
+        return {
+          created: createdCount,
+          updated: updatedCount,
+          skipped: skippedCount,
+          total: dates.length
+        };
+      } catch (err) {
+        this.error = err.message;
+        useGlobalStore().addError(err.message, 'Erreur Création en série');
+        throw err;
+      } finally {
+        await this.refreshCurrentView();
+        this.loading = false;
+      }
+    },
+
     async refreshCurrentView() {
       if (this.currentViewMode === 'day') {
         await this.fetchSessions(this.selectedDate);

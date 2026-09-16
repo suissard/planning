@@ -50,6 +50,11 @@
       "relation": "oneToMany",
       "target": "api::room-session.room-session",
       "mappedBy": "manager"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
     }
   }
 }

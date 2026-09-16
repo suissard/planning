@@ -1272,8 +1272,28 @@
             </select>
           </div>
 
-          <!-- Date & Time Range -->
-          <div class="form-row-2">
+          <!-- Date & Time Range Mode Toggle (en création uniquement) -->
+          <div v-if="!editingSlotId" class="date-mode-toggle-group">
+            <button 
+              type="button" 
+              class="date-mode-btn" 
+              :class="{ active: slotForm.dateMode === 'single' }" 
+              @click="slotForm.dateMode = 'single'"
+            >
+              📅 Date unique
+            </button>
+            <button 
+              type="button" 
+              class="date-mode-btn" 
+              :class="{ active: slotForm.dateMode === 'range' }" 
+              @click="slotForm.dateMode = 'range'"
+            >
+              🔄 Période & Répétitivité
+            </button>
+          </div>
+
+          <!-- CAS 1 : DATE UNIQUE (OU ÉDITION) -->
+          <div v-if="editingSlotId || slotForm.dateMode === 'single'" class="form-row-2">
             <div class="form-group">
               <label>📅 Date *</label>
               <input type="date" v-model="slotForm.date" required class="form-input" />
@@ -1287,6 +1307,74 @@
                 </option>
               </select>
             </div>
+          </div>
+
+          <!-- CAS 2 : PÉRIODE & RÉPÉTITIVITÉ -->
+          <div v-else class="range-date-wrapper">
+            <div class="range-date-box">
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label>📅 Date de début *</label>
+                  <input type="date" v-model="slotForm.startDate" required class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label>🏁 Date de fin *</label>
+                  <input type="date" v-model="slotForm.endDate" :min="slotForm.startDate" required class="form-input" />
+                </div>
+              </div>
+
+              <!-- Jours de répétition -->
+              <div class="days-selector-group">
+                <div class="days-selector-header">
+                  <label>📆 Jours de répétition :</label>
+                  <div class="days-quick-presets">
+                    <button type="button" class="preset-pill-btn" @click="setSlotDaysPreset('workdays')">Lun - Ven</button>
+                    <button type="button" class="preset-pill-btn" @click="setSlotDaysPreset('all')">Tous (7j/7)</button>
+                    <button type="button" class="preset-pill-btn" @click="setSlotDaysPreset('same-day')">Même jour</button>
+                  </div>
+                </div>
+                <div class="days-checkbox-pills">
+                  <button 
+                    v-for="day in weekDaysOptions" 
+                    :key="day.id" 
+                    type="button" 
+                    class="day-pill-toggle" 
+                    :class="{ active: slotForm.daysOfWeek.includes(day.id), weekend: day.id >= 6 }"
+                    @click="toggleSlotDay(day.id)"
+                  >
+                    {{ day.label }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Résumé visuel des créneaux calculés -->
+              <div class="range-summary-banner" :class="{ 'has-dates': modalTargetDates.length > 0, 'no-dates': modalTargetDates.length === 0 }">
+                <div class="summary-text" v-if="modalTargetDates.length > 0">
+                  <span class="summary-icon">✨</span>
+                  <div>
+                    <strong>{{ modalTargetDates.length }} créneau(x) d'animation programmés</strong>
+                    <p class="summary-detail">{{ formatTargetDatesSummary(modalTargetDates) }}</p>
+                  </div>
+                </div>
+                <div class="summary-text text-danger" v-else>
+                  <span>⚠️ Aucun jour ne correspond aux critères sélectionnés.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group mt-2">
+              <label>📍 Salle / Lieu</label>
+              <select v-model="slotForm.location" class="form-input">
+                <option value="">Aucune salle assignée</option>
+                <option v-for="loc in locations" :key="loc.documentId || loc.id" :value="loc.documentId || loc.id">
+                  {{ loc.name }} (Capacité: {{ loc.capacity || 'N/A' }})
+                </option>
+              </select>
+            </div>
+
+            <p class="range-mode-hint">
+              ⚡ <em>Les créneaux seront générés automatiquement en arrière-plan sans bloquer votre écran.</em>
+            </p>
           </div>
 
           <div class="form-row-2">
@@ -1375,8 +1463,12 @@
 
           <div class="modal-actions-footer">
             <button type="button" class="tool-btn" @click="closeSlotModal">Annuler</button>
-            <button type="submit" class="action-btn primary-btn" :disabled="isSavingModal">
-              {{ isSavingModal ? 'Enregistrement...' : (editingSlotId ? 'Sauvegarder les modifications' : 'Créer l\'animation') }}
+            <button 
+              type="submit" 
+              class="action-btn primary-btn" 
+              :disabled="isSavingModal || (!editingSlotId && slotForm.dateMode === 'range' && modalTargetDates.length === 0)"
+            >
+              {{ isSavingModal ? 'Enregistrement...' : (editingSlotId ? 'Sauvegarder les modifications' : (slotForm.dateMode === 'range' ? `🚀 Valider la programmation (${modalTargetDates.length} séances)` : 'Créer l\'animation')) }}
             </button>
           </div>
         </form>
@@ -1480,6 +1572,30 @@
       </div>
     </div>
 
+    <!-- ════════════════ BANDEAU D'OPÉRATION EN ARRIÈRE-PLAN ════════════════ -->
+    <transition name="job-fade">
+      <div v-if="backgroundJob.active" class="background-job-card no-print">
+        <div class="job-card-header">
+          <div class="job-spinner"></div>
+          <div class="job-title-content">
+            <div class="job-title-row">
+              <strong>Génération en arrière-plan</strong>
+              <span class="job-percentage">{{ Math.round((backgroundJob.current / backgroundJob.total) * 100) }}%</span>
+            </div>
+            <span class="job-desc">
+              {{ backgroundJob.activityName }} : {{ backgroundJob.current }} / {{ backgroundJob.total }} séance(s) programmée(s)
+            </span>
+          </div>
+        </div>
+        <div class="job-progress-bar-bg">
+          <div 
+            class="job-progress-bar-fill" 
+            :style="{ width: `${Math.round((backgroundJob.current / backgroundJob.total) * 100)}%` }"
+          ></div>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -1487,7 +1603,7 @@
 import { computed, ref, onMounted, watch } from 'vue';
 import { useActiveSchedulerStore } from '../stores/activeScheduler';
 import { useGlobalStore } from '../stores/global';
-import { checkPersonDateAvailability } from '../utils/availabilityHelper';
+import { checkPersonDateAvailability, formatLocalDate } from '../utils/availabilityHelper';
 
 export default {
   name: 'AnimationsPlanningView',
@@ -1627,13 +1743,25 @@ export default {
     const editingSlotId = ref(null);
     const isSavingModal = ref(false);
     const slotForm = ref({
+      dateMode: 'single', // 'single' | 'range'
       activityTemplate: '',
       date: '',
+      startDate: '',
+      endDate: '',
+      daysOfWeek: [1, 2, 3, 4, 5],
       startTime: '10:00',
       endTime: '11:30',
       location: '',
       facilitators: [],
       participants: []
+    });
+
+    const backgroundJob = ref({
+      active: false,
+      current: 0,
+      total: 0,
+      activityName: '',
+      isDone: false
     });
 
     const showDuplicateModal = ref(false);
@@ -2469,6 +2597,89 @@ export default {
     // Modal Create / Edit Slot
     const modalContextTitle = ref('');
 
+    // Range mode options & helpers
+    const weekDaysOptions = [
+      { id: 1, label: 'Lun', full: 'Lundi' },
+      { id: 2, label: 'Mar', full: 'Mardi' },
+      { id: 3, label: 'Mer', full: 'Mercredi' },
+      { id: 4, label: 'Jeu', full: 'Jeudi' },
+      { id: 5, label: 'Ven', full: 'Vendredi' },
+      { id: 6, label: 'Sam', full: 'Samedi' },
+      { id: 7, label: 'Dim', full: 'Dimanche' }
+    ];
+
+    function setSlotDaysPreset(preset) {
+      if (preset === 'workdays') {
+        slotForm.value.daysOfWeek = [1, 2, 3, 4, 5];
+      } else if (preset === 'all') {
+        slotForm.value.daysOfWeek = [1, 2, 3, 4, 5, 6, 7];
+      } else if (preset === 'same-day') {
+        const dStr = slotForm.value.startDate || currentDateStr.value;
+        const [y, m, d] = dStr.split('-').map(Number);
+        const startDt = new Date(y, m - 1, d, 12, 0, 0);
+        const jsDay = startDt.getDay();
+        const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+        slotForm.value.daysOfWeek = [dayOfWeek];
+      }
+    }
+
+    function toggleSlotDay(dayId) {
+      const idx = slotForm.value.daysOfWeek.indexOf(dayId);
+      if (idx === -1) {
+        slotForm.value.daysOfWeek.push(dayId);
+        slotForm.value.daysOfWeek.sort((a, b) => a - b);
+      } else {
+        if (slotForm.value.daysOfWeek.length > 1) {
+          slotForm.value.daysOfWeek.splice(idx, 1);
+        }
+      }
+    }
+
+    const modalTargetDates = computed(() => {
+      if (slotForm.value.dateMode !== 'range') {
+        return slotForm.value.date ? [slotForm.value.date] : [];
+      }
+      if (!slotForm.value.startDate || !slotForm.value.endDate) return [];
+      if (slotForm.value.startDate > slotForm.value.endDate) return [];
+
+      const dates = [];
+      const [sY, sM, sD] = slotForm.value.startDate.split('-').map(Number);
+      const [eY, eM, eD] = slotForm.value.endDate.split('-').map(Number);
+      const start = new Date(sY, sM - 1, sD, 12, 0, 0);
+      const end = new Date(eY, eM - 1, eD, 12, 0, 0);
+      const maxDays = 180;
+      let count = 0;
+      const current = new Date(start);
+
+      while (current <= end && count < maxDays) {
+        const jsDay = current.getDay();
+        const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+        if (slotForm.value.daysOfWeek.includes(dayOfWeek)) {
+          dates.push(formatLocalDate(current));
+        }
+        current.setDate(current.getDate() + 1);
+        count++;
+      }
+
+      return dates;
+    });
+
+    function formatTargetDatesSummary(dates) {
+      if (!dates || dates.length === 0) return '';
+      if (dates.length <= 5) {
+        return dates.map(d => {
+          const [y, m, day] = d.split('-').map(Number);
+          const dt = new Date(y, m - 1, day, 12, 0, 0);
+          return dt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'numeric' });
+        }).join(', ');
+      }
+      const [fYear, fMonth, fDay] = dates[0].split('-').map(Number);
+      const first = new Date(fYear, fMonth - 1, fDay, 12, 0, 0).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      const [lYear, lMonth, lDay] = dates[dates.length - 1].split('-').map(Number);
+      const last = new Date(lYear, lMonth - 1, lDay, 12, 0, 0).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+      return `Du ${first} au ${last} (${dates.length} séances)`;
+    }
+
     function applyTimePreset(timeStr) {
       slotForm.value.startTime = timeStr;
       recomputeEndTime();
@@ -2487,9 +2698,17 @@ export default {
         modalContextTitle.value = '➕ Nouveau Créneau d\'Animation';
       }
 
+      const [initY, initM, initD] = initialDate.split('-').map(Number);
+      const nextWeek = new Date(initY, initM - 1, initD + 7, 12, 0, 0);
+      const defaultEndDate = formatLocalDate(nextWeek);
+
       slotForm.value = {
+        dateMode: 'single',
         activityTemplate: selectedActId,
         date: initialDate,
+        startDate: initialDate,
+        endDate: defaultEndDate,
+        daysOfWeek: [1, 2, 3, 4, 5],
         startTime: defaults.startTime || '10:00',
         endTime: '11:30',
         location: defaults.location || '',
@@ -2515,8 +2734,12 @@ export default {
       const eh = String(e.getHours()).padStart(2, '0') + ':' + String(e.getMinutes()).padStart(2, '0');
 
       slotForm.value = {
+        dateMode: 'single',
         activityTemplate: slot.activityTemplate?.documentId || slot.activityTemplate?.id || '',
         date: dateStr,
+        startDate: dateStr,
+        endDate: dateStr,
+        daysOfWeek: [1, 2, 3, 4, 5],
         startTime: sh,
         endTime: eh,
         location: slot.location?.documentId || slot.location?.id || '',
@@ -2553,36 +2776,139 @@ export default {
     }
 
     async function saveSlotForm() {
-      isSavingModal.value = true;
-      try {
-        const [y, m, d] = slotForm.value.date.split('-').map(Number);
-        const [sh, sm] = slotForm.value.startTime.split(':').map(Number);
-        const [eh, em] = slotForm.value.endTime.split(':').map(Number);
+      if (!slotForm.value.activityTemplate) {
+        globalStore.addError('Veuillez sélectionner une activité.', 'Champ manquant');
+        return;
+      }
 
-        const start = new Date(y, m - 1, d, sh, sm, 0);
-        const end = new Date(y, m - 1, d, eh, em, 0);
+      // Cas 1 : Modification d'un créneau existant
+      if (editingSlotId.value) {
+        isSavingModal.value = true;
+        try {
+          const [y, m, d] = slotForm.value.date.split('-').map(Number);
+          const [sh, sm] = slotForm.value.startTime.split(':').map(Number);
+          const [eh, em] = slotForm.value.endTime.split(':').map(Number);
 
-        const payload = {
-          startDate: start.toISOString(),
-          endDate: end.toISOString(),
-          activityTemplate: slotForm.value.activityTemplate,
-          location: slotForm.value.location || null,
-          facilitators: slotForm.value.facilitators
-        };
+          const start = new Date(y, m - 1, d, sh, sm, 0);
+          const end = new Date(y, m - 1, d, eh, em, 0);
 
-        if (editingSlotId.value) {
-          // Lors de la modification de l'activité, on ne touche pas aux participants (ils héritent du créneau)
+          const payload = {
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
+            activityTemplate: slotForm.value.activityTemplate,
+            location: slotForm.value.location || null,
+            facilitators: slotForm.value.facilitators
+          };
+
           await schedulerStore.updateSlot(editingSlotId.value, payload);
-        } else {
-          payload.participants = slotForm.value.participants || [];
+          closeSlotModal();
+        } catch (err) {
+          globalStore.addError(err.message || 'Erreur lors de la modification.', 'Erreur');
+        } finally {
+          isSavingModal.value = false;
+        }
+        return;
+      }
+
+      // Cas 2 : Création d'une date unique
+      if (slotForm.value.dateMode === 'single') {
+        if (!slotForm.value.date) {
+          globalStore.addError('Veuillez sélectionner une date.', 'Champ manquant');
+          return;
+        }
+        isSavingModal.value = true;
+        try {
+          const [y, m, d] = slotForm.value.date.split('-').map(Number);
+          const [sh, sm] = slotForm.value.startTime.split(':').map(Number);
+          const [eh, em] = slotForm.value.endTime.split(':').map(Number);
+
+          const start = new Date(y, m - 1, d, sh, sm, 0);
+          const end = new Date(y, m - 1, d, eh, em, 0);
+
+          const payload = {
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
+            activityTemplate: slotForm.value.activityTemplate,
+            location: slotForm.value.location || null,
+            facilitators: slotForm.value.facilitators,
+            participants: slotForm.value.participants || []
+          };
+
           await schedulerStore.createSlot(payload);
+          closeSlotModal();
+        } catch (err) {
+          globalStore.addError(err.message || 'Erreur lors de la création.', 'Erreur');
+        } finally {
+          isSavingModal.value = false;
+        }
+        return;
+      }
+
+      // Cas 3 : Création sur une plage de dates avec répétitivité (Génération en arrière-plan)
+      if (slotForm.value.dateMode === 'range') {
+        if (!slotForm.value.startDate || !slotForm.value.endDate) {
+          globalStore.addError('Veuillez renseigner une date de début et une date de fin.', 'Champs manquants');
+          return;
+        }
+        if (slotForm.value.startDate > slotForm.value.endDate) {
+          globalStore.addError('La date de fin doit être postérieure ou égale à la date de début.', 'Date invalide');
+          return;
+        }
+        const targetDates = [...modalTargetDates.value];
+        if (targetDates.length === 0) {
+          globalStore.addError('Aucune date correspondante trouvée pour cette période.', 'Sélection vide');
+          return;
         }
 
+        const act = props.activities.find(a => (a.documentId || a.id) === slotForm.value.activityTemplate);
+        const actName = act ? act.name : 'l\'animation';
+
+        const payload = {
+          dates: targetDates,
+          startTime: slotForm.value.startTime,
+          endTime: slotForm.value.endTime,
+          activityTemplate: slotForm.value.activityTemplate,
+          location: slotForm.value.location || null,
+          facilitators: [...slotForm.value.facilitators],
+          participants: [...slotForm.value.participants]
+        };
+
+        // Fermeture immédiate de la modale pour rendre la main
         closeSlotModal();
-      } catch (err) {
-        globalStore.addError(err.message || 'Erreur lors de la sauvegarde.', 'Erreur');
-      } finally {
-        isSavingModal.value = false;
+
+        // Activation du bandeau flottant de progression
+        backgroundJob.value = {
+          active: true,
+          current: 0,
+          total: targetDates.length,
+          activityName: actName,
+          isDone: false
+        };
+
+        globalStore.addInfo(
+          `Programmation de ${targetDates.length} créneau(x) pour "${actName}" lancée en arrière-plan...`,
+          'Génération en arrière-plan'
+        );
+
+        // Exécution en tâche d'arrière-plan
+        (async () => {
+          try {
+            await schedulerStore.createRecurringSlots(payload, (progress) => {
+              backgroundJob.value.current = progress.current;
+            });
+            globalStore.addSuccess(
+              `${targetDates.length} séance(s) de "${actName}" programmée(s) avec succès !`,
+              'Programmation terminée'
+            );
+          } catch (err) {
+            console.error('Erreur programmation récurrente:', err);
+            globalStore.addError(err.message || 'Erreur lors de la programmation en arrière-plan.', 'Erreur');
+          } finally {
+            setTimeout(() => {
+              backgroundJob.value.active = false;
+            }, 1500);
+          }
+        })();
       }
     }
 
@@ -2757,7 +3083,13 @@ export default {
       toggleDaySlots,
       getFacilitatorsSummaryText,
       getFacilitatorsSummaryTooltip,
-      lastNavAction
+      lastNavAction,
+      weekDaysOptions,
+      setSlotDaysPreset,
+      toggleSlotDay,
+      modalTargetDates,
+      formatTargetDatesSummary,
+      backgroundJob
     };
   }
 };
@@ -5050,6 +5382,285 @@ export default {
   gap: 0.75rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* DATE MODE SELECTOR & RANGE BOX */
+.date-mode-toggle-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.date-mode-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 0.55rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.date-mode-btn:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.date-mode-btn.active {
+  background: #0d9488;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35);
+}
+
+.range-date-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.range-date-box {
+  background: rgba(13, 148, 136, 0.05);
+  border: 1px solid rgba(13, 148, 136, 0.22);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.days-selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.days-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.days-selector-header label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.days-quick-presets {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.preset-pill-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-pill-btn:hover {
+  background: rgba(13, 148, 136, 0.25);
+  color: #5eead4;
+  border-color: rgba(13, 148, 136, 0.5);
+}
+
+.days-checkbox-pills {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.day-pill-toggle {
+  flex: 1;
+  min-width: 38px;
+  padding: 0.45rem 0.2rem;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.day-pill-toggle:hover {
+  border-color: rgba(94, 234, 212, 0.4);
+  color: #f8fafc;
+}
+
+.day-pill-toggle.active {
+  background: rgba(13, 148, 136, 0.3);
+  border-color: #0d9488;
+  color: #5eead4;
+  font-weight: 700;
+  box-shadow: inset 0 0 8px rgba(13, 148, 136, 0.2);
+}
+
+.day-pill-toggle.weekend.active {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  color: #fcd34d;
+}
+
+.range-summary-banner {
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.range-summary-banner.has-dates {
+  background: rgba(13, 148, 136, 0.15);
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  color: #ccfbf1;
+}
+
+.range-summary-banner.no-dates {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.range-summary-banner .summary-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.range-summary-banner .summary-icon {
+  font-size: 1.1rem;
+}
+
+.summary-detail {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.74rem;
+  opacity: 0.85;
+}
+
+.range-mode-hint {
+  font-size: 0.75rem;
+  color: #5eead4;
+  background: rgba(13, 148, 136, 0.1);
+  border: 1px dashed rgba(13, 148, 136, 0.3);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin: 0;
+}
+
+/* FLOATING BACKGROUND JOB CARD */
+.background-job-card {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 99999;
+  background: #0f172a;
+  border: 1.5px solid #0d9488;
+  border-radius: 12px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), 0 0 20px rgba(13, 148, 136, 0.3);
+  padding: 1rem 1.25rem;
+  min-width: 320px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  backdrop-filter: blur(10px);
+}
+
+.job-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.job-spinner {
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 2.5px solid rgba(94, 234, 212, 0.2);
+  border-top-color: #5eead4;
+  border-radius: 50%;
+  animation: jobSpinner 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.job-title-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.job-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.job-title-row strong {
+  font-size: 0.85rem;
+  color: #f8fafc;
+}
+
+.job-percentage {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #5eead4;
+}
+
+.job-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.job-progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.job-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0d9488, #5eead4);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.job-fade-enter-active,
+.job-fade-leave-active {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.job-fade-enter-from,
+.job-fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+@keyframes jobSpinner {
+  to { transform: rotate(360deg); }
 }
 
 /* ──────────────── PRINT STYLES ──────────────── */

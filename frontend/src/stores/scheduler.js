@@ -64,7 +64,7 @@ export const useSchedulerStore = defineStore('scheduler', {
       }
     },
 
-    async createSlot(form) {
+    async createSlot(form, silent = false) {
       const payload = {
         data: {
           startDate: new Date(form.startDate).toISOString(),
@@ -104,7 +104,9 @@ export const useSchedulerStore = defineStore('scheduler', {
           }
         }
 
-        await this.fetchData();
+        if (!silent) {
+          await this.fetchData();
+        }
         return createdSlot;
       } catch (err) {
         console.error(err);
@@ -314,6 +316,65 @@ export const useSchedulerStore = defineStore('scheduler', {
         }
       }
       await this.fetchData();
+    },
+
+    async createRecurringSlots(payload, onProgress = null) {
+      const {
+        dates = [],
+        startTime = '10:00',
+        endTime = '11:30',
+        activityTemplate,
+        location = null,
+        facilitators = [],
+        participants = []
+      } = payload;
+
+      this.loading = true;
+      const created = [];
+
+      try {
+        for (let i = 0; i < dates.length; i++) {
+          const dateStr = dates[i];
+          const [y, m, d] = dateStr.split('-').map(Number);
+          const [sh, sm] = startTime.split(':').map(Number);
+          const [eh, em] = endTime.split(':').map(Number);
+
+          const start = new Date(y, m - 1, d, sh, sm, 0);
+          const end = new Date(y, m - 1, d, eh, em, 0);
+
+          const slotData = {
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
+            activityTemplate,
+            location: location || null,
+            facilitators: facilitators || [],
+            participants: participants || []
+          };
+
+          const newSlot = await this.createSlot(slotData, true);
+          created.push(newSlot);
+
+          if (typeof onProgress === 'function') {
+            try {
+              onProgress({
+                current: i + 1,
+                total: dates.length,
+                date: dateStr
+              });
+            } catch (cbErr) {
+              console.error('Error in onProgress callback:', cbErr);
+            }
+          }
+        }
+
+        await this.fetchData();
+        return created;
+      } catch (err) {
+        console.error('Error creating recurring slots:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
     }
   }
 });

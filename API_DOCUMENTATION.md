@@ -557,7 +557,7 @@ Permet de définir la **semaine type** (gabarit récurrent) pour préconfigurer 
 
 | Méthode | Route | Description | Corps de Requête Requis |
 |---|---|---|---|
-| `POST` | `/api/auth/local` | Connexion utilisateur (renvoie token JWT et infos) | `identifier` (email ou username), `password` |
+| `POST` | `/api/auth/local` | Connexion utilisateur (renvoie token JWT et infos) | `identifier` (email), `password` |
 | `POST` | `/api/auth/local/register` | Inscription d'un nouveau compte | `username`, `email`, `password` |
 | `GET` | `/api/users/me` | Profil de l'utilisateur connecté | Header `Authorization: Bearer <TOKEN>` requis |
 | `PUT` | `/api/users/:id` | Modifier les données d'un profil | Champs utilisateur modifiables |

@@ -55,7 +55,7 @@
       <template v-slot:item.hours="{ item }">
         <div class="d-flex align-center ga-1">
           <v-chip size="small" variant="outlined" color="teal" class="font-weight-medium">
-            ⏰ {{ formatTime(item.globalOpeningStart) }} → {{ formatTime(item.globalOpeningEnd) }}
+            📅 {{ formatDateRange(item.globalOpeningStart, item.globalOpeningEnd) }}
           </v-chip>
         </div>
       </template>
@@ -188,7 +188,7 @@ export default {
       const base = [
         { title: 'Nom du lieu', key: 'name' },
         { title: 'Capacité', key: 'capacity', align: 'center' },
-        { title: 'Horaires généraux', key: 'hours', sortable: false },
+        { title: 'Période d\'ouverture', key: 'hours', sortable: false },
         { title: 'Fermetures hebdo', key: 'weeklyClosures', sortable: false },
         { title: 'Fermetures exceptionnelles', key: 'specificClosures', sortable: false },
       ];
@@ -218,13 +218,17 @@ export default {
     };
 
     const saveLocation = async (locationData) => {
-      if (selectedLocation.value) {
-        await locationStore.updateLocation(selectedLocation.value.documentId, locationData);
-      } else {
-        await locationStore.addLocation(locationData);
+      try {
+        if (selectedLocation.value) {
+          await locationStore.updateLocation(selectedLocation.value.documentId, locationData);
+        } else {
+          await locationStore.addLocation(locationData);
+        }
+        closeDialog();
+        locationStore.fetchLocations();
+      } catch (err) {
+        console.error('Erreur lors de la sauvegarde du lieu:', err);
       }
-      closeDialog();
-      locationStore.fetchLocations();
     };
 
     const deleteLocation = async (item) => {
@@ -232,6 +236,24 @@ export default {
         await locationStore.deleteLocation(item.documentId);
         locationStore.fetchLocations();
       }
+    };
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '--';
+      try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+      } catch (e) {
+        return dateStr;
+      }
+    };
+
+    const formatDateRange = (start, end) => {
+      if (!start && !end) return 'Non définie';
+      if (start && end) return `${formatDate(start)} → ${formatDate(end)}`;
+      if (start) return `Dès le ${formatDate(start)}`;
+      return `Jusqu'au ${formatDate(end)}`;
     };
 
     const formatTime = (timeString) => {
@@ -288,6 +310,8 @@ export default {
       closeDialog,
       saveLocation,
       deleteLocation,
+      formatDate,
+      formatDateRange,
       formatTime,
       formatWeeklyClosuresList,
       formatSpecificClosuresList

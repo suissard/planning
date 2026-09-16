@@ -8,6 +8,17 @@ export default defineConfig({
     vue(),
     vuetify({ autoImport: true }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-vue': ['vue', 'vue-router', 'pinia'],
+          'vendor-vuetify': ['vuetify'],
+          'vendor-utils': ['axios'],
+        },
+      },
+    },
+  },
   server: {
     host: true,
     port: 5173,
