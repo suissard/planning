@@ -41,6 +41,11 @@
       "relation": "oneToMany",
       "target": "api::check-in.check-in",
       "mappedBy": "participant"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
     }
   }
 }

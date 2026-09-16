@@ -1547,7 +1547,7 @@
           <div class="modal-title-box">
             <span class="modal-icon">{{ isEditing ? '✏️' : '🚪' }}</span>
             <div>
-              <h3>{{ isEditing ? 'Modifier la Session de Salle' : 'Ouvrir une Salle' }}</h3>
+              <h3>{{ isEditing ? 'Modifier la Session de Salle' : (form.dateMode === 'range' ? 'Ouvrir une Salle sur une Période' : 'Ouvrir une Salle') }}</h3>
               <p class="modal-sub">Désignez le lieu, le professionnel référent et les bénéficiaires.</p>
             </div>
           </div>
@@ -1559,9 +1559,30 @@
             <span>⚠️ {{ formError }}</span>
           </div>
 
-          <div class="form-row-2">
+          <!-- SÉLECTEUR DE MODE (UNIQUEMENT LORS DE LA CRÉATION) -->
+          <div v-if="!isEditing" class="date-mode-toggle-group">
+            <button 
+              type="button" 
+              class="date-mode-btn" 
+              :class="{ active: form.dateMode === 'single' }" 
+              @click="form.dateMode = 'single'"
+            >
+              📅 Date unique
+            </button>
+            <button 
+              type="button" 
+              class="date-mode-btn" 
+              :class="{ active: form.dateMode === 'range' }" 
+              @click="form.dateMode = 'range'"
+            >
+              🗓️ Période (Date début & fin)
+            </button>
+          </div>
+
+          <!-- CAS 1 : DATE UNIQUE (OU EN COURS D'ÉDITION) -->
+          <div v-if="isEditing || form.dateMode === 'single'" class="form-row-2">
             <div class="form-group">
-              <label>📅 Date d'ouverture :</label>
+              <label>📅 {{ isEditing ? 'Date de la session :' : 'Date d\'ouverture :' }}</label>
               <input type="date" v-model="form.date" class="form-input" required />
             </div>
 
@@ -1574,6 +1595,86 @@
                 </option>
               </select>
             </div>
+          </div>
+
+          <!-- CAS 2 : PLAGE DE DATES (DATE DE DÉBUT ET DATE DE FIN) -->
+          <div v-else class="range-date-wrapper">
+            <div class="range-date-box">
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label>📅 Date de début :</label>
+                  <input type="date" v-model="form.startDate" class="form-input" required />
+                </div>
+
+                <div class="form-group">
+                  <label>🏁 Date de fin :</label>
+                  <input type="date" v-model="form.endDate" :min="form.startDate" class="form-input" required />
+                </div>
+              </div>
+
+              <!-- Choix des jours de la semaine -->
+              <div class="days-selector-group">
+                <div class="days-selector-header">
+                  <label>📆 Jours de la semaine inclus :</label>
+                  <div class="days-quick-presets">
+                    <button type="button" class="preset-pill-btn" @click="setFormDaysPreset('workdays')">Lun - Ven</button>
+                    <button type="button" class="preset-pill-btn" @click="setFormDaysPreset('all')">Tous (7j/7)</button>
+                  </div>
+                </div>
+                <div class="days-checkbox-pills">
+                  <button 
+                    v-for="day in weekDaysOptions" 
+                    :key="day.id" 
+                    type="button" 
+                    class="day-pill-toggle" 
+                    :class="{ active: form.daysOfWeek.includes(day.id), weekend: day.id >= 6 }"
+                    @click="toggleFormDay(day.id)"
+                  >
+                    {{ day.label }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Résumé visuel des dates ciblées -->
+              <div class="range-summary-banner" :class="{ 'has-dates': modalTargetDates.length > 0, 'no-dates': modalTargetDates.length === 0 }">
+                <div class="summary-text" v-if="modalTargetDates.length > 0">
+                  <span class="summary-icon">✨</span>
+                  <div>
+                    <strong>{{ modalTargetDates.length }} ouverture(s) à générer</strong>
+                    <p class="summary-detail">{{ formatTargetDatesSummary(modalTargetDates) }}</p>
+                  </div>
+                </div>
+                <div class="summary-text text-danger" v-else>
+                  <span>⚠️ Aucune date ne correspond aux critères sélectionnés.</span>
+                </div>
+              </div>
+
+              <!-- Conflits avec dates déjà existantes -->
+              <div v-if="modalExistingDatesCount > 0" class="conflict-alert-box">
+                <div class="conflict-info">
+                  <span>⚠️</span>
+                  <span><strong>{{ modalExistingDatesCount }} date(s)</strong> ont déjà cette salle ouverte.</span>
+                </div>
+                <label class="conflict-checkbox-label">
+                  <input type="checkbox" v-model="form.overwriteExisting" />
+                  <span>Écraser / mettre à jour les sessions existantes sur ces dates</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group mt-3">
+              <label>📍 Lieu / Salle :</label>
+              <select v-model="form.location" class="form-input" required>
+                <option value="" disabled>-- Sélectionner une salle --</option>
+                <option v-for="loc in locations" :key="loc.documentId || loc.id" :value="loc.documentId || loc.id">
+                  {{ loc.name }} (Capacité : {{ loc.capacity }} places)
+                </option>
+              </select>
+            </div>
+
+            <p class="range-mode-hint">
+              ⚡ <em>Les ouvertures seront générées automatiquement en arrière-plan sans bloquer votre écran.</em>
+            </p>
           </div>
 
           <div class="form-group">
@@ -1689,8 +1790,13 @@
 
           <div class="modal-actions">
             <button type="button" class="secondary-btn" @click="closeModal">Annuler</button>
-            <button type="button" class="action-btn primary-btn" @click="saveSession" :disabled="saving">
-              {{ saving ? 'Enregistrement...' : (isEditing ? '💾 Mettre à jour' : '➕ Valider l\'ouverture') }}
+            <button 
+              type="button" 
+              class="action-btn primary-btn" 
+              @click="saveSession" 
+              :disabled="saving || (!isEditing && form.dateMode === 'range' && modalTargetDates.length === 0)"
+            >
+              {{ saving ? 'Enregistrement...' : (isEditing ? '💾 Mettre à jour' : (form.dateMode === 'range' ? `🚀 Valider les ouvertures (${modalTargetDates.length} jours)` : '➕ Valider l\'ouverture')) }}
             </button>
           </div>
         </div>
@@ -1891,6 +1997,30 @@
       </div>
     </div>
 
+    <!-- ════════════════ BANDEAU D'OPÉRATION EN ARRIÈRE-PLAN ════════════════ -->
+    <transition name="job-fade">
+      <div v-if="backgroundJob.active" class="background-job-card no-print">
+        <div class="job-card-header">
+          <div class="job-spinner"></div>
+          <div class="job-title-content">
+            <div class="job-title-row">
+              <strong>Création en arrière-plan</strong>
+              <span class="job-percentage">{{ Math.round((backgroundJob.current / backgroundJob.total) * 100) }}%</span>
+            </div>
+            <span class="job-desc">
+              {{ backgroundJob.roomName }} : {{ backgroundJob.current }} / {{ backgroundJob.total }} date(s) traitée(s)
+            </span>
+          </div>
+        </div>
+        <div class="job-progress-bar-bg">
+          <div 
+            class="job-progress-bar-fill" 
+            :style="{ width: `${Math.round((backgroundJob.current / backgroundJob.total) * 100)}%` }"
+          ></div>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -1899,7 +2029,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useRoomSessionStore } from '../stores/roomSessionStore';
 import { useRoomSessionTemplateStore } from '../stores/roomSessionTemplateStore';
 import { useGlobalStore } from '../stores/global';
-import { checkPersonDateAvailability, getEvaluatedPersonsList } from '../utils/availabilityHelper';
+import { checkPersonDateAvailability, getEvaluatedPersonsList, formatLocalDate } from '../utils/availabilityHelper';
 import SearchableSelect from './SearchableSelect.vue';
 
 const props = defineProps({
@@ -1975,11 +2105,24 @@ const duplicateCopyManager = ref(true);
 const duplicateCopyParticipants = ref(true);
 const duplicateOverwrite = ref(false);
 
-const showBulkAssignModal = ref(false);
+// BACKGROUND JOB STATE
+const backgroundJob = ref({
+  active: false,
+  current: 0,
+  total: 0,
+  roomName: '',
+  isDone: false
+});
 
 // FORM STATE
+const todayLocalStr = formatLocalDate(new Date());
 const form = ref({
-  date: new Date().toISOString().slice(0, 10),
+  dateMode: 'single', // 'single' | 'range'
+  date: todayLocalStr,
+  startDate: todayLocalStr,
+  endDate: todayLocalStr,
+  daysOfWeek: [1, 2, 3, 4, 5],
+  overwriteExisting: false,
   location: '',
   manager: '',
   participants: []
@@ -1987,7 +2130,7 @@ const form = ref({
 
 // COMPUTED VALUES
 const currentDateStr = computed(() => {
-  return currentDate.value.toISOString().slice(0, 10);
+  return formatLocalDate(currentDate.value);
 });
 
 const sessions = computed(() => roomSessionStore.sessions || []);
@@ -2482,10 +2625,17 @@ const filteredDaySessions = computed(() => {
 });
 
 // ══════════════════════════════════════════════════════════
-// MODAL AVAILABILITY COMPUTED (EVALUATED FOR form.value.date)
+// MODAL AVAILABILITY COMPUTED & DATE RANGE HELPERS
 // ══════════════════════════════════════════════════════════
+const modalEffectiveDate = computed(() => {
+  if (form.value.dateMode === 'range') {
+    return form.value.startDate || currentDateStr.value;
+  }
+  return form.value.date || currentDateStr.value;
+});
+
 const evaluatedModalFacilitators = computed(() => {
-  const dateStr = form.value.date || currentDateStr.value;
+  const dateStr = modalEffectiveDate.value;
   return getEvaluatedPersonsList(props.facilitators, dateStr, 'facilitator', sessions.value, currentEditingId.value);
 });
 
@@ -2499,16 +2649,107 @@ const unavailableModalFacilitators = computed(() => {
 
 const selectedManagerStatus = computed(() => {
   if (!form.value.manager) return null;
-  const dateStr = form.value.date || currentDateStr.value;
+  const dateStr = modalEffectiveDate.value;
   const fac = props.facilitators.find(f => (f.documentId || f.id) === form.value.manager);
   if (!fac) return null;
   return checkPersonDateAvailability(fac, dateStr, 'facilitator', sessions.value, currentEditingId.value);
 });
 
 const evaluatedModalParticipants = computed(() => {
-  const dateStr = form.value.date || currentDateStr.value;
+  const dateStr = modalEffectiveDate.value;
   return getEvaluatedPersonsList(props.participants, dateStr, 'participant', sessions.value, currentEditingId.value);
 });
+
+// Options de jours pour le mode période
+const weekDaysOptions = [
+  { id: 1, label: 'Lun', full: 'Lundi' },
+  { id: 2, label: 'Mar', full: 'Mardi' },
+  { id: 3, label: 'Mer', full: 'Mercredi' },
+  { id: 4, label: 'Jeu', full: 'Jeudi' },
+  { id: 5, label: 'Ven', full: 'Vendredi' },
+  { id: 6, label: 'Sam', full: 'Samedi' },
+  { id: 7, label: 'Dim', full: 'Dimanche' }
+];
+
+function setFormDaysPreset(preset) {
+  if (preset === 'workdays') {
+    form.value.daysOfWeek = [1, 2, 3, 4, 5];
+  } else if (preset === 'all') {
+    form.value.daysOfWeek = [1, 2, 3, 4, 5, 6, 7];
+  } else if (preset === 'same-day') {
+    const dStr = form.value.startDate || currentDateStr.value;
+    const [y, m, d] = dStr.split('-').map(Number);
+    const startDt = new Date(y, m - 1, d, 12, 0, 0);
+    const jsDay = startDt.getDay();
+    const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+    form.value.daysOfWeek = [dayOfWeek];
+  }
+}
+
+function toggleFormDay(dayId) {
+  const idx = form.value.daysOfWeek.indexOf(dayId);
+  if (idx === -1) {
+    form.value.daysOfWeek.push(dayId);
+    form.value.daysOfWeek.sort((a, b) => a - b);
+  } else {
+    if (form.value.daysOfWeek.length > 1) {
+      form.value.daysOfWeek.splice(idx, 1);
+    }
+  }
+}
+
+const modalTargetDates = computed(() => {
+  if (form.value.dateMode !== 'range') {
+    return form.value.date ? [form.value.date] : [];
+  }
+  if (!form.value.startDate || !form.value.endDate) return [];
+  if (form.value.startDate > form.value.endDate) return [];
+
+  const dates = [];
+  const [sY, sM, sD] = form.value.startDate.split('-').map(Number);
+  const [eY, eM, eD] = form.value.endDate.split('-').map(Number);
+  const start = new Date(sY, sM - 1, sD, 12, 0, 0);
+  const end = new Date(eY, eM - 1, eD, 12, 0, 0);
+  const maxDays = 180;
+  let count = 0;
+  const current = new Date(start);
+
+  while (current <= end && count < maxDays) {
+    const jsDay = current.getDay(); // 0 is Sun, 1 is Mon...
+    const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+    if (form.value.daysOfWeek.includes(dayOfWeek)) {
+      dates.push(formatLocalDate(current));
+    }
+    current.setDate(current.getDate() + 1);
+    count++;
+  }
+
+  return dates;
+});
+
+const modalExistingDatesCount = computed(() => {
+  if (!form.value.location || modalTargetDates.value.length === 0) return 0;
+  const locId = form.value.location;
+  return modalTargetDates.value.filter(dateStr => {
+    return sessions.value.some(s => s.date === dateStr && (s.location?.documentId === locId || s.location?.id === locId));
+  }).length;
+});
+
+function formatTargetDatesSummary(dates) {
+  if (!dates || dates.length === 0) return '';
+  if (dates.length <= 5) {
+    return dates.map(d => {
+      const [y, m, day] = d.split('-').map(Number);
+      const dt = new Date(y, m - 1, day, 12, 0, 0);
+      return dt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'numeric' });
+    }).join(', ');
+  }
+  const [fYear, fMonth, fDay] = dates[0].split('-').map(Number);
+  const first = new Date(fYear, fMonth - 1, fDay, 12, 0, 0).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const [lYear, lMonth, lDay] = dates[dates.length - 1].split('-').map(Number);
+  const last = new Date(lYear, lMonth - 1, lDay, 12, 0, 0).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  return `Du ${first} au ${last} (${dates.length} jours)`;
+}
 
 const modalAvailabilityCounts = computed(() => {
   const list = evaluatedModalParticipants.value;
@@ -2845,8 +3086,23 @@ function openCreateModal(defaultDate = null) {
   const firstAvailableFac = evaluatedFacs.find(f => f.isAvailable);
   const defaultFacId = firstAvailableFac ? (firstAvailableFac.documentId || firstAvailableFac.id) : (props.facilitators[0]?.documentId || props.facilitators[0]?.id || '');
 
+  const [initY, initM, initD] = dateToUse.split('-').map(Number);
+  const dt = new Date(initY, initM - 1, initD, 12, 0, 0);
+  const startOfWeek = getStartOfWeek(dt);
+  const friday = new Date(startOfWeek);
+  friday.setDate(friday.getDate() + 4);
+  const fridayStr = formatLocalDate(friday);
+  const defaultEndDate = fridayStr >= dateToUse 
+    ? fridayStr 
+    : dateToUse;
+
   form.value = {
+    dateMode: 'single',
     date: dateToUse,
+    startDate: dateToUse,
+    endDate: defaultEndDate,
+    daysOfWeek: [1, 2, 3, 4, 5],
+    overwriteExisting: false,
     location: props.locations.length > 0 ? (props.locations[0].documentId || props.locations[0].id) : '',
     manager: defaultFacId,
     participants: []
@@ -2861,7 +3117,12 @@ function editSession(session) {
   modalParticipantSearch.value = '';
   modalParticipantFilterTab.value = 'all';
   form.value = {
+    dateMode: 'single',
     date: session.date || currentDateStr.value,
+    startDate: session.date || currentDateStr.value,
+    endDate: session.date || currentDateStr.value,
+    daysOfWeek: [1, 2, 3, 4, 5],
+    overwriteExisting: false,
     location: session.location?.documentId || session.location?.id || '',
     manager: session.manager?.documentId || session.manager?.id || '',
     participants: (session.participants || []).map(p => p.documentId || p.id)
@@ -2880,8 +3141,23 @@ function openRoomForDay(location, dateStr) {
   const firstAvailableFac = evaluatedFacs.find(f => f.isAvailable);
   const defaultFacId = firstAvailableFac ? (firstAvailableFac.documentId || firstAvailableFac.id) : (props.facilitators[0]?.documentId || props.facilitators[0]?.id || '');
 
+  const [initY, initM, initD] = dateStr.split('-').map(Number);
+  const dt = new Date(initY, initM - 1, initD, 12, 0, 0);
+  const startOfWeek = getStartOfWeek(dt);
+  const friday = new Date(startOfWeek);
+  friday.setDate(friday.getDate() + 4);
+  const fridayStr = formatLocalDate(friday);
+  const defaultEndDate = fridayStr >= dateStr 
+    ? fridayStr 
+    : dateStr;
+
   form.value = {
+    dateMode: 'single',
     date: dateStr,
+    startDate: dateStr,
+    endDate: defaultEndDate,
+    daysOfWeek: [1, 2, 3, 4, 5],
+    overwriteExisting: false,
     location: location.documentId || location.id,
     manager: defaultFacId,
     participants: []
@@ -2913,24 +3189,117 @@ function clearAllParticipants() {
 
 async function saveSession() {
   formError.value = '';
-  if (!form.value.location || !form.value.manager || !form.value.date) {
-    formError.value = 'Veuillez remplir tous les champs obligatoires.';
+  if (!form.value.location || !form.value.manager) {
+    formError.value = 'Veuillez remplir tous les champs obligatoires (Lieu et Référent).';
     return;
   }
 
-  saving.value = true;
-  try {
-    if (isEditing.value && currentEditingId.value) {
-      await roomSessionStore.updateSession(currentEditingId.value, form.value);
-    } else {
-      await roomSessionStore.createSession(form.value);
+  // Cas 1 : Modification d'une session unique existante
+  if (isEditing.value && currentEditingId.value) {
+    if (!form.value.date) {
+      formError.value = 'Veuillez sélectionner une date valide.';
+      return;
     }
+    saving.value = true;
+    try {
+      await roomSessionStore.updateSession(currentEditingId.value, {
+        date: form.value.date,
+        location: form.value.location,
+        manager: form.value.manager,
+        participants: form.value.participants
+      });
+      closeModal();
+      await loadDataForCurrentView();
+    } catch (err) {
+      formError.value = err.message || "Erreur lors de la modification.";
+    } finally {
+      saving.value = false;
+    }
+    return;
+  }
+
+  // Cas 2 : Création sur une seule date
+  if (form.value.dateMode === 'single') {
+    if (!form.value.date) {
+      formError.value = 'Veuillez sélectionner une date valide.';
+      return;
+    }
+    saving.value = true;
+    try {
+      await roomSessionStore.createSession({
+        date: form.value.date,
+        location: form.value.location,
+        manager: form.value.manager,
+        participants: form.value.participants
+      });
+      closeModal();
+      await loadDataForCurrentView();
+    } catch (err) {
+      formError.value = err.message || "Erreur lors de l'enregistrement.";
+    } finally {
+      saving.value = false;
+    }
+    return;
+  }
+
+  // Cas 3 : Création sur une plage de dates (Génération en arrière-plan)
+  if (form.value.dateMode === 'range') {
+    if (!form.value.startDate || !form.value.endDate) {
+      formError.value = 'Veuillez renseigner la date de début et la date de fin.';
+      return;
+    }
+    if (form.value.startDate > form.value.endDate) {
+      formError.value = 'La date de fin doit être postérieure ou égale à la date de début.';
+      return;
+    }
+    const targetDates = [...modalTargetDates.value];
+    if (targetDates.length === 0) {
+      formError.value = 'Aucune date correspondante trouvée pour les critères sélectionnés.';
+      return;
+    }
+
+    const loc = props.locations.find(l => (l.documentId || l.id) === form.value.location);
+    const roomName = loc ? loc.name : 'la salle';
+    const payload = {
+      dates: targetDates,
+      location: form.value.location,
+      manager: form.value.manager,
+      participants: [...form.value.participants],
+      overwrite: form.value.overwriteExisting
+    };
+
+    // Fermer immédiatement la modale pour libérer l'utilisateur
     closeModal();
-    await loadDataForCurrentView();
-  } catch (err) {
-    formError.value = err.message || "Erreur lors de l'enregistrement.";
-  } finally {
-    saving.value = false;
+
+    // Activer le bandeau de progression en arrière-plan
+    backgroundJob.value = {
+      active: true,
+      current: 0,
+      total: targetDates.length,
+      roomName: roomName,
+      isDone: false
+    };
+
+    globalStore.addInfo(
+      `Création de ${targetDates.length} ouverture(s) de salle lancée en arrière-plan pour ${roomName}...`,
+      'Génération en arrière-plan'
+    );
+
+    // Exécution asynchrone non-bloquante
+    (async () => {
+      try {
+        await roomSessionStore.openRoomForDateRange(payload, (progress) => {
+          backgroundJob.value.current = progress.current;
+        });
+        await loadDataForCurrentView();
+      } catch (err) {
+        console.error('Erreur lors de la création des ouvertures en arrière-plan:', err);
+      } finally {
+        setTimeout(() => {
+          backgroundJob.value.active = false;
+        }, 1500);
+      }
+    })();
   }
 }
 
@@ -3119,7 +3488,7 @@ const calculatedTemplateTargetDates = computed(() => {
     for (let i = 0; i < 7; i++) {
       const d = new Date(s);
       d.setDate(d.getDate() + i);
-      dates.push(d.toISOString().slice(0, 10));
+      dates.push(formatLocalDate(d));
     }
   } else if (templateTargetPeriod.value === 'next-week') {
     const s = getStartOfWeek(now);
@@ -3127,21 +3496,23 @@ const calculatedTemplateTargetDates = computed(() => {
     for (let i = 0; i < 7; i++) {
       const d = new Date(s);
       d.setDate(d.getDate() + i);
-      dates.push(d.toISOString().slice(0, 10));
+      dates.push(formatLocalDate(d));
     }
   } else if (templateTargetPeriod.value === 'current-month') {
     const y = now.getFullYear();
     const m = now.getMonth();
     const lastDay = new Date(y, m + 1, 0).getDate();
     for (let d = 1; d <= lastDay; d++) {
-      dates.push(new Date(y, m, d).toISOString().slice(0, 10));
+      dates.push(formatLocalDate(new Date(y, m, d, 12, 0, 0)));
     }
   } else if (templateTargetPeriod.value === 'custom') {
-    const start = new Date(templateCustomStartDate.value);
-    const end = new Date(templateCustomEndDate.value);
+    const [sY, sM, sD] = templateCustomStartDate.value.split('-').map(Number);
+    const [eY, eM, eD] = templateCustomEndDate.value.split('-').map(Number);
+    const start = new Date(sY, sM - 1, sD, 12, 0, 0);
+    const end = new Date(eY, eM - 1, eD, 12, 0, 0);
     const cur = new Date(start);
     while (cur <= end) {
-      dates.push(cur.toISOString().slice(0, 10));
+      dates.push(formatLocalDate(cur));
       cur.setDate(cur.getDate() + 1);
     }
   }
@@ -3178,7 +3549,7 @@ async function applyTemplateGeneration() {
 async function quickCopyPreviousDay() {
   const cur = new Date(currentDate.value);
   cur.setDate(cur.getDate() - 1);
-  const prevDateStr = cur.toISOString().slice(0, 10);
+  const prevDateStr = formatLocalDate(cur);
 
   await roomSessionStore.duplicateDay(prevDateStr, [currentDateStr.value], {
     copyManager: true,
@@ -3194,7 +3565,7 @@ async function openWeeklyBatchOpen() {
   for (let i = 0; i < 5; i++) {
     const d = new Date(startOfWeek);
     d.setDate(d.getDate() + i);
-    targetDates.push(d.toISOString().slice(0, 10));
+    targetDates.push(formatLocalDate(d));
   }
   
   if (confirm(`Ouvrir toutes les salles pour les 5 jours ouvrés de cette semaine (${targetDates[0]} au ${targetDates[4]}) ?`)) {
@@ -3209,12 +3580,12 @@ async function openWeeklyBatchOpen() {
 
 async function duplicateWeekDayToOthers() {
   const startOfWeek = getStartOfWeek(currentDate.value);
-  const mondayStr = startOfWeek.toISOString().slice(0, 10);
+  const mondayStr = formatLocalDate(startOfWeek);
   const targets = [];
   for (let i = 1; i < 5; i++) {
     const d = new Date(startOfWeek);
     d.setDate(d.getDate() + i);
-    targets.push(d.toISOString().slice(0, 10));
+    targets.push(formatLocalDate(d));
   }
   await roomSessionStore.duplicateDay(mondayStr, targets, { copyManager: true, copyParticipants: true, overwrite: false });
   await loadDataForCurrentView();
@@ -5569,6 +5940,312 @@ select.form-input optgroup {
 .avail-reason-badge {
   font-size: 0.65rem;
   color: #5eead4;
+}
+
+/* DATE MODE SELECTOR & RANGE BOX */
+.date-mode-toggle-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-sm, 0.5rem);
+  padding: 3px;
+  gap: 4px;
+}
+
+.date-mode-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #94a3b8);
+  padding: 0.55rem 0.75rem;
+  border-radius: calc(var(--radius-sm, 0.5rem) - 2px);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.date-mode-btn:hover {
+  color: var(--text-primary, #f8fafc);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.date-mode-btn.active {
+  background: #0d9488;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35);
+}
+
+.range-date-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.range-date-box {
+  background: rgba(13, 148, 136, 0.05);
+  border: 1px solid rgba(13, 148, 136, 0.22);
+  border-radius: var(--radius-sm, 0.5rem);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.days-selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.days-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.days-selector-header label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.days-quick-presets {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.preset-pill-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-pill-btn:hover {
+  background: rgba(13, 148, 136, 0.25);
+  color: #5eead4;
+  border-color: rgba(13, 148, 136, 0.5);
+}
+
+.days-checkbox-pills {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.day-pill-toggle {
+  flex: 1;
+  min-width: 38px;
+  padding: 0.45rem 0.2rem;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted, #64748b);
+  border-radius: var(--radius-sm, 0.4rem);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.day-pill-toggle:hover {
+  border-color: rgba(94, 234, 212, 0.4);
+  color: var(--text-primary, #f8fafc);
+}
+
+.day-pill-toggle.active {
+  background: rgba(13, 148, 136, 0.3);
+  border-color: #0d9488;
+  color: #5eead4;
+  font-weight: 700;
+  box-shadow: inset 0 0 8px rgba(13, 148, 136, 0.2);
+}
+
+.day-pill-toggle.weekend.active {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  color: #fcd34d;
+}
+
+.range-summary-banner {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm, 0.45rem);
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.range-summary-banner.has-dates {
+  background: rgba(13, 148, 136, 0.15);
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  color: #ccfbf1;
+}
+
+.range-summary-banner.no-dates {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.range-summary-banner .summary-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.range-summary-banner .summary-icon {
+  font-size: 1.1rem;
+}
+
+.summary-detail {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.74rem;
+  opacity: 0.85;
+}
+
+.conflict-alert-box {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-sm, 0.45rem);
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #fde68a;
+}
+
+.conflict-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.conflict-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: #fef08a;
+}
+
+.range-mode-hint {
+  font-size: 0.75rem;
+  color: #5eead4;
+  background: rgba(13, 148, 136, 0.1);
+  border: 1px dashed rgba(13, 148, 136, 0.3);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm, 0.4rem);
+  margin: 0;
+}
+
+/* FLOATING BACKGROUND JOB CARD */
+.background-job-card {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 99999;
+  background: #0f172a;
+  border: 1.5px solid #0d9488;
+  border-radius: var(--radius-md, 0.85rem);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), 0 0 20px rgba(13, 148, 136, 0.3);
+  padding: 1rem 1.25rem;
+  min-width: 320px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  backdrop-filter: blur(10px);
+}
+
+.job-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.job-spinner {
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 2.5px solid rgba(94, 234, 212, 0.2);
+  border-top-color: #5eead4;
+  border-radius: 50%;
+  animation: jobSpinner 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.job-title-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.job-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.job-title-row strong {
+  font-size: 0.85rem;
+  color: #f8fafc;
+}
+
+.job-percentage {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #5eead4;
+}
+
+.job-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.job-progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.job-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0d9488, #5eead4);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.job-fade-enter-active,
+.job-fade-leave-active {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.job-fade-enter-from,
+.job-fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+@keyframes jobSpinner {
+  to { transform: rotate(360deg); }
 }
 
 .modal-actions {

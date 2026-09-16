@@ -46,6 +46,9 @@ services:
     restart: unless-stopped
     ports:
       - "5173:5173"
+    environment:
+      VITE_STRAPI_URL: https://strapi.clavier.dev
+      VITE_STRAPI_API_TOKEN: ${STRAPI_API_TOKEN:-a18990837aaec95b8a205895a214502e3e433b113d828102600bb0e46f629f84d1efd5296734655ecceea3cee5fef27bac4015e076935822070fdddf2a2a6a48d6faa8095255c524abdf3285659d0a3093aba46d803d4457cdf19108bf56a118e6d369dd976e06ce3905d2293c689ba71c203df20afe2bdcd6429651b333bc47}
     volumes:
       - ./frontend:/app
       - /app/node_modules

@@ -57,9 +57,10 @@
           <v-col cols="6" sm="4">
             <v-text-field
               v-model="formData.globalOpeningStart"
-              label="Ouverture globale *"
-              type="time"
-              prepend-inner-icon="mdi-clock-outline"
+              :rules="[v => !!v || 'Date de début requise']"
+              label="Début validité ouverture *"
+              type="date"
+              prepend-inner-icon="mdi-calendar-start"
               variant="outlined"
               density="comfortable"
               required
@@ -68,9 +69,13 @@
           <v-col cols="6" sm="4">
             <v-text-field
               v-model="formData.globalOpeningEnd"
-              label="Fermeture globale *"
-              type="time"
-              prepend-inner-icon="mdi-clock-check-outline"
+              :rules="[
+                v => !!v || 'Date de fin requise',
+                v => !formData.globalOpeningStart || v >= formData.globalOpeningStart || 'Doit être >= date de début'
+              ]"
+              label="Fin validité ouverture *"
+              type="date"
+              prepend-inner-icon="mdi-calendar-end"
               variant="outlined"
               density="comfortable"
               required
@@ -305,7 +310,7 @@
         <v-btn color="grey-lighten-1" variant="text" @click="$emit('cancel')" class="text-none">
           Annuler
         </v-btn>
-        <v-btn color="primary" variant="flat" @click="save" :disabled="!valid" class="text-none px-5">
+        <v-btn color="primary" variant="flat" @click="save" class="text-none px-5">
           💾 Enregistrer le lieu
         </v-btn>
       </div>
@@ -329,12 +334,29 @@ export default {
     const valid = ref(false);
     const form = ref(null);
 
+    const getDefaultDates = () => {
+      const year = new Date().getFullYear();
+      return {
+        start: `${year}-01-01`,
+        end: `${year + 1}-12-31`
+      };
+    };
+
+    const extractDateOnly = (val, fallback) => {
+      if (!val) return fallback;
+      if (typeof val === 'string' && val.length >= 10) {
+        return val.substring(0, 10);
+      }
+      return fallback;
+    };
+
+    const defaultDates = getDefaultDates();
     const formData = ref({
       name: '',
       address: '',
       capacity: 10,
-      globalOpeningStart: '08:00',
-      globalOpeningEnd: '18:00',
+      globalOpeningStart: defaultDates.start,
+      globalOpeningEnd: defaultDates.end,
     });
 
     const weeklyClosures = ref([]);
@@ -380,13 +402,14 @@ export default {
     };
 
     const initForm = () => {
+      const dates = getDefaultDates();
       if (props.location) {
         formData.value = {
           name: props.location.name || '',
           address: props.location.address || '',
           capacity: props.location.capacity || 10,
-          globalOpeningStart: props.location.globalOpeningStart ? props.location.globalOpeningStart.substring(0, 5) : '08:00',
-          globalOpeningEnd: props.location.globalOpeningEnd ? props.location.globalOpeningEnd.substring(0, 5) : '18:00',
+          globalOpeningStart: extractDateOnly(props.location.globalOpeningStart, dates.start),
+          globalOpeningEnd: extractDateOnly(props.location.globalOpeningEnd, dates.end),
         };
 
         // Parse weekly closures
@@ -429,8 +452,8 @@ export default {
           name: '',
           address: '',
           capacity: 10,
-          globalOpeningStart: '08:00',
-          globalOpeningEnd: '18:00',
+          globalOpeningStart: dates.start,
+          globalOpeningEnd: dates.end,
         };
         weeklyClosures.value = [];
         specificClosures.value = [];
@@ -540,37 +563,39 @@ export default {
       });
     };
 
-    const save = () => {
-      if (form.value && form.value.validate()) {
-        const formattedWeekly = weeklyClosures.value
-          .filter(wc => wc.dayOfWeek && wc.startTime && wc.endTime)
-          .map(wc => ({
-            dayOfWeek: wc.dayOfWeek,
-            startTime: wc.startTime.length === 5 ? `${wc.startTime}:00.000` : wc.startTime,
-            endTime: wc.endTime.length === 5 ? `${wc.endTime}:00.000` : wc.endTime,
-            reason: wc.reason || ''
-          }));
+    const save = async () => {
+      if (!form.value) return;
+      const { valid: isValid } = await form.value.validate();
+      if (!isValid) return;
 
-        const formattedSpecific = specificClosures.value
-          .filter(sc => sc.startDate && sc.endDate)
-          .map(sc => ({
-            startDate: new Date(sc.startDate).toISOString(),
-            endDate: new Date(sc.endDate).toISOString(),
-            reason: sc.reason || ''
-          }));
+      const formattedWeekly = weeklyClosures.value
+        .filter(wc => wc.dayOfWeek && wc.startTime && wc.endTime)
+        .map(wc => ({
+          dayOfWeek: wc.dayOfWeek,
+          startTime: wc.startTime.length === 5 ? `${wc.startTime}:00.000` : wc.startTime,
+          endTime: wc.endTime.length === 5 ? `${wc.endTime}:00.000` : wc.endTime,
+          reason: wc.reason || ''
+        }));
 
-        const formattedData = {
-          name: formData.value.name,
-          address: formData.value.address,
-          capacity: parseInt(formData.value.capacity) || 1,
-          globalOpeningStart: `${formData.value.globalOpeningStart}:00.000`,
-          globalOpeningEnd: `${formData.value.globalOpeningEnd}:00.000`,
-          weeklyClosures: formattedWeekly,
-          specificClosures: formattedSpecific
-        };
+      const formattedSpecific = specificClosures.value
+        .filter(sc => sc.startDate && sc.endDate)
+        .map(sc => ({
+          startDate: new Date(sc.startDate).toISOString(),
+          endDate: new Date(sc.endDate).toISOString(),
+          reason: sc.reason || ''
+        }));
 
-        emit('save', formattedData);
-      }
+      const formattedData = {
+        name: formData.value.name,
+        address: formData.value.address,
+        capacity: parseInt(formData.value.capacity) || 1,
+        globalOpeningStart: formData.value.globalOpeningStart,
+        globalOpeningEnd: formData.value.globalOpeningEnd,
+        weeklyClosures: formattedWeekly,
+        specificClosures: formattedSpecific
+      };
+
+      emit('save', formattedData);
     };
 
     return {

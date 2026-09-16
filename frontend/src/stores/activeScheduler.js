@@ -72,6 +72,10 @@ export const useActiveSchedulerStore = defineStore('activeScheduler', () => {
     return await activeStore.value.batchDeleteSlots(slotIds);
   }
 
+  async function createRecurringSlots(payload, onProgress) {
+    return await activeStore.value.createRecurringSlots(payload, onProgress);
+  }
+
   return {
     locations,
     activities,
@@ -94,6 +98,7 @@ export const useActiveSchedulerStore = defineStore('activeScheduler', () => {
     createSlotForDate,
     duplicateDaySlots,
     batchDeleteSlots,
+    createRecurringSlots,
     activeStore
   };
 });

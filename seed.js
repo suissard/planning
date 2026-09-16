@@ -13,11 +13,35 @@
 const fs = require('fs');
 const path = require('path');
 
+// ─── Chargement des variables d'environnement (.env) ─────────────────────────
+function loadEnvFile(filePath) {
+  if (fs.existsSync(filePath)) {
+    const lines = fs.readFileSync(filePath, 'utf-8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx !== -1) {
+        const key = trimmed.slice(0, eqIdx).trim();
+        const value = trimmed.slice(eqIdx + 1).trim().replace(/^['"]|['"]$/g, '');
+        if (!process.env[key]) {
+          process.env[key] = value;
+        }
+      }
+    }
+  }
+}
+loadEnvFile(path.join(__dirname, '.env'));
+
 // ─── Configuration ───────────────────────────────────────────────────────────
-const STRAPI_URL = process.env.STRAPI_URL || 'http://localhost:1337';
-const API_TOKEN = process.env.STRAPI_API_TOKEN
-  || '81fa8d8d37c6be0538193845de5d69c9b6237a1198b5d8c775d3cceb758b3954d3c5de63d816350d7c1315fdf686efdb2d92fc63907f3eac4a6d190490727b9d6c83bba6422240934a3dc395c1a614c68f6453ea146ebf1927ebda95b82bbc99fe9ee521670d648b6b137e8e874b872c70d40018e934fc1b6bcca63168ead71f';
+const STRAPI_URL = process.env.STRAPI_URL || process.env.VITE_STRAPI_URL || 'https://strapi.clavier.dev';
+const API_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_CONTENT_API_TOKEN || process.env.VITE_STRAPI_API_TOKEN;
 const DATA_DIR = path.join(__dirname, 'data');
+
+if (!API_TOKEN) {
+  console.error('\x1b[31m❌ Erreur : STRAPI_API_TOKEN manquant dans les variables d\'environnement ou le fichier .env\x1b[0m');
+  process.exit(1);
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const C = {
@@ -107,15 +131,66 @@ async function seedLocations() {
   return created;
 }
 
-async function seedFacilitators() {
+async function getOrCreateUser(firstName, lastName, email, roleId, existingUsersMap) {
+  const key = email.toLowerCase();
+  if (existingUsersMap.has(key)) {
+    return existingUsersMap.get(key);
+  }
+  const cleanUsername = (firstName + '_' + lastName)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+    .toLowerCase() + '_' + Math.floor(Math.random() * 1000);
+
+  const newUser = await apiRequest('/api/users', {
+    method: 'POST',
+    body: {
+      username: cleanUsername,
+      email: email,
+      password: 'Password123!',
+      confirmed: true,
+      blocked: false,
+      role: roleId,
+    },
+  });
+  existingUsersMap.set(key, newUser);
+  return newUser;
+}
+
+async function loadExistingUsers() {
+  try {
+    const users = await apiRequest('/api/users');
+    const map = new Map();
+    for (const u of users) {
+      map.set(u.email.toLowerCase(), u);
+    }
+    return map;
+  } catch (e) {
+    return new Map();
+  }
+}
+
+async function seedFacilitators(existingUsersMap) {
   const facilitators = loadJSON('facilitators.json');
   const created = {};
 
   for (const fac of facilitators) {
     const { _authorizedActivities, ...data } = fac;
+    let userDocId = null;
+    try {
+      const user = await getOrCreateUser(fac.firstName, fac.lastName, fac.email, 3, existingUsersMap);
+      userDocId = user.documentId;
+    } catch (e) {
+      // ignore user creation error if role not matching
+    }
+
     const res = await apiRequest('/api/facilitators', {
       method: 'POST',
-      body: { data },
+      body: {
+        data: {
+          ...data,
+          ...(userDocId ? { user: userDocId } : {}),
+        },
+      },
     });
     created[fac.email] = {
       documentId: res.data.documentId,
@@ -123,23 +198,34 @@ async function seedFacilitators() {
     };
   }
 
-  log('👨‍🏫', `${C.green}${Object.keys(created).length} animateurs créés${C.reset}`);
+  log('👨‍🏫', `${C.green}${Object.keys(created).length} animateurs créés et liés à un utilisateur${C.reset}`);
   return created;
 }
 
-async function seedParticipants() {
+async function seedParticipants(existingUsersMap) {
   const participants = loadJSON('participants.json');
   const created = {};
 
   for (const part of participants) {
+    let userDocId = null;
+    try {
+      const user = await getOrCreateUser(part.firstName, part.lastName, part.email, 1, existingUsersMap);
+      userDocId = user.documentId;
+    } catch (e) {}
+
     const res = await apiRequest('/api/participants', {
       method: 'POST',
-      body: { data: part },
+      body: {
+        data: {
+          ...part,
+          ...(userDocId ? { user: userDocId } : {}),
+        },
+      },
     });
     created[part.email] = res.data.documentId;
   }
 
-  log('👥', `${C.green}${Object.keys(created).length} participants créés${C.reset}`);
+  log('👥', `${C.green}${Object.keys(created).length} participants créés et liés à un utilisateur${C.reset}`);
   return created;
 }
 
@@ -424,9 +510,10 @@ async function main() {
   // 3. Seed (ordre des dépendances)
   log('🌱', `${C.yellow}Injection des données de développement...${C.reset}`);
   console.log('');
+  const existingUsersMap = await loadExistingUsers();
   const locationsMap = await seedLocations();
-  const facilitatorsMap = await seedFacilitators();
-  const participantsMap = await seedParticipants();
+  const facilitatorsMap = await seedFacilitators(existingUsersMap);
+  const participantsMap = await seedParticipants(existingUsersMap);
   const activitiesMap = await seedActivityTemplates(facilitatorsMap);
   const roomSessionsMap = await seedRoomSessions(locationsMap, facilitatorsMap, participantsMap);
   await seedRoomSessionTemplates(locationsMap, facilitatorsMap, participantsMap);

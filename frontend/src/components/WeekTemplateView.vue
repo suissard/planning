@@ -946,14 +946,19 @@ function getStartOfWeek(date) {
 const calculatedTargetDates = computed(() => {
   if (!customStartDate.value || !customEndDate.value) return [];
   const dates = [];
-  const curr = new Date(customStartDate.value + 'T00:00:00');
-  const end = new Date(customEndDate.value + 'T00:00:00');
+  const [sY, sM, sD] = customStartDate.value.split('-').map(Number);
+  const [eY, eM, eD] = customEndDate.value.split('-').map(Number);
+  const curr = new Date(sY, sM - 1, sD, 12, 0, 0);
+  const end = new Date(eY, eM - 1, eD, 12, 0, 0);
 
   while (curr <= end) {
     const jsDay = curr.getDay();
     const dayOfWeek = jsDay === 0 ? 7 : jsDay;
     if (applyAllowedDays.value.includes(dayOfWeek)) {
-      dates.push(curr.toISOString().slice(0, 10));
+      const y = curr.getFullYear();
+      const m = String(curr.getMonth() + 1).padStart(2, '0');
+      const d = String(curr.getDate()).padStart(2, '0');
+      dates.push(`${y}-${m}-${d}`);
     }
     curr.setDate(curr.getDate() + 1);
   }

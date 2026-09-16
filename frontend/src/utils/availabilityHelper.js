@@ -172,3 +172,17 @@ export function getEvaluatedPersonsList(persons = [], dateStr, type = 'participa
     return nameA.localeCompare(nameB, 'fr');
   });
 }
+
+/**
+ * Format a Date object (or date string) to local YYYY-MM-DD string
+ * avoiding timezone offset shifts (such as UTC midnight falling on previous day).
+ */
+export function formatLocalDate(dateObj) {
+  if (!dateObj) return '';
+  const d = typeof dateObj === 'string' ? new Date(dateObj) : dateObj;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
