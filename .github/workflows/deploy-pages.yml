@@ -1,0 +1,63 @@
+name: Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend for GitHub Pages
+        run: npm run build
+        working-directory: frontend
+        env:
+          GITHUB_PAGES: 'true'
+          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH || '' }}
+          VITE_STRAPI_URL: ${{ vars.VITE_STRAPI_URL || 'https://strapi.clavier.dev' }}
+          VITE_STRAPI_API_TOKEN: ${{ secrets.VITE_STRAPI_API_TOKEN || 'a18990837aaec95b8a205895a214502e3e433b113d828102600bb0e46f629f84d1efd5296734655ecceea3cee5fef27bac4015e076935822070fdddf2a2a6a48d6faa8095255c524abdf3285659d0a3093aba46d803d4457cdf19108bf56a118e6d369dd976e06ce3905d2293c689ba71c203df20afe2bdcd6429651b333bc47' }}
+
+      - name: Setup SPA fallback (404.html)
+        run: cp dist/index.html dist/404.html
+        working-directory: frontend
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

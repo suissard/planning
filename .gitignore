@@ -4,8 +4,10 @@ jspm_packages/
 web_stage/
 
 # Build outputs
+dist/
 dist-ssr/
 build/
+frontend/dist/
 .temp/
 .tmp/
 out/
