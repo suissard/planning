@@ -1,5 +1,5 @@
 <template>
-  <div class="room-sessions-root printable-room-sessions" :class="{ 'is-dragging-active': !!activeDragType, ['drag-' + activeDragType]: !!activeDragType }">
+  <div class="room-sessions-root printable-room-sessions">
     
     <!-- ════════════════ TOP HEADER CONTROLS (NO PRINT) ════════════════ -->
     <div class="view-header no-print">
@@ -10,10 +10,9 @@
             <div class="title-with-pill">
               <h2>Gestion des Ouvertures de Salles</h2>
               <span class="mode-tag-pill">Admin</span>
-              <span class="dnd-badge-pill">✨ Glisser-Déposer Actif</span>
             </div>
             <p class="subtitle">
-              Remplissez facilement votre semaine ou vos journées : glissez des salles, assignez des gestionnaires et affectez des bénéficiaires.
+              Gérez facilement votre semaine ou vos journées : ouvrez des salles, affectez des gestionnaires et ajoutez des bénéficiaires.
             </p>
           </div>
         </div>
@@ -108,18 +107,6 @@
 
         <!-- ACTION TOOLS (Édition & Remplissage) -->
         <div class="action-tools-group">
-          <!-- Toggle Side Palette Button -->
-          <button 
-            type="button" 
-            class="tool-btn palette-toggle-btn"
-            :class="{ active: isPaletteOpen }"
-            @click="isPaletteOpen = !isPaletteOpen"
-            title="Afficher/masquer le panneau latéral de glisser-déposer"
-          >
-            <span class="btn-icon">✨</span>
-            <span>Palette D&D ({{ isPaletteOpen ? 'Masquer' : 'Afficher' }})</span>
-          </button>
-
           <button type="button" class="action-btn primary-btn" @click="openCreateModal()" title="Ouvrir une salle">
             ➕ Ouvrir une Salle
           </button>
@@ -230,8 +217,8 @@
       <button class="action-btn secondary-btn mt-2" @click="loadDataForCurrentView">Réessayer</button>
     </div>
 
-    <!-- ════════════════ DND WORKSPACE CONTAINER ════════════════ -->
-    <div v-else class="dnd-main-layout" :class="{ 'palette-visible': isPaletteOpen }">
+    <!-- ════════════════ PLANNING WORKSPACE CONTAINER ════════════════ -->
+    <div v-else class="planning-main-layout">
       <!-- Translucent Canvas Loading Overlay during fetch -->
       <div v-if="roomSessionStore.loading" class="canvas-loading-overlay">
         <div class="loading-card-badge">
@@ -262,9 +249,9 @@
                   class="sub-pill-btn" 
                   :class="{ active: weekSubView === 'kanban' }"
                   @click="weekSubView = 'kanban'"
-                  title="Vue par colonnes interactives avec Glisser-Déposer"
+                  title="Vue par colonnes"
                 >
-                  📋 Colonnes Drag & Drop
+                  📋 Colonnes
                 </button>
                 <button 
                   type="button" 
@@ -286,21 +273,13 @@
             </div>
           </div>
 
-          <!-- A. KANBAN DAY COLUMNS (PRIMARY D&D VIEW) -->
+          <!-- A. KANBAN DAY COLUMNS (WEEK CARDS VIEW) -->
           <div v-if="weekSubView === 'kanban'" class="week-kanban-board">
             <div 
               v-for="day in weekDaysList" 
               :key="day.dateKey" 
               class="kanban-day-column"
-              :class="{ 
-                'is-today': day.isToday,
-                'drop-hover': hoveredDropZone === 'day-' + day.dateKey,
-                'drag-over-valid': activeDragType === 'room'
-              }"
-              @dragover.prevent="onDragOver($event, 'room')"
-              @dragenter.prevent="onDragEnter($event, 'day-' + day.dateKey)"
-              @dragleave="onDragLeave($event, 'day-' + day.dateKey)"
-              @drop="onDropOnDay($event, day.dateKey)"
+              :class="{ 'is-today': day.isToday }"
             >
               <!-- Column Header -->
               <div class="column-header" @click="goToDayView(day.date)">
@@ -324,15 +303,6 @@
                 </div>
               </div>
 
-              <!-- Quick Room Drop Target Zone when dragging a room -->
-              <div 
-                v-if="activeDragType === 'room'" 
-                class="column-quick-drop-zone"
-                :class="{ 'target-active': hoveredDropZone === 'day-' + day.dateKey }"
-              >
-                <span>➕ Déposer la salle ici pour ouvrir</span>
-              </div>
-
               <!-- Column Sessions List -->
               <div class="column-sessions-list">
                 <!-- Empty Column Placeholder -->
@@ -343,7 +313,7 @@
                 >
                   <span class="empty-icon">🏢</span>
                   <p>Aucune salle ouverte</p>
-                  <span class="empty-hint">Glissez une salle ici ou cliquez pour ouvrir</span>
+                  <span class="empty-hint">Cliquez pour ouvrir une salle</span>
                 </div>
 
                 <!-- Session Cards in this day -->
@@ -353,25 +323,9 @@
                   class="kanban-session-card"
                   :class="[
                     getCapacityClass(session),
-                    { 
-                      'card-conflict': getSessionConflictInfo(session).hasConflict,
-                      'card-drop-active': hoveredDropZone === 'sess-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
-                      'session-already-present': isDraggedPersonInSession(session)
-                    }
+                    { 'card-conflict': getSessionConflictInfo(session).hasConflict }
                   ]"
-                  @dragover="onDragOver($event, 'any', session)"
-                  @dragenter.prevent="onDragEnter($event, 'sess-' + (session.documentId || session.id))"
-                  @dragleave="onDragLeave($event, 'sess-' + (session.documentId || session.id))"
-                  @drop="onDropOnSession($event, session)"
                 >
-                  <!-- Orange Banner when dragged person is already in this session -->
-                  <div v-if="isDraggedPersonInSession(session)" class="session-already-present-banner">
-                    <span class="banner-icon">🟠</span>
-                    <span class="banner-text">
-                      {{ activeDragType === 'participant' ? 'Bénéficiaire déjà présent dans cette salle' : 'Référent déjà assigné à cette salle' }}
-                    </span>
-                  </div>
-
                   <!-- Card Top: Room Name & Capacity -->
                   <div class="kcard-header">
                     <div class="kcard-room-info">
@@ -418,28 +372,19 @@
                     <span>⚠️ {{ getSessionConflictInfo(session).conflictSummary }}</span>
                   </div>
 
-                  <!-- 👨‍💼 Manager Slot (D&D Target & Draggable) -->
+                  <!-- 👨‍💼 Manager Slot -->
                   <div 
                     class="kcard-manager-slot"
                     :class="{ 
                       'has-manager': !!session.manager,
                       'no-manager': !session.manager,
-                      'manager-unavail': getSessionConflictInfo(session).unavailableManager,
-                      'drop-hover-slot': hoveredDropZone === 'mgr-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
-                      'target-disabled': activeDragType === 'manager' && isDraggedPersonInSession(session)
+                      'manager-unavail': getSessionConflictInfo(session).unavailableManager
                     }"
-                    @dragover.stop="onDragOver($event, 'manager', session)"
-                    @dragenter.prevent.stop="onDragEnter($event, 'mgr-' + (session.documentId || session.id))"
-                    @dragleave.stop="onDragLeave($event, 'mgr-' + (session.documentId || session.id))"
-                    @drop.stop="onDropOnSession($event, session, 'manager')"
                   >
                     <template v-if="session.manager">
                       <div 
-                        class="manager-chip-draggable"
-                        draggable="true"
-                        @dragstart="onDragStart($event, { type: 'manager', facilitator: session.manager, fromSessionId: session.documentId || session.id })"
-                        @dragend="onDragEnd"
-                        title="Glisser pour déplacer le référent ou vers la corbeille pour désaffecter"
+                        class="manager-chip"
+                        title="Référent affecté"
                       >
                         <span class="mgr-avatar">{{ getSessionConflictInfo(session).unavailableManager ? '🔴' : '👨‍💼' }}</span>
                         <div class="mgr-details">
@@ -450,31 +395,29 @@
                           type="button" 
                           class="unassign-btn no-print" 
                           @click.stop="unassignManagerQuick(session)" 
-                          title="Retirer ce gestionnaire référent"
+                          title="Retirer le référent"
                         >
                           <i class="mdi mdi-close"></i>
                         </button>
                       </div>
                     </template>
                     <template v-else>
-                      <div class="empty-manager-drop" @click="editSession(session)">
-                        <span class="drop-icon">👉</span>
-                        <span class="drop-text">Glisser un référent ici</span>
-                      </div>
+                      <button
+                        type="button"
+                        class="empty-manager-action"
+                        @click="editSession(session)"
+                        title="Affecter un référent"
+                      >
+                        <span>👨‍💼</span>
+                        <span>Affecter un référent</span>
+                      </button>
                     </template>
                   </div>
 
-                  <!-- 👥 Participants Section (D&D List & Drop Zone - Collapsible) -->
+                  <!-- 👥 Participants Section (Collapsible) -->
                   <div 
                     class="kcard-participants-section"
-                    :class="{ 
-                      'drop-hover-parts': hoveredDropZone === 'parts-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
-                      'is-collapsed-parts': !isSessionParticipantsExpanded(session)
-                    }"
-                    @dragover="onDragOver($event, 'participant', session)"
-                    @dragenter.prevent="onDragEnter($event, 'parts-' + (session.documentId || session.id))"
-                    @dragleave="onDragLeave($event, 'parts-' + (session.documentId || session.id))"
-                    @drop="onDropOnSession($event, session, 'participant')"
+                    :class="{ 'is-collapsed-parts': !isSessionParticipantsExpanded(session) }"
                   >
                     <div 
                       class="parts-header-row is-clickable" 
@@ -490,7 +433,7 @@
                           type="button" 
                           class="mini-link-btn no-print" 
                           @click.stop="openInlineAddParticipant(session)"
-                          title="Ajouter des participants"
+                          title="Ajouter des bénéficiaires"
                         >
                           ➕
                         </button>
@@ -527,32 +470,16 @@
                         </span>
                       </div>
 
-                      <!-- Quick Drop Box when collapsed -->
-                      <div 
-                        class="participant-drop-target-box compact"
-                        :class="{ 
-                          'target-highlight': activeDragType === 'participant' && !isDraggedPersonInSession(session),
-                          'target-disabled': activeDragType === 'participant' && isDraggedPersonInSession(session)
-                        }"
-                      >
-                        <span class="drop-hint-icon">{{ isDraggedPersonInSession(session) ? '⛔' : '📥' }}</span>
-                        <span class="drop-hint-text">
-                          {{ isDraggedPersonInSession(session) ? 'Déjà présent dans cette salle' : (getParticipantCount(session) === 0 ? 'Glisser des bénéficiaires ici' : '+ Déposer un bénéficiaire') }}
-                        </span>
-                      </div>
                     </div>
 
-                    <!-- ── B. EXPANDED VIEW (Full Draggable Chips List) ── -->
+                    <!-- ── B. EXPANDED VIEW (Full Chips List) ── -->
                     <div v-show="isSessionParticipantsExpanded(session)" class="parts-chips-container">
                       <div 
                         v-for="p in getParticipants(session)" 
                         :key="p.documentId || p.id"
-                        class="participant-chip-draggable"
+                        class="participant-chip"
                         :class="{ 'chip-unavail': isParticipantUnavailableInSession(p, session) }"
-                        draggable="true"
-                        @dragstart="onDragStart($event, { type: 'participant', participant: p, fromSessionId: session.documentId || session.id })"
-                        @dragend="onDragEnd"
-                        :title="isParticipantUnavailableInSession(p, session) ? getParticipantUnavailabilityTitle(p, session) + ' — Glisser pour déplacer' : 'Glisser pour déplacer vers une autre salle/jour ou vers la corbeille'"
+                        :title="isParticipantUnavailableInSession(p, session) ? getParticipantUnavailabilityTitle(p, session) : 'Bénéficiaire affecté'"
                       >
                         <span class="chip-icon">{{ isParticipantUnavailableInSession(p, session) ? '⚠️' : '👤' }}</span>
                         <span class="chip-name">{{ p.lastName }} {{ p.firstName }}</span>
@@ -564,20 +491,6 @@
                         >
                           <i class="mdi mdi-close"></i>
                         </button>
-                      </div>
-
-                      <!-- Empty participant drop zone when room has space -->
-                      <div 
-                        class="participant-drop-target-box"
-                        :class="{ 
-                          'target-highlight': activeDragType === 'participant' && !isDraggedPersonInSession(session),
-                          'target-disabled': activeDragType === 'participant' && isDraggedPersonInSession(session)
-                        }"
-                      >
-                        <span class="drop-hint-icon">{{ isDraggedPersonInSession(session) ? '⛔' : '📥' }}</span>
-                        <span class="drop-hint-text">
-                          {{ isDraggedPersonInSession(session) ? 'Déjà présent dans cette salle' : (getParticipantCount(session) === 0 ? 'Glisser des bénéficiaires ici' : '+ Déposer un bénéficiaire') }}
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -627,15 +540,7 @@
                     v-for="day in weekDaysList" 
                     :key="day.dateKey" 
                     class="matrix-slot-cell"
-                    :class="{ 
-                      'cell-has-session': !!getSessionForRoomAndDate(loc, day.dateKey),
-                      'cell-drop-hover': hoveredDropZone === 'mat-' + loc.id + '-' + day.dateKey && !isDraggedPersonInSession(getSessionForRoomAndDate(loc, day.dateKey)),
-                      'cell-already-present': isDraggedPersonInSession(getSessionForRoomAndDate(loc, day.dateKey))
-                    }"
-                    @dragover="onDragOver($event, 'any', getSessionForRoomAndDate(loc, day.dateKey))"
-                    @dragenter.prevent="onDragEnter($event, 'mat-' + loc.id + '-' + day.dateKey)"
-                    @dragleave="onDragLeave($event, 'mat-' + loc.id + '-' + day.dateKey)"
-                    @drop="onMatrixCellDrop($event, loc, day.dateKey)"
+                    :class="{ 'cell-has-session': !!getSessionForRoomAndDate(loc, day.dateKey) }"
                   >
                     <!-- If Open Session Exists -->
                     <div 
@@ -643,10 +548,7 @@
                       class="matrix-session-pill"
                       :class="[
                         getCapacityClass(getSessionForRoomAndDate(loc, day.dateKey)),
-                        { 
-                          'matrix-pill-conflict': getSessionConflictInfo(getSessionForRoomAndDate(loc, day.dateKey)).hasConflict,
-                          'matrix-already-present': isDraggedPersonInSession(getSessionForRoomAndDate(loc, day.dateKey))
-                        }
+                        { 'matrix-pill-conflict': getSessionConflictInfo(getSessionForRoomAndDate(loc, day.dateKey)).hasConflict }
                       ]"
                       @click="editSession(getSessionForRoomAndDate(loc, day.dateKey))"
                     >
@@ -685,7 +587,7 @@
                       v-else 
                       class="matrix-closed-cell"
                       @click="openRoomForDay(loc, day.dateKey)"
-                      title="Cliquez ou glissez pour ouvrir cette salle ce jour-là"
+                      title="Cliquez pour ouvrir cette salle ce jour-là"
                     >
                       <span class="closed-label">Fermée</span>
                       <button type="button" class="quick-open-btn no-print">➕ Ouvrir</button>
@@ -698,7 +600,7 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════ -->
-        <!-- 2. VUE JOUR (DETAILED DAY VIEW WITH D&D)            -->
+        <!-- 2. VUE JOUR (DETAILED DAY VIEW)                     -->
         <!-- ═══════════════════════════════════════════════════ -->
         <div v-else-if="viewMode === 'day'" class="day-view-container">
           <!-- Room Filter & Search bar for Day view -->
@@ -761,28 +663,11 @@
             </div>
           </div>
 
-          <!-- Day Drop Zone for Opening a Room -->
-          <div 
-            class="day-drop-open-room-banner no-print"
-            :class="{ 
-              'banner-active': activeDragType === 'room',
-              'banner-hover': hoveredDropZone === 'day-banner-' + currentDateStr
-            }"
-            @dragover.prevent="onDragOver($event, 'room')"
-            @dragenter.prevent="onDragEnter($event, 'day-banner-' + currentDateStr)"
-            @dragleave="onDragLeave($event, 'day-banner-' + currentDateStr)"
-            @drop="onDropOnDay($event, currentDateStr)"
-          >
-            <span class="banner-icon">🚪</span>
-            <span class="banner-text">Glissez une salle depuis la palette ici pour l'ouvrir aujourd'hui</span>
-            <button type="button" class="mini-tool-btn" @click="openCreateModal(currentDateStr)">➕ Ouvrir manuellement</button>
-          </div>
-
           <!-- Empty Day State -->
           <div v-if="filteredDaySessions.length === 0" class="empty-state">
             <div class="empty-illustration">🏢</div>
             <h3>Aucune salle ouverte pour le {{ formatFullDate(currentDate) }}</h3>
-            <p>Glissez une salle depuis la palette latérale ou appliquez la semaine type pour démarrer.</p>
+            <p>Ouvrez une salle ou appliquez la semaine type pour démarrer.</p>
             <div class="empty-actions-row">
               <button class="action-btn primary-btn" @click="openCreateModal()">
                 ➕ Ouvrir une Salle
@@ -804,23 +689,9 @@
               class="session-card"
               :class="{ 
                 'card-overbooked': isOverCapacity(session),
-                'card-has-conflict': getSessionConflictInfo(session).hasConflict,
-                'card-drop-active': hoveredDropZone === 'day-sess-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
-                'session-already-present': isDraggedPersonInSession(session)
+                'card-has-conflict': getSessionConflictInfo(session).hasConflict
               }"
-              @dragover="onDragOver($event, 'any', session)"
-              @dragenter.prevent="onDragEnter($event, 'day-sess-' + (session.documentId || session.id))"
-              @dragleave="onDragLeave($event, 'day-sess-' + (session.documentId || session.id))"
-              @drop="onDropOnSession($event, session)"
             >
-              <!-- Orange Banner when dragged person is already in this session (Day View) -->
-              <div v-if="isDraggedPersonInSession(session)" class="session-already-present-banner">
-                <span class="banner-icon">🟠</span>
-                <span class="banner-text">
-                  {{ activeDragType === 'participant' ? 'Bénéficiaire déjà présent dans cette salle' : 'Référent déjà assigné à cette salle' }}
-                </span>
-              </div>
-
               <!-- Card Header -->
               <div class="card-header">
                 <div class="room-title-block">
@@ -875,19 +746,13 @@
                   </div>
                 </div>
 
-                <!-- Manager Info Banner & D&D Slot -->
+                <!-- Manager Info Banner -->
                 <div 
                   class="manager-banner" 
                   :class="{ 
                     'manager-unassigned': !session.manager,
-                    'manager-banner-unavail': getSessionConflictInfo(session).unavailableManager,
-                    'drop-hover-slot': hoveredDropZone === 'day-mgr-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
-                    'target-disabled': activeDragType === 'manager' && isDraggedPersonInSession(session)
+                    'manager-banner-unavail': getSessionConflictInfo(session).unavailableManager
                   }"
-                  @dragover.stop="onDragOver($event, 'manager', session)"
-                  @dragenter.prevent.stop="onDragEnter($event, 'day-mgr-' + (session.documentId || session.id))"
-                  @dragleave.stop="onDragLeave($event, 'day-mgr-' + (session.documentId || session.id))"
-                  @drop.stop="onDropOnSession($event, session, 'manager')"
                 >
                   <div class="manager-avatar-badge">{{ getSessionConflictInfo(session).unavailableManager ? '🔴' : '👨‍💼' }}</div>
                   <div class="manager-info-text">
@@ -902,7 +767,7 @@
                       {{ session.manager.skills }}
                     </span>
                     <span v-else-if="!session.manager" class="manager-empty-hint">
-                      Glissez un référent ici pour l'assigner
+                      Aucun référent affecté
                     </span>
                   </div>
                   
@@ -912,7 +777,7 @@
                       type="button" 
                       class="action-icon-btn delete-btn" 
                       @click="unassignManagerQuick(session)" 
-                      title="Retirer ce référent"
+                      title="Retirer le référent"
                     >
                       <i class="mdi mdi-close"></i>
                     </button>
@@ -920,7 +785,7 @@
                       type="button" 
                       class="action-icon-btn edit-btn" 
                       @click="editSession(session)" 
-                      title="Changer de gestionnaire"
+                      :title="session.manager ? 'Modifier le référent' : 'Affecter un référent'"
                     >
                       <i class="mdi mdi-pencil"></i>
                     </button>
@@ -947,17 +812,10 @@
                   </div>
                 </div>
 
-                <!-- Beneficiaries / Participants Section with Draggable Chips - Collapsible -->
+                <!-- Beneficiaries / Participants Section - Collapsible -->
                 <div 
                   class="participants-section"
-                  :class="{ 
-                    'drop-hover-parts': hoveredDropZone === 'day-parts-' + (session.documentId || session.id) && !isDraggedPersonInSession(session),
-                    'is-collapsed-parts': !isSessionParticipantsExpanded(session)
-                  }"
-                  @dragover="onDragOver($event, 'participant', session)"
-                  @dragenter.prevent="onDragEnter($event, 'day-parts-' + (session.documentId || session.id))"
-                  @dragleave="onDragLeave($event, 'day-parts-' + (session.documentId || session.id))"
-                  @drop="onDropOnSession($event, session, 'participant')"
+                  :class="{ 'is-collapsed-parts': !isSessionParticipantsExpanded(session) }"
                 >
                   <div 
                     class="section-title-row is-clickable" 
@@ -1122,32 +980,16 @@
                         +{{ getParticipantCount(session) - 5 }} autre(s)...
                       </span>
                     </div>
-
-                    <div 
-                      class="participant-drop-target-box day-drop-box compact"
-                      :class="{ 
-                        'target-highlight': activeDragType === 'participant' && !isDraggedPersonInSession(session),
-                        'target-disabled': activeDragType === 'participant' && isDraggedPersonInSession(session)
-                      }"
-                    >
-                      <span class="drop-hint-icon">{{ isDraggedPersonInSession(session) ? '⛔' : '📥' }}</span>
-                      <span class="drop-hint-text">
-                        {{ isDraggedPersonInSession(session) ? 'Déjà présent dans cette salle' : (getParticipantCount(session) === 0 ? 'Glisser des bénéficiaires ici' : '+ Glisser d\'autres bénéficiaires') }}
-                      </span>
-                    </div>
                   </div>
 
-                  <!-- ── B. DAY VIEW EXPANDED DRAGGABLE CHIPS GRID ── -->
+                  <!-- ── B. DAY VIEW EXPANDED CHIPS GRID ── -->
                   <div v-show="isSessionParticipantsExpanded(session)" class="participants-chips-grid">
                     <div 
                       v-for="p in getParticipants(session)" 
                       :key="p.documentId || p.id" 
-                      class="participant-chip-draggable day-chip"
+                      class="participant-chip day-chip"
                       :class="{ 'chip-unavail': isParticipantUnavailableInSession(p, session) }"
-                      draggable="true"
-                      @dragstart="onDragStart($event, { type: 'participant', participant: p, fromSessionId: session.documentId || session.id })"
-                      @dragend="onDragEnd"
-                      :title="isParticipantUnavailableInSession(p, session) ? getParticipantUnavailabilityTitle(p, session) + ' — Glisser pour déplacer' : 'Glisser pour déplacer vers une autre salle ou vers la corbeille'"
+                      :title="isParticipantUnavailableInSession(p, session) ? getParticipantUnavailabilityTitle(p, session) : 'Bénéficiaire affecté'"
                     >
                       <span class="chip-icon">{{ isParticipantUnavailableInSession(p, session) ? '⚠️' : '👤' }}</span>
                       <span class="chip-name">{{ p.lastName }} {{ p.firstName }}</span>
@@ -1159,20 +1001,6 @@
                       >
                         <i class="mdi mdi-close"></i>
                       </button>
-                    </div>
-
-                    <!-- Drop Target Box inside participants list -->
-                    <div 
-                      class="participant-drop-target-box day-drop-box"
-                      :class="{ 
-                        'target-highlight': activeDragType === 'participant' && !isDraggedPersonInSession(session),
-                        'target-disabled': activeDragType === 'participant' && isDraggedPersonInSession(session)
-                      }"
-                    >
-                      <span class="drop-hint-icon">{{ isDraggedPersonInSession(session) ? '⛔' : '📥' }}</span>
-                      <span class="drop-hint-text">
-                        {{ isDraggedPersonInSession(session) ? 'Déjà présent dans cette salle' : (getParticipantCount(session) === 0 ? 'Glisser des bénéficiaires ici' : '+ Glisser d\'autres bénéficiaires') }}
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -1264,279 +1092,6 @@
         </div>
       </div>
 
-      <!-- ────────────────── RIGHT: DRAG & DROP SIDEBAR PALETTE ────────────────── -->
-      <aside class="dnd-sidebar-palette no-print" v-if="isPaletteOpen">
-        <!-- Palette Header -->
-        <div class="palette-header">
-          <div class="palette-title-box">
-            <span class="palette-icon">✨</span>
-            <div>
-              <h3>Palette Drag & Drop</h3>
-              <p class="palette-subtitle">Glissez les éléments sur le planning</p>
-            </div>
-          </div>
-          <button type="button" class="palette-close-btn" @click="isPaletteOpen = false" title="Masquer la palette">✕</button>
-        </div>
-
-        <!-- Palette Tabs -->
-        <div class="palette-tabs-nav">
-          <button 
-            type="button" 
-            class="palette-tab-btn" 
-            :class="{ active: activePaletteTab === 'participants' }"
-            @click="activePaletteTab = 'participants'"
-          >
-            <span class="tab-icon">👥</span>
-            <span>Bénéficiaires</span>
-            <span class="palette-count-pill">{{ paletteCounts.participants }}</span>
-          </button>
-          
-          <button 
-            type="button" 
-            class="palette-tab-btn" 
-            :class="{ active: activePaletteTab === 'facilitators' }"
-            @click="activePaletteTab = 'facilitators'"
-          >
-            <span class="tab-icon">👨‍💼</span>
-            <span>Référents</span>
-            <span class="palette-count-pill">{{ paletteCounts.facilitators }}</span>
-          </button>
-
-          <button 
-            type="button" 
-            class="palette-tab-btn" 
-            :class="{ active: activePaletteTab === 'locations' }"
-            @click="activePaletteTab = 'locations'"
-          >
-            <span class="tab-icon">🚪</span>
-            <span>Salles</span>
-            <span class="palette-count-pill">{{ paletteCounts.locations }}</span>
-          </button>
-        </div>
-
-        <!-- Palette Body -->
-        <div class="palette-body">
-          
-          <!-- ── TAB 1: BÉNÉFICIAIRES ── -->
-          <div v-if="activePaletteTab === 'participants'" class="palette-section">
-            <!-- Filter pills -->
-            <div class="palette-filter-chips">
-              <button 
-                type="button" 
-                class="filter-chip-btn" 
-                :class="{ active: paletteParticipantFilter === 'all' }"
-                @click="paletteParticipantFilter = 'all'"
-              >
-                Tous ({{ participants.length }})
-              </button>
-              <button 
-                type="button" 
-                class="filter-chip-btn unassigned-chip" 
-                :class="{ active: paletteParticipantFilter === 'unassigned' }"
-                @click="paletteParticipantFilter = 'unassigned'"
-                title="Bénéficiaires non inscrits dans la période affichée"
-              >
-                ⚡ Non affectés ({{ paletteCounts.unassignedParticipants }})
-              </button>
-              <button 
-                type="button" 
-                class="filter-chip-btn" 
-                :class="{ active: paletteParticipantFilter === 'available' }"
-                @click="paletteParticipantFilter = 'available'"
-              >
-                ✅ Dispos
-              </button>
-              <button 
-                type="button" 
-                class="filter-chip-btn" 
-                :class="{ active: paletteParticipantFilter === 'assigned' }"
-                @click="paletteParticipantFilter = 'assigned'"
-              >
-                🔵 Déjà affectés
-              </button>
-              <button 
-                type="button" 
-                class="filter-chip-btn" 
-                :class="{ active: paletteParticipantFilter === 'unavailable' }"
-                @click="paletteParticipantFilter = 'unavailable'"
-              >
-                ❌ Indispos
-              </button>
-            </div>
-
-            <!-- Search input -->
-            <div class="palette-search-box">
-              <span class="search-mini-icon">🔍</span>
-              <input 
-                type="text" 
-                v-model="paletteParticipantSearch" 
-                placeholder="Chercher un bénéficiaire..."
-                class="palette-search-input"
-              />
-              <button v-if="paletteParticipantSearch" @click="paletteParticipantSearch = ''" class="clear-mini-btn">✕</button>
-            </div>
-
-            <!-- Draggable Participants List -->
-            <div class="palette-draggable-list">
-              <div 
-                v-if="filteredPaletteParticipants.length === 0" 
-                class="palette-empty-msg"
-              >
-                Aucun bénéficiaire correspondant
-              </div>
-
-              <div 
-                v-for="p in filteredPaletteParticipants" 
-                :key="p.documentId || p.id"
-                class="palette-drag-item participant-item"
-                :class="{ 
-                  'item-unavail': !p.isAvailable,
-                  'item-unassigned-highlight': p.weeklyAssignmentsCount === 0 
-                }"
-                draggable="true"
-                @dragstart="onDragStart($event, { type: 'participant', participant: p })"
-                @dragend="onDragEnd"
-                :title="!p.isAvailable ? p.unavailabilityReason : 'Glisser sur une salle pour affecter'"
-              >
-                <div class="drag-handle-icon" title="Glisser">⋮⋮</div>
-                <div class="item-avatar-badge">👤</div>
-                <div class="item-info">
-                  <strong class="item-title">{{ p.lastName }} {{ p.firstName }}</strong>
-                  <div class="item-sub-tags">
-                    <span 
-                      class="presence-count-tag" 
-                      :class="{ 'zero-count': p.weeklyAssignmentsCount === 0 }"
-                    >
-                      📅 {{ p.weeklyAssignmentsCount }} fois / sem.
-                    </span>
-                    <span v-if="!p.isAvailable" class="item-status-tag unavail">
-                      ⚠️ Indispo
-                    </span>
-                    <span v-else class="item-status-tag avail">
-                      ✅ Dispo
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── TAB 2: GESTIONNAIRES / RÉFÉRENTS ── -->
-          <div v-else-if="activePaletteTab === 'facilitators'" class="palette-section">
-            <!-- Search input -->
-            <div class="palette-search-box">
-              <span class="search-mini-icon">🔍</span>
-              <input 
-                type="text" 
-                v-model="paletteFacilitatorSearch" 
-                placeholder="Chercher un référent..."
-                class="palette-search-input"
-              />
-              <button v-if="paletteFacilitatorSearch" @click="paletteFacilitatorSearch = ''" class="clear-mini-btn">✕</button>
-            </div>
-
-            <!-- Draggable Facilitators List -->
-            <div class="palette-draggable-list">
-              <div 
-                v-if="evaluatedPaletteFacilitators.length === 0" 
-                class="palette-empty-msg"
-              >
-                Aucun référent correspondant
-              </div>
-
-              <div 
-                v-for="f in evaluatedPaletteFacilitators" 
-                :key="f.documentId || f.id"
-                class="palette-drag-item facilitator-item"
-                :class="{ 'item-unavail': !f.isAvailable }"
-                draggable="true"
-                @dragstart="onDragStart($event, { type: 'manager', facilitator: f })"
-                @dragend="onDragEnd"
-                :title="!f.isAvailable ? f.unavailabilityReason : 'Glisser sur une salle pour assigner comme référent'"
-              >
-                <div class="drag-handle-icon" title="Glisser">⋮⋮</div>
-                <div class="item-avatar-badge">{{ f.isAvailable ? '👨‍💼' : '🔴' }}</div>
-                <div class="item-info">
-                  <strong class="item-title">{{ f.firstName }} {{ f.lastName }}</strong>
-                  <div class="item-sub-tags">
-                    <span v-if="f.skills" class="skills-tag">{{ f.skills }}</span>
-                    <span v-if="!f.isAvailable" class="item-status-tag unavail">
-                      ⚠️ {{ f.unavailabilityReason || 'Indisponible' }}
-                    </span>
-                    <span v-else class="item-status-tag avail">
-                      ✅ Disponible
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── TAB 3: SALLES / LIEUX ── -->
-          <div v-else-if="activePaletteTab === 'locations'" class="palette-section">
-            <!-- Search input -->
-            <div class="palette-search-box">
-              <span class="search-mini-icon">🔍</span>
-              <input 
-                type="text" 
-                v-model="paletteLocationSearch" 
-                placeholder="Chercher une salle..."
-                class="palette-search-input"
-              />
-              <button v-if="paletteLocationSearch" @click="paletteLocationSearch = ''" class="clear-mini-btn">✕</button>
-            </div>
-
-            <!-- Draggable Rooms List -->
-            <div class="palette-draggable-list">
-              <div 
-                v-if="filteredPaletteLocations.length === 0" 
-                class="palette-empty-msg"
-              >
-                Aucune salle correspondante
-              </div>
-
-              <div 
-                v-for="loc in filteredPaletteLocations" 
-                :key="loc.documentId || loc.id"
-                class="palette-drag-item location-item"
-                draggable="true"
-                @dragstart="onDragStart($event, { type: 'room', location: loc })"
-                @dragend="onDragEnd"
-                title="Glisser sur une colonne de jour pour ouvrir la salle"
-              >
-                <div class="drag-handle-icon" title="Glisser">⋮⋮</div>
-                <div class="item-avatar-badge">📍</div>
-                <div class="item-info">
-                  <strong class="item-title">{{ loc.name }}</strong>
-                  <div class="item-sub-tags">
-                    <span class="cap-tag">👥 Capacité : {{ loc.capacity }} places</span>
-                    <span v-if="loc.description" class="desc-tag">{{ loc.description }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bottom Trash Drop Target (Unassign Zone) -->
-        <div 
-          class="palette-trash-drop-zone"
-          :class="{ 
-            'trash-active': hoveredDropZone === 'trash',
-            'trash-highlight': !!draggedItem?.fromSessionId 
-          }"
-          @dragover.prevent="onDragOver($event, 'any')"
-          @dragenter.prevent="onDragEnter($event, 'trash')"
-          @dragleave="onDragLeave($event, 'trash')"
-          @drop="onDropOnTrash($event)"
-        >
-          <span class="trash-icon">🗑️</span>
-          <div class="trash-text">
-            <strong>Zone de désaffectation</strong>
-            <small>Glissez un référent ou un résident ici pour le retirer</small>
-          </div>
-        </div>
-      </aside>
     </div>
 
     <!-- ════════════════ MODAL 1: CRÉER / MODIFIER UNE SESSION DE SALLE      -->
@@ -2056,18 +1611,6 @@ const saving = ref(false);
 const formError = ref('');
 const currentEditingId = ref(null);
 
-// DRAG & DROP STATE & PALETTE
-const isPaletteOpen = ref(true);
-const activePaletteTab = ref('participants'); // 'participants' | 'facilitators' | 'locations'
-const paletteParticipantFilter = ref('all'); // 'all' | 'unassigned' | 'available' | 'assigned' | 'unavailable'
-const paletteParticipantSearch = ref('');
-const paletteFacilitatorSearch = ref('');
-const paletteLocationSearch = ref('');
-
-const draggedItem = ref(null); // { type, item, fromSessionId, fromDate }
-const activeDragType = ref(null); // 'room' | 'manager' | 'participant' | null
-const hoveredDropZone = ref(null);
-
 // DAY VIEW FILTERS & INLINE MULTI-ADD
 const dayFilterSearch = ref('');
 const dayFilterStatus = ref('all');
@@ -2149,104 +1692,6 @@ const selectedLocationCapacity = computed(() => {
 });
 
 // ══════════════════════════════════════════════════════════
-// PALETTE & DRAG-AND-DROP COMPUTED
-// ══════════════════════════════════════════════════════════
-
-// Count of times each participant is assigned across the currently loaded sessions
-const participantWeeklyAssignmentsMap = computed(() => {
-  const map = {};
-  sessions.value.forEach(sess => {
-    (sess.participants || []).forEach(p => {
-      const pid = p.documentId || p.id;
-      if (pid) {
-        map[pid] = (map[pid] || 0) + 1;
-      }
-    });
-  });
-  return map;
-});
-
-// Filtered locations in palette
-const filteredPaletteLocations = computed(() => {
-  let list = props.locations;
-  if (paletteLocationSearch.value.trim()) {
-    const q = paletteLocationSearch.value.toLowerCase().trim();
-    list = list.filter(l => l.name?.toLowerCase().includes(q) || l.description?.toLowerCase().includes(q));
-  }
-  return list;
-});
-
-// Evaluated facilitators in palette
-const evaluatedPaletteFacilitators = computed(() => {
-  const dateStr = currentDateStr.value;
-  let list = getEvaluatedPersonsList(props.facilitators, dateStr, 'facilitator', sessions.value, null);
-  if (paletteFacilitatorSearch.value.trim()) {
-    const q = paletteFacilitatorSearch.value.toLowerCase().trim();
-    list = list.filter(f => `${f.firstName} ${f.lastName}`.toLowerCase().includes(q) || f.skills?.toLowerCase().includes(q));
-  }
-  return list;
-});
-
-// Evaluated participants in palette with weekly counters & tab filters
-const evaluatedPaletteParticipants = computed(() => {
-  const dateStr = currentDateStr.value;
-  const assignmentsMap = participantWeeklyAssignmentsMap.value;
-
-  return props.participants.map(p => {
-    const pid = p.documentId || p.id;
-    const status = checkPersonDateAvailability(p, dateStr, 'participant', sessions.value, null);
-    const weeklyCount = assignmentsMap[pid] || 0;
-    return {
-      ...p,
-      isAvailable: status.available,
-      unavailabilityReason: status.reason,
-      weeklyAssignmentsCount: weeklyCount
-    };
-  });
-});
-
-const filteredPaletteParticipants = computed(() => {
-  let list = evaluatedPaletteParticipants.value;
-
-  // Filter tabs
-  if (paletteParticipantFilter.value === 'unassigned') {
-    list = list.filter(p => p.weeklyAssignmentsCount === 0);
-  } else if (paletteParticipantFilter.value === 'available') {
-    list = list.filter(p => p.isAvailable);
-  } else if (paletteParticipantFilter.value === 'assigned') {
-    list = list.filter(p => p.weeklyAssignmentsCount > 0);
-  } else if (paletteParticipantFilter.value === 'unavailable') {
-    list = list.filter(p => !p.isAvailable);
-  }
-
-  // Text search
-  if (paletteParticipantSearch.value.trim()) {
-    const q = paletteParticipantSearch.value.toLowerCase().trim();
-    list = list.filter(p => `${p.firstName} ${p.lastName}`.toLowerCase().includes(q));
-  }
-
-  // Sort: Unassigned first, then by alphabetical
-  return list.sort((a, b) => {
-    if (a.weeklyAssignmentsCount === 0 && b.weeklyAssignmentsCount > 0) return -1;
-    if (a.weeklyAssignmentsCount > 0 && b.weeklyAssignmentsCount === 0) return 1;
-    const nameA = `${a.lastName || ''} ${a.firstName || ''}`.trim().toLowerCase();
-    const nameB = `${b.lastName || ''} ${b.firstName || ''}`.trim().toLowerCase();
-    return nameA.localeCompare(nameB, 'fr');
-  });
-});
-
-const paletteCounts = computed(() => {
-  const totalParts = props.participants.length;
-  const unassigned = evaluatedPaletteParticipants.value.filter(p => p.weeklyAssignmentsCount === 0).length;
-  return {
-    participants: totalParts,
-    unassignedParticipants: unassigned,
-    facilitators: props.facilitators.length,
-    locations: props.locations.length
-  };
-});
-
-// ══════════════════════════════════════════════════════════
 // PARTICIPANTS COLLAPSE / EXPAND STATE (Collapsed by default)
 // ══════════════════════════════════════════════════════════
 const expandedSessionParticipantIds = ref(new Set());
@@ -2293,197 +1738,6 @@ function toggleAllParticipants() {
   } else {
     expandAllParticipants();
   }
-}
-
-// ══════════════════════════════════════════════════════════
-// DRAG AND DROP HANDLERS (OPTIMIZED O(1) LOOKUPS)
-// ══════════════════════════════════════════════════════════
-const draggedPersonOccupiedSessionIds = ref(new Set());
-
-function onDragStart(e, payload) {
-  draggedItem.value = payload;
-  activeDragType.value = payload.type;
-  e.dataTransfer.effectAllowed = 'copyMove';
-  try {
-    e.dataTransfer.setData('text/plain', JSON.stringify(payload));
-  } catch (err) {
-    // ignore serialize issue
-  }
-
-  // Precompute Set of session IDs where this person is already assigned (O(1) lookups during drag)
-  const occupied = new Set();
-  if (payload && payload.type === 'participant' && payload.participant) {
-    const partId = String(payload.participant.documentId || payload.participant.id);
-    (sessions.value || []).forEach(s => {
-      const pList = s.participants || [];
-      if (pList.some(p => String(p.documentId || p.id) === partId)) {
-        occupied.add(String(s.documentId || s.id));
-      }
-    });
-  } else if (payload && payload.type === 'manager' && payload.facilitator) {
-    const mgrId = String(payload.facilitator.documentId || payload.facilitator.id);
-    (sessions.value || []).forEach(s => {
-      const curMgrId = s.manager ? String(s.manager.documentId || s.manager.id) : null;
-      if (curMgrId === mgrId) {
-        occupied.add(String(s.documentId || s.id));
-      }
-    });
-  }
-  draggedPersonOccupiedSessionIds.value = occupied;
-}
-
-function onDragEnd() {
-  draggedItem.value = null;
-  activeDragType.value = null;
-  hoveredDropZone.value = null;
-  draggedPersonOccupiedSessionIds.value = new Set();
-}
-
-function isDraggedPersonInSession(session) {
-  if (!session || draggedPersonOccupiedSessionIds.value.size === 0) return false;
-  return draggedPersonOccupiedSessionIds.value.has(String(session.documentId || session.id));
-}
-
-function onDragOver(e, acceptedType, session = null) {
-  if (!activeDragType.value) return;
-  if (acceptedType !== 'any' && activeDragType.value !== acceptedType) {
-    e.dataTransfer.dropEffect = 'none';
-    return;
-  }
-  if (session && isDraggedPersonInSession(session)) {
-    e.dataTransfer.dropEffect = 'none';
-    return;
-  }
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'copy';
-}
-
-function onDragEnter(e, zoneId) {
-  hoveredDropZone.value = zoneId;
-}
-
-function onDragLeave(e, zoneId) {
-  if (hoveredDropZone.value === zoneId) {
-    hoveredDropZone.value = null;
-  }
-}
-
-async function onDropOnDay(e, dayDateKey) {
-  e.preventDefault();
-  hoveredDropZone.value = null;
-  if (!draggedItem.value) return;
-
-  if (draggedItem.value.type === 'room') {
-    const locId = draggedItem.value.location?.documentId || draggedItem.value.location?.id;
-    if (locId) {
-      await roomSessionStore.openRoomForDate(locId, dayDateKey);
-      await loadDataForCurrentView();
-    }
-  }
-  onDragEnd();
-}
-
-async function onDropOnSession(e, session, targetArea = 'any') {
-  e.preventDefault();
-  hoveredDropZone.value = null;
-  if (!draggedItem.value || !session) return;
-
-  if (isDraggedPersonInSession(session)) {
-    const personName = draggedItem.value.type === 'participant'
-      ? `${draggedItem.value.participant?.firstName || ''} ${draggedItem.value.participant?.lastName || ''}`.trim()
-      : `${draggedItem.value.facilitator?.firstName || ''} ${draggedItem.value.facilitator?.lastName || ''}`.trim();
-    globalStore.addWarning(`${draggedItem.value.type === 'participant' ? 'Le bénéficiaire' : 'Le référent'} "${personName}" est déjà présent dans cette salle.`, 'Déjà présent');
-    onDragEnd();
-    return;
-  }
-
-  const sessionId = session.documentId || session.id;
-
-  if (draggedItem.value.type === 'manager') {
-    const mgrId = draggedItem.value.facilitator?.documentId || draggedItem.value.facilitator?.id;
-    if (mgrId) {
-      await roomSessionStore.assignManager(sessionId, mgrId);
-      await loadDataForCurrentView();
-    }
-  } else if (draggedItem.value.type === 'participant') {
-    const partId = draggedItem.value.participant?.documentId || draggedItem.value.participant?.id;
-    if (partId) {
-      if (draggedItem.value.fromSessionId) {
-        if (draggedItem.value.fromSessionId === sessionId) {
-          onDragEnd();
-          return;
-        }
-        await roomSessionStore.moveParticipantBetweenSessions(draggedItem.value.fromSessionId, sessionId, partId);
-      } else {
-        await roomSessionStore.addParticipantToSession(sessionId, partId);
-      }
-      // Auto-expand this session's participants so the user sees the dropped person
-      const nextSet = new Set(expandedSessionParticipantIds.value);
-      nextSet.add(String(sessionId));
-      expandedSessionParticipantIds.value = nextSet;
-
-      await loadDataForCurrentView();
-    }
-  }
-  onDragEnd();
-}
-
-async function onMatrixCellDrop(e, location, dayDateKey) {
-  e.preventDefault();
-  hoveredDropZone.value = null;
-  if (!draggedItem.value) return;
-
-  const existingSession = getSessionForRoomAndDate(location, dayDateKey);
-  const locId = location.documentId || location.id;
-
-  if (existingSession && isDraggedPersonInSession(existingSession)) {
-    const personName = draggedItem.value.type === 'participant'
-      ? `${draggedItem.value.participant?.firstName || ''} ${draggedItem.value.participant?.lastName || ''}`.trim()
-      : `${draggedItem.value.facilitator?.firstName || ''} ${draggedItem.value.facilitator?.lastName || ''}`.trim();
-    globalStore.addWarning(`${draggedItem.value.type === 'participant' ? 'Le bénéficiaire' : 'Le référent'} "${personName}" est déjà présent dans cette salle.`, 'Déjà présent');
-    onDragEnd();
-    return;
-  }
-
-  if (draggedItem.value.type === 'room') {
-    await roomSessionStore.openRoomForDate(locId, dayDateKey);
-  } else if (draggedItem.value.type === 'manager') {
-    const mgrId = draggedItem.value.facilitator?.documentId || draggedItem.value.facilitator?.id;
-    if (existingSession) {
-      await roomSessionStore.assignManager(existingSession.documentId || existingSession.id, mgrId);
-    } else {
-      await roomSessionStore.openRoomForDate(locId, dayDateKey, mgrId);
-    }
-  } else if (draggedItem.value.type === 'participant') {
-    const partId = draggedItem.value.participant?.documentId || draggedItem.value.participant?.id;
-    if (existingSession) {
-      if (draggedItem.value.fromSessionId) {
-        await roomSessionStore.moveParticipantBetweenSessions(draggedItem.value.fromSessionId, existingSession.documentId || existingSession.id, partId);
-      } else {
-        await roomSessionStore.addParticipantToSession(existingSession.documentId || existingSession.id, partId);
-      }
-    } else {
-      await roomSessionStore.openRoomForDate(locId, dayDateKey, null, [partId]);
-    }
-  }
-  await loadDataForCurrentView();
-  onDragEnd();
-}
-
-async function onDropOnTrash(e) {
-  e.preventDefault();
-  hoveredDropZone.value = null;
-  if (!draggedItem.value) return;
-
-  if (draggedItem.value.type === 'participant' && draggedItem.value.fromSessionId) {
-    const partId = draggedItem.value.participant?.documentId || draggedItem.value.participant?.id;
-    await roomSessionStore.removeParticipantFromSession(draggedItem.value.fromSessionId, partId);
-    await loadDataForCurrentView();
-  } else if (draggedItem.value.type === 'manager' && draggedItem.value.fromSessionId) {
-    await roomSessionStore.unassignManager(draggedItem.value.fromSessionId);
-    await loadDataForCurrentView();
-  }
-  onDragEnd();
 }
 
 async function unassignManagerQuick(session) {
@@ -3682,22 +2936,6 @@ function printPage() {
   font-weight: 600;
 }
 
-.dnd-badge-pill {
-  background: rgba(13, 148, 136, 0.15);
-  color: #5eead4;
-  border: 1px solid rgba(13, 148, 136, 0.35);
-  padding: 0.2rem 0.65rem;
-  border-radius: var(--radius-pill, 9999px);
-  font-size: 0.75rem;
-  font-weight: 600;
-  animation: pulseGlow 3s infinite ease-in-out;
-}
-
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 rgba(13, 148, 136, 0); }
-  50% { box-shadow: 0 0 10px rgba(13, 148, 136, 0.4); }
-}
-
 .subtitle {
   color: var(--text-secondary, #94a3b8);
   font-size: 0.9rem;
@@ -3870,18 +3108,6 @@ function printPage() {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.palette-toggle-btn {
-  background: rgba(13, 148, 136, 0.15);
-  border-color: rgba(13, 148, 136, 0.4);
-  color: #5eead4;
-}
-
-.palette-toggle-btn.active {
-  background: linear-gradient(135deg, rgba(13, 148, 136, 0.3), rgba(2, 132, 199, 0.3));
-  border-color: #5eead4;
-  box-shadow: 0 0 12px rgba(13, 148, 136, 0.3);
-}
-
 .template-btn, .duplicate-btn, .assign-btn, .print-btn {
   background: rgba(255, 255, 255, 0.04);
   border-color: var(--border-color, rgba(255, 255, 255, 0.1));
@@ -3970,8 +3196,8 @@ function printPage() {
 .mini-progress-fill.full { background: #3b82f6; }
 .mini-progress-fill.exceeded { background: #ef4444; }
 
-/* ════════════════ DND WORKSPACE LAYOUT ════════════════ */
-.dnd-main-layout {
+/* ════════════════ PLANNING WORKSPACE LAYOUT ════════════════ */
+.planning-main-layout {
   position: relative;
   display: flex;
   gap: 1.5rem;
@@ -3985,331 +3211,6 @@ function printPage() {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-}
-
-/* ════════════════ SIDEBAR PALETTE ════════════════ */
-.dnd-sidebar-palette {
-  width: 340px;
-  flex-shrink: 0;
-  background: var(--panel-bg, rgba(15, 23, 42, 0.9));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
-  border-radius: var(--radius-lg, 1.15rem);
-  box-shadow: var(--shadow-lg, 0 16px 40px rgba(0, 0, 0, 0.5));
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 1.5rem;
-  max-height: calc(100vh - 3rem);
-  overflow: hidden;
-  animation: slideInRight 0.3s ease;
-}
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.palette-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.palette-title-box {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.palette-icon {
-  font-size: 1.25rem;
-}
-
-.palette-title-box h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-primary, #f8fafc);
-  margin: 0;
-}
-
-.palette-subtitle {
-  font-size: 0.72rem;
-  color: var(--text-muted, #64748b);
-  margin: 0;
-}
-
-.palette-close-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted, #64748b);
-  font-size: 1.1rem;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm, 0.5rem);
-}
-
-.palette-close-btn:hover {
-  color: var(--text-primary, #f8fafc);
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.palette-tabs-nav {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  background: rgba(0, 0, 0, 0.35);
-  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  padding: 0.25rem;
-  gap: 0.25rem;
-}
-
-.palette-tab-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary, #94a3b8);
-  padding: 0.5rem 0.25rem;
-  border-radius: var(--radius-sm, 0.5rem);
-  font-size: 0.75rem;
-  font-weight: 600;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.palette-tab-btn:hover {
-  color: var(--text-primary, #f8fafc);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.palette-tab-btn.active {
-  background: var(--primary, #0d9488);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35);
-}
-
-.palette-count-pill {
-  font-size: 0.65rem;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 0.1rem 0.4rem;
-  border-radius: 999px;
-}
-
-.palette-body {
-  padding: 1rem;
-  overflow-y: auto;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.palette-filter-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.filter-chip-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  color: var(--text-secondary, #94a3b8);
-  padding: 0.25rem 0.55rem;
-  border-radius: var(--radius-pill, 9999px);
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.filter-chip-btn.active {
-  background: var(--accent, #0284c7);
-  border-color: #38bdf8;
-  color: #ffffff;
-}
-
-.filter-chip-btn.unassigned-chip.active {
-  background: var(--warm-amber, #f59e0b);
-  border-color: #fbbf24;
-  color: #1e1e24;
-}
-
-.palette-search-box {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-mini-icon {
-  position: absolute;
-  left: 0.75rem;
-  font-size: 0.8rem;
-  opacity: 0.6;
-}
-
-.palette-search-input {
-  width: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  color: var(--text-primary, #f8fafc);
-  padding: 0.45rem 2rem 0.45rem 2rem;
-  border-radius: var(--radius-sm, 0.5rem);
-  font-size: 0.8rem;
-}
-
-.clear-mini-btn {
-  position: absolute;
-  right: 0.5rem;
-  background: transparent;
-  border: none;
-  color: var(--text-muted, #64748b);
-  cursor: pointer;
-}
-
-.palette-draggable-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  max-height: 480px;
-  overflow-y: auto;
-  padding-right: 0.25rem;
-}
-
-.palette-drag-item {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-sm, 0.5rem);
-  padding: 0.55rem 0.75rem;
-  cursor: grab;
-  transition: all 0.2s ease;
-  user-select: none;
-}
-
-.palette-drag-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.2));
-}
-
-.palette-drag-item:active {
-  cursor: grabbing;
-}
-
-.palette-drag-item.item-unassigned-highlight {
-  border-left: 3px solid #fbbf24;
-  background: rgba(245, 158, 11, 0.06);
-}
-
-.palette-drag-item.item-unavail {
-  opacity: 0.65;
-}
-
-.drag-handle-icon {
-  color: var(--text-muted, #64748b);
-  font-size: 0.9rem;
-}
-
-.item-avatar-badge {
-  font-size: 1.1rem;
-}
-
-.item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.item-title {
-  font-size: 0.82rem;
-  color: var(--text-primary, #f8fafc);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.item-sub-tags {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-}
-
-.presence-count-tag {
-  font-size: 0.68rem;
-  color: var(--text-secondary, #94a3b8);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-}
-
-.presence-count-tag.zero-count {
-  color: #fbbf24;
-  background: rgba(245, 158, 11, 0.15);
-  font-weight: 600;
-}
-
-.item-status-tag {
-  font-size: 0.68rem;
-  padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-}
-
-.item-status-tag.avail {
-  color: #5eead4;
-  background: rgba(13, 148, 136, 0.15);
-}
-
-.item-status-tag.unavail {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.15);
-}
-
-.cap-tag, .skills-tag, .desc-tag {
-  font-size: 0.68rem;
-  color: var(--text-muted, #64748b);
-}
-
-.palette-trash-drop-zone {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px dashed rgba(239, 68, 68, 0.3);
-  padding: 0.75rem 1rem;
-  border-radius: 0 0 var(--radius-lg, 1.15rem) var(--radius-lg, 1.15rem);
-  color: #f87171;
-  transition: all 0.2s ease;
-}
-
-.palette-trash-drop-zone.trash-active {
-  background: rgba(239, 68, 68, 0.25);
-  border-color: #ef4444;
-  transform: scale(1.02);
-}
-
-.trash-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.trash-text strong {
-  font-size: 0.8rem;
-}
-
-.trash-text small {
-  font-size: 0.68rem;
-  color: var(--text-muted, #64748b);
 }
 
 /* ════════════════ 1. VUE SEMAINE (KANBAN COLUMNS) ════════════════ */
@@ -4410,19 +3311,12 @@ function printPage() {
   display: flex;
   flex-direction: column;
   min-height: 480px;
-  transition: all 0.2s ease;
   overflow: hidden;
 }
 
 .kanban-day-column.is-today {
   border-color: rgba(13, 148, 136, 0.4);
   box-shadow: 0 0 15px rgba(13, 148, 136, 0.15);
-}
-
-.kanban-day-column.drop-hover {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.06);
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
 }
 
 .column-header {
@@ -4505,24 +3399,6 @@ function printPage() {
   color: #ffffff;
 }
 
-.column-quick-drop-zone {
-  margin: 0.5rem;
-  padding: 0.75rem;
-  background: rgba(13, 148, 136, 0.1);
-  border: 2px dashed rgba(13, 148, 136, 0.4);
-  border-radius: var(--radius-md, 0.85rem);
-  text-align: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #5eead4;
-  animation: pulseTarget 1.5s infinite;
-}
-
-@keyframes pulseTarget {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-}
-
 .column-sessions-list {
   padding: 0.75rem;
   display: flex;
@@ -4588,12 +3464,6 @@ function printPage() {
 .kanban-session-card.card-conflict {
   border-color: rgba(239, 68, 68, 0.4);
   background: rgba(239, 68, 68, 0.05);
-}
-
-.kanban-session-card.card-drop-active {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  transform: scale(1.02);
 }
 
 .kcard-header {
@@ -4689,27 +3559,16 @@ function printPage() {
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   border-radius: var(--radius-sm, 0.5rem);
   padding: 0.45rem 0.65rem;
-  transition: all 0.2s ease;
-}
-
-.kcard-manager-slot.drop-hover-slot {
-  border-color: #fbbf24;
-  background: rgba(245, 158, 11, 0.15);
 }
 
 .kcard-manager-slot.no-manager {
   border-style: dashed;
 }
 
-.manager-chip-draggable {
+.manager-chip {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  cursor: grab;
-}
-
-.manager-chip-draggable:active {
-  cursor: grabbing;
 }
 
 .mgr-avatar {
@@ -4752,17 +3611,19 @@ function printPage() {
   background: rgba(239, 68, 68, 0.15);
 }
 
-.empty-manager-drop {
+.empty-manager-action {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  background: transparent;
+  border: none;
   color: var(--text-muted, #64748b);
   font-size: 0.75rem;
   cursor: pointer;
   padding: 0.2rem 0;
 }
 
-.empty-manager-drop:hover {
+.empty-manager-action:hover {
   color: var(--text-primary, #f8fafc);
 }
 
@@ -4771,12 +3632,6 @@ function printPage() {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-}
-
-.kcard-participants-section.drop-hover-parts {
-  background: rgba(13, 148, 136, 0.1);
-  border-radius: var(--radius-sm, 0.5rem);
-  padding: 0.25rem;
 }
 
 .parts-header-row,
@@ -4893,11 +3748,6 @@ function printPage() {
   border-radius: 4px;
 }
 
-.participant-drop-target-box.compact {
-  padding: 0.3rem 0.45rem;
-  font-size: 0.68rem;
-}
-
 .tool-btn.toggle-parts-btn.active {
   background: rgba(13, 148, 136, 0.25);
   border-color: #0d9488;
@@ -4926,7 +3776,7 @@ function printPage() {
   gap: 0.35rem;
 }
 
-.participant-chip-draggable {
+.participant-chip {
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -4936,21 +3786,15 @@ function printPage() {
   padding: 0.35rem 0.55rem;
   font-size: 0.78rem;
   color: var(--text-primary, #f8fafc);
-  cursor: grab;
-  user-select: none;
   transition: all 0.15s ease;
 }
 
-.participant-chip-draggable:hover {
+.participant-chip:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.participant-chip-draggable:active {
-  cursor: grabbing;
-}
-
-.participant-chip-draggable.chip-unavail {
+.participant-chip.chip-unavail {
   border-color: rgba(239, 68, 68, 0.4);
   background: rgba(239, 68, 68, 0.1);
   color: #fca5a5;
@@ -4980,87 +3824,6 @@ function printPage() {
 .chip-remove-btn:hover {
   color: #f87171;
   background: rgba(239, 68, 68, 0.15);
-}
-
-.participant-drop-target-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.45rem;
-  border: 1px dashed rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius-sm, 0.5rem);
-  color: var(--text-muted, #64748b);
-  font-size: 0.72rem;
-  transition: all 0.2s ease;
-}
-
-.participant-drop-target-box.target-highlight {
-  border-color: #5eead4;
-  color: #5eead4;
-  background: rgba(13, 148, 136, 0.1);
-}
-
-/* ──────────────── ALREADY PRESENT IN SESSION (ORANGE HIGHLIGHT & DISABLED DROP) ──────────────── */
-.kanban-session-card.session-already-present,
-.session-card.session-already-present {
-  border-color: #f97316 !important;
-  border-left: 5px solid #ea580c !important;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.18) 0%, rgba(234, 88, 12, 0.1) 100%) !important;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.45), 0 6px 18px rgba(234, 88, 12, 0.22) !important;
-  cursor: not-allowed !important;
-}
-
-.matrix-slot-cell.cell-already-present,
-.matrix-session-pill.matrix-already-present {
-  border-color: #f97316 !important;
-  background: rgba(249, 115, 22, 0.22) !important;
-  box-shadow: 0 0 0 2px #ea580c !important;
-  cursor: not-allowed !important;
-}
-
-.session-already-present-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: rgba(249, 115, 22, 0.25);
-  border: 1.5px solid #f97316;
-  border-radius: var(--radius-sm, 0.5rem);
-  padding: 0.35rem 0.65rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #fdba74;
-  margin-bottom: 0.4rem;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
-  animation: pulse-orange-glow 1.8s infinite alternate;
-  z-index: 2;
-}
-
-@keyframes pulse-orange-glow {
-  from {
-    background-color: rgba(249, 115, 22, 0.2);
-    border-color: #f97316;
-    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.3);
-  }
-  to {
-    background-color: rgba(234, 88, 12, 0.35);
-    border-color: #ea580c;
-    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.25);
-  }
-}
-
-.session-already-present-banner .banner-icon {
-  font-size: 0.9rem;
-}
-
-.participant-drop-target-box.target-disabled,
-.kcard-manager-slot.target-disabled,
-.manager-banner.target-disabled {
-  border-color: #f97316 !important;
-  background: rgba(249, 115, 22, 0.14) !important;
-  color: #fdba74 !important;
-  cursor: not-allowed !important;
-  font-weight: 700 !important;
 }
 
 /* ════════════════ 2. VUE JOUR STYLES ════════════════ */
@@ -5137,26 +3900,6 @@ function printPage() {
   background: var(--primary, #0d9488);
   color: #ffffff;
   border-color: var(--primary, #0d9488);
-}
-
-.day-drop-open-room-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 1.25rem;
-  background: rgba(13, 148, 136, 0.08);
-  border: 2px dashed rgba(13, 148, 136, 0.3);
-  border-radius: var(--radius-md, 0.85rem);
-  color: #5eead4;
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-.day-drop-open-room-banner.banner-hover {
-  background: rgba(13, 148, 136, 0.2);
-  border-color: #5eead4;
-  transform: scale(1.01);
 }
 
 .day-sessions-grid {
@@ -5273,11 +4016,6 @@ function printPage() {
   padding: 0.75rem 1rem;
 }
 
-.manager-banner.drop-hover-slot {
-  border-color: #fbbf24;
-  background: rgba(245, 158, 11, 0.15);
-}
-
 .manager-banner.manager-unassigned {
   border-style: dashed;
 }
@@ -5389,13 +4127,9 @@ function printPage() {
   gap: 0.5rem;
 }
 
-.participant-chip-draggable.day-chip {
+.participant-chip.day-chip {
   padding: 0.45rem 0.75rem;
   font-size: 0.82rem;
-}
-
-.participant-drop-target-box.day-drop-box {
-  min-height: 38px;
 }
 
 .card-footer {
@@ -5487,12 +4221,6 @@ function printPage() {
 .matrix-slot-cell {
   vertical-align: top;
   height: 80px;
-  transition: all 0.2s ease;
-}
-
-.matrix-slot-cell.cell-drop-hover {
-  background: rgba(16, 185, 129, 0.15);
-  border-color: #10b981;
 }
 
 .matrix-session-pill {
@@ -6598,11 +5326,11 @@ select.form-input optgroup {
     break-inside: avoid;
   }
 
-  .room-name, .mgr-name, .item-title, .col-day-name {
+  .room-name, .mgr-name, .col-day-name {
     color: #000000 !important;
   }
 
-  .participant-chip-draggable {
+  .participant-chip {
     background: #f1f5f9 !important;
     color: #000000 !important;
     border: 1px solid #ddd !important;
@@ -6610,17 +5338,6 @@ select.form-input optgroup {
 }
 
 /* ════════════════ RESPONSIVE ════════════════ */
-@media (max-width: 1200px) {
-  .dnd-main-layout {
-    flex-direction: column;
-  }
-  .dnd-sidebar-palette {
-    width: 100%;
-    position: static;
-    max-height: none;
-  }
-}
-
 @media (max-width: 768px) {
   .header-main {
     flex-direction: column;

@@ -1,5 +1,5 @@
 <template>
-  <div class="animations-planning-root printable-animations-planning" :class="{ 'is-dragging-active': !!activeDragType, ['drag-' + activeDragType]: !!activeDragType }">
+  <div class="animations-planning-root printable-animations-planning">
     
     <!-- ════════════════ TOP HEADER CONTROLS (NO PRINT) ════════════════ -->
     <div class="view-header no-print">
@@ -10,10 +10,9 @@
             <div class="title-with-pill">
               <h2>Planning des Animations & Activités</h2>
               <span class="mode-tag-pill">Admin</span>
-              <span class="dnd-badge-pill">✨ Glisser-Déposer Actif</span>
             </div>
             <p class="subtitle">
-              Planifiez facilement votre semaine : glissez des activités sur les jours, assignez des animateurs, des salles et inscrivez les bénéficiaires.
+              Planifiez facilement votre semaine : créez des animations, assignez des animateurs, des salles et inscrivez les bénéficiaires.
             </p>
           </div>
         </div>
@@ -129,19 +128,7 @@
             title="Afficher les créneaux de salle au premier plan et les animations en transparence"
           >
             <span class="btn-icon">👥</span>
-            <span>{{ isPlacingParticipants ? 'Mode Salle & Bénéficiaires' : 'Placer des Bénéficiaires' }}</span>
-          </button>
-
-          <!-- Toggle Side Palette Button -->
-          <button 
-            type="button" 
-            class="tool-btn palette-toggle-btn"
-            :class="{ active: isPaletteOpen }"
-            @click="isPaletteOpen = !isPaletteOpen"
-            title="Afficher/masquer le panneau latéral de glisser-déposer"
-          >
-            <span class="btn-icon">✨</span>
-            <span>Palette D&D ({{ isPaletteOpen ? 'Masquer' : 'Afficher' }})</span>
+            <span>{{ isPlacingParticipants ? 'Mode Salle & Bénéficiaires' : 'Vue Salle & Bénéficiaires' }}</span>
           </button>
 
           <button type="button" class="action-btn primary-btn" @click="openCreateModal()" title="Créer un créneau d'animation">
@@ -289,8 +276,8 @@
       <p class="print-date">Document édité le {{ todayFormatted }}</p>
     </div>
 
-    <!-- ════════════════ MAIN CONTENT AREA WITH OPTIONAL SIDE PALETTE ════════════════ -->
-    <div class="main-planning-layout" :class="{ 'has-open-palette': isPaletteOpen }">
+    <!-- ════════════════ MAIN CONTENT AREA ════════════════ -->
+    <div class="main-planning-layout">
       
       <!-- ──────────────── CENTRAL PLANNING CANVAS ──────────────── -->
       <div class="planning-canvas-container" style="position: relative;">
@@ -303,22 +290,18 @@
           </div>
         </div>
 
-        <!-- ────────── VIEW 1: WEEK VIEW (COLUMNS KANBAN D&D) ────────── -->
+        <!-- ────────── VIEW 1: WEEK VIEW ────────── -->
         <div v-if="viewMode === 'week'" class="week-kanban-board">
           <div class="week-columns-grid">
             <div 
               v-for="day in weekDaysList" 
               :key="day.dateStr" 
               class="day-kanban-column"
-              :class="{ 
-                'is-today': day.isToday, 
-                'is-weekend': day.isWeekend,
-                'drop-active-column': activeDragType === 'activity'
-              }"
-              @dragover.prevent="onDragOver($event, ['activity'])"
-              @dragleave="onDragLeave($event)"
-              @drop.prevent="onDropOnDay($event, day)"
-            >
+               :class="{
+                 'is-today': day.isToday,
+                 'is-weekend': day.isWeekend
+               }"
+             >
               <!-- Column Day Header -->
               <div class="column-header">
                 <div class="day-title-row">
@@ -351,29 +334,18 @@
 
               <!-- Column Slots List -->
               <div class="column-slots-list">
-                <!-- Drop invitation prompt at top of day column if dragging an activity -->
-                <div 
-                  v-if="activeDragType === 'activity'" 
-                  class="drop-placeholder-zone activity-drop-placeholder"
-                  @dragover.prevent="onDragOver($event, ['activity'])"
-                  @drop.prevent="onDropOnDay($event, day)"
-                >
-                  📥 Déposer l'activité pour {{ day.dayName }}
-                </div>
-
                 <!-- Empty Day State (Clickable & Quick Action) -->
                 <div 
-                  v-if="day.slots.length === 0 && activeDragType !== 'activity'" 
+                  v-if="day.slots.length === 0"
                   class="empty-day-state clickable-empty-day"
                   @click="openCreateModal({ date: day.dateStr })"
-                  title="Cliquer pour créer un créneau d'animation ou glisser une activité"
+                  title="Cliquer pour créer un créneau d'animation"
                 >
                   <span class="empty-day-icon">🏖️</span>
                   <p class="empty-day-text">Aucune animation</p>
                   <button type="button" class="quick-add-slot-btn no-print" @click.stop="openCreateModal({ date: day.dateStr })">
                     ➕ Créer un créneau
                   </button>
-                  <small class="empty-day-subtext">ou glissez une activité ici</small>
                 </div>
 
                 <!-- Animation Slot Cards -->
@@ -389,21 +361,10 @@
                     'is-over-max': isOverMaxParticipants(slot),
                     'is-full': isFullParticipants(slot),
                     'highlighted-card': highlightedSlotId === (slot.documentId || slot.id),
-                    'is-participant-mode': isPlacingParticipants,
-                    'is-already-present-slot': isDraggedPersonInSlot(slot)
-                  }"
-                  :id="'slot-card-' + (slot.documentId || slot.id)"
-                  @dragover.prevent="onDragOver($event, ['activity', 'facilitator', 'participant', 'location'], slot)"
-                  @dragleave="onDragLeave($event)"
-                  @drop.prevent="onDropOnCard($event, slot)"
-                >
-                  <!-- Orange Banner when dragged person is already in this slot -->
-                  <div v-if="isDraggedPersonInSlot(slot)" class="already-present-banner">
-                    <span class="already-present-icon">🟠</span>
-                    <span class="already-present-text">
-                      {{ activeDragType === 'participant' ? 'Bénéficiaire déjà inscrit sur ce créneau' : 'Animateur déjà assigné à ce créneau' }}
-                    </span>
-                  </div>
+                     'is-participant-mode': isPlacingParticipants
+                   }"
+                   :id="'slot-card-' + (slot.documentId || slot.id)"
+                 >
 
                   <!-- Background Watermark / Ghost Activity when in Participant Placement Mode -->
                   <div v-if="isPlacingParticipants" class="room-slot-activity-watermark" :title="'Animation programmée : ' + (slot.activityTemplate?.name || 'Activité')">
@@ -485,10 +446,6 @@
                       <span class="ghost-name">{{ slot.activityTemplate?.name || 'Animation' }}</span>
                     </div>
 
-                    <!-- Direct Drop Hint when dragging participant -->
-                    <div class="room-placement-drop-hint" v-if="activeDragType === 'participant' && !isDraggedPersonInSlot(slot)">
-                      <span>📥 Glisser le bénéficiaire ici pour l'inscrire dans cette salle</span>
-                    </div>
                   </template>
 
                   <!-- Conflict Warning Alert Banner -->
@@ -538,23 +495,17 @@
                     </div>
                   </div>
 
-                  <!-- ════════ EXPANDED FULL DETAILS (DROP TARGETS) ════════ -->
+                  <!-- ════════ EXPANDED FULL DETAILS ════════ -->
                   <div v-show="isSlotExpanded(slot)" class="anim-expanded-body">
-                    <!-- ──────── LOCATION TARGET ──────── -->
-                    <div 
-                      class="anim-section location-section"
-                      :class="{ 'drop-target-active': activeDragType === 'location' }"
-                      @dragover.prevent="onDragOver($event, ['location'])"
-                      @dragleave="onDragLeave($event)"
-                      @drop.prevent="onDropOnSlot($event, slot, 'location')"
-                    >
+                    <!-- ──────── LOCATION ──────── -->
+                    <div class="anim-section location-section">
                       <div class="section-label-row">
                         <span class="label-text">📍 Salle / Lieu</span>
-                        <button 
-                          v-if="slot.location" 
-                          type="button" 
-                          class="clear-chip-btn no-print" 
-                          @click="clearSlotLocation(slot)" 
+                        <button
+                          v-if="slot.location"
+                          type="button"
+                          class="clear-chip-btn no-print"
+                          @click="removeLocation(slot)"
                           title="Retirer la salle"
                         >✕</button>
                       </div>
@@ -563,22 +514,13 @@
                         <span class="loc-name">{{ slot.location.name }}</span>
                         <span v-if="slot.location.capacity" class="loc-cap">Max {{ slot.location.capacity }}p</span>
                       </div>
-                      <div v-else class="empty-drop-slot location-drop-slot">
-                        <span class="drop-invite-text">👉 Glisser une salle ici</span>
+                      <div v-else class="empty-assignment-slot location-assignment-slot">
+                        <span>Aucune salle assignée — modifiez l’animation pour en choisir une.</span>
                       </div>
                     </div>
 
-                    <!-- ──────── FACILITATORS (ANIMATEURS) TARGET ──────── -->
-                    <div 
-                      class="anim-section facilitators-section"
-                      :class="{ 
-                        'drop-target-active': activeDragType === 'facilitator' && !isDraggedPersonInSlot(slot),
-                        'drop-target-disabled': activeDragType === 'facilitator' && isDraggedPersonInSlot(slot)
-                      }"
-                      @dragover.prevent="onDragOver($event, ['facilitator'], slot)"
-                      @dragleave="onDragLeave($event)"
-                      @drop.prevent="onDropOnSlot($event, slot, 'facilitator')"
-                    >
+                    <!-- ──────── FACILITATORS (ANIMATEURS) ──────── -->
+                    <div class="anim-section facilitators-section">
                       <div class="section-label-row">
                         <span class="label-text">👨‍🏫 Animateur(s)</span>
                         <span class="count-badge">{{ (slot.facilitators || []).length }}</span>
@@ -586,47 +528,34 @@
 
                       <!-- Facilitators Chips List -->
                       <div class="facilitators-chips-list" v-if="slot.facilitators && slot.facilitators.length > 0">
-                        <div 
-                          v-for="fac in slot.facilitators" 
-                          :key="fac.documentId || fac.id" 
+                        <div
+                          v-for="fac in slot.facilitators"
+                          :key="fac.documentId || fac.id"
                           class="person-chip facilitator-chip"
-                          draggable="true"
-                          @dragstart="onDragStart($event, { type: 'facilitator', data: fac, fromSlotId: slot.documentId || slot.id })"
-                          @dragend="onDragEnd($event)"
                         >
                           <span class="person-name">{{ fac.firstName }} {{ fac.lastName }}</span>
                           <!-- Conflict indicator -->
-                          <span 
-                            v-if="getPersonSlotConflict(fac, slot, 'facilitator')" 
-                            class="conflict-warn-dot" 
+                          <span
+                            v-if="getPersonSlotConflict(fac, slot, 'facilitator')"
+                            class="conflict-warn-dot"
                             :title="getPersonSlotConflict(fac, slot, 'facilitator')"
                           >⚠️</span>
-                          <button 
-                            type="button" 
-                            class="remove-chip-btn no-print" 
-                            @click.stop="removeFacilitator(slot, fac)" 
+                          <button
+                            type="button"
+                            class="remove-chip-btn no-print"
+                            @click.stop="removeFacilitator(slot, fac)"
                             title="Désaffecter"
                           ><i class="mdi mdi-close"></i></button>
                         </div>
                       </div>
 
-                      <!-- Drop invite if no facilitator -->
-                      <div v-else class="empty-drop-slot facilitator-drop-slot">
-                        <span class="drop-invite-text">👉 Glisser un animateur ici</span>
+                      <div v-else class="empty-assignment-slot facilitator-assignment-slot">
+                        <span>Aucun animateur assigné — modifiez l’animation pour en ajouter.</span>
                       </div>
                     </div>
 
-                    <!-- ──────── PARTICIPANTS (BÉNÉFICIAIRES) TARGET ──────── -->
-                    <div 
-                      class="anim-section participants-section"
-                      :class="{ 
-                        'drop-target-active': activeDragType === 'participant' && !isDraggedPersonInSlot(slot),
-                        'drop-target-disabled': activeDragType === 'participant' && isDraggedPersonInSlot(slot)
-                      }"
-                      @dragover.prevent="onDragOver($event, ['participant'], slot)"
-                      @dragleave="onDragLeave($event)"
-                      @drop.prevent="onDropOnSlot($event, slot, 'participant')"
-                    >
+                    <!-- ──────── PARTICIPANTS (BÉNÉFICIAIRES) ──────── -->
+                    <div class="anim-section participants-section">
                       <div class="section-label-row">
                         <span class="label-text">👥 Bénéficiaires</span>
                         <span class="capacity-gauge-pill" :class="getCapacityClass(slot)">
@@ -636,8 +565,8 @@
 
                       <!-- Capacity Gauge Bar -->
                       <div class="capacity-progress-track">
-                        <div 
-                          class="capacity-progress-fill" 
+                        <div
+                          class="capacity-progress-fill"
                           :style="{ width: getCapacityPercentage(slot) + '%' }"
                           :class="getCapacityClass(slot)"
                         ></div>
@@ -645,35 +574,31 @@
 
                       <!-- Participants Chips Grid -->
                       <div class="participants-chips-grid" v-if="slot.participants && slot.participants.length > 0">
-                        <div 
-                          v-for="part in slot.participants" 
-                          :key="part.documentId || part.id" 
+                        <div
+                          v-for="part in slot.participants"
+                          :key="part.documentId || part.id"
                           class="person-chip participant-chip"
-                          draggable="true"
-                          @dragstart="onDragStart($event, { type: 'participant', data: part, fromSlotId: slot.documentId || slot.id })"
-                          @dragend="onDragEnd($event)"
                         >
                           <span class="person-avatar">👤</span>
                           <span class="person-name">{{ part.firstName }} {{ part.lastName }}</span>
                           <!-- Conflict Dot -->
-                          <span 
-                            v-if="getPersonSlotConflict(part, slot, 'participant')" 
-                            class="conflict-warn-dot" 
+                          <span
+                            v-if="getPersonSlotConflict(part, slot, 'participant')"
+                            class="conflict-warn-dot"
                             :title="getPersonSlotConflict(part, slot, 'participant')"
                           >⚠️</span>
-                          <button 
-                            type="button" 
-                            class="remove-chip-btn no-print" 
-                            @click.stop="removeParticipant(slot, part)" 
+                          <button
+                            type="button"
+                            class="remove-chip-btn no-print"
+                            @click.stop="removeParticipant(slot, part)"
                             title="Désinscrire"
                           >✕</button>
                         </div>
                       </div>
 
-                      <!-- Drop Target Prompt -->
-                      <div class="participants-drop-zone-cta">
-                        <span class="drop-cta-text">📥 Glisser des bénéficiaires ici</span>
-                      </div>
+                      <button type="button" class="tool-btn small-btn no-print" @click="openQuickAddParticipants(slot)">
+                        ➕ Ajouter des bénéficiaires
+                      </button>
                     </div>
                   </div>
 
@@ -681,13 +606,11 @@
               </div>
 
               <!-- Bottom Add Area on Column -->
-              <div 
+              <div
                 class="column-bottom-add-zone"
-                @dragover.prevent="onDragOver($event, ['activity'])"
-                @drop.prevent="onDropOnDay($event, day)"
                 @click="openCreateModal({ date: day.dateStr })"
               >
-                <span>➕ Ajouter / Glisser une activité</span>
+                <span>➕ Ajouter une activité</span>
               </div>
             </div>
           </div>
@@ -707,22 +630,11 @@
             </div>
           </div>
 
-          <!-- Day Drop Banner for Activity -->
-          <div 
-            class="day-full-drop-banner"
-            :class="{ 'drop-active': activeDragType === 'activity' }"
-            @dragover.prevent="onDragOver($event, ['activity'])"
-            @dragleave="onDragLeave($event)"
-            @drop.prevent="onDropOnDay($event, selectedDayObject)"
-          >
-            <span>🎯 Glissez une activité ici pour la planifier ce {{ selectedDayObject.dayName }} {{ selectedDayObject.dayNumber }} {{ selectedDayObject.monthFull }}</span>
-          </div>
-
           <!-- Empty State in Day View -->
           <div v-if="selectedDaySlots.length === 0" class="empty-state-large">
             <span class="empty-icon-large">🏖️</span>
             <h3>Aucune animation programmée pour cette journée</h3>
-            <p>Glissez une activité depuis la palette latérale à droite ou cliquez sur le bouton ci-dessous.</p>
+            <p>Créez une animation ou utilisez le bouton ci-dessous pour démarrer.</p>
             <button type="button" class="action-btn primary-btn" @click="openCreateModal({ date: currentDateStr })">
               ➕ Créer une animation
             </button>
@@ -734,27 +646,16 @@
               v-for="slot in selectedDaySlots" 
               :key="slot.documentId || slot.id" 
               class="day-slot-expanded-card"
-              :class="{
-                'is-collapsed': !isSlotExpanded(slot),
-                'is-expanded': isSlotExpanded(slot),
-                'has-conflict': slotConflicts(slot).length > 0,
-                'is-under-min': isUnderMinParticipants(slot),
-                'is-over-max': isOverMaxParticipants(slot),
-                'is-full': isFullParticipants(slot),
-                'is-participant-mode': isPlacingParticipants,
-                'is-already-present-slot': isDraggedPersonInSlot(slot)
-              }"
-              @dragover.prevent="onDragOver($event, ['activity', 'facilitator', 'participant', 'location'], slot)"
-              @dragleave="onDragLeave($event)"
-              @drop.prevent="onDropOnCard($event, slot)"
-            >
-              <!-- Orange Banner when dragged person is already in this slot (Day View) -->
-              <div v-if="isDraggedPersonInSlot(slot)" class="already-present-banner">
-                <span class="already-present-icon">🟠</span>
-                <span class="already-present-text">
-                  {{ activeDragType === 'participant' ? 'Bénéficiaire déjà inscrit sur ce créneau' : 'Animateur déjà assigné à ce créneau' }}
-                </span>
-              </div>
+               :class="{
+                 'is-collapsed': !isSlotExpanded(slot),
+                 'is-expanded': isSlotExpanded(slot),
+                 'has-conflict': slotConflicts(slot).length > 0,
+                 'is-under-min': isUnderMinParticipants(slot),
+                 'is-over-max': isOverMaxParticipants(slot),
+                 'is-full': isFullParticipants(slot),
+                 'is-participant-mode': isPlacingParticipants
+               }"
+             >
 
               <!-- Background Watermark / Ghost Activity in Day View -->
               <div v-if="isPlacingParticipants" class="room-slot-activity-watermark" :title="'Animation programmée : ' + (slot.activityTemplate?.name || 'Activité')">
@@ -832,14 +733,7 @@
               <div v-show="isSlotExpanded(slot)" class="day-slot-expanded-body">
                 <!-- Location & Facilitators Row -->
                 <div class="expanded-middle-row">
-                  <!-- Location Target -->
-                  <div 
-                    class="location-box"
-                    :class="{ 'drop-target-active': activeDragType === 'location' }"
-                    @dragover.prevent="onDragOver($event, ['location'])"
-                    @dragleave="onDragLeave($event)"
-                    @drop.prevent="onDropOnSlot($event, slot, 'location')"
-                  >
+                  <div class="location-box">
                     <span class="box-title">📍 Salle / Lieu</span>
                     <div class="location-content" v-if="slot.location">
                       <strong class="loc-name">{{ slot.location.name }}</strong>
@@ -849,34 +743,21 @@
                         <i class="mdi mdi-close"></i>
                       </button>
                     </div>
-                    <div v-else class="empty-drop-slot">
-                      <span>👉 Glisser une salle ici</span>
+                    <div v-else class="empty-assignment-slot">
+                      <span>Aucune salle assignée — modifiez l’animation pour en choisir une.</span>
                     </div>
                   </div>
 
-                  <!-- Facilitators Target -->
-                  <div 
-                    class="facilitators-box"
-                    :class="{ 
-                      'drop-target-active': activeDragType === 'facilitator' && !isDraggedPersonInSlot(slot),
-                      'drop-target-disabled': activeDragType === 'facilitator' && isDraggedPersonInSlot(slot)
-                    }"
-                    @dragover.prevent="onDragOver($event, ['facilitator'], slot)"
-                    @dragleave="onDragLeave($event)"
-                    @drop.prevent="onDropOnSlot($event, slot, 'facilitator')"
-                  >
+                  <div class="facilitators-box">
                     <div class="box-title-row">
                       <span class="box-title">👨‍🏫 Animateurs</span>
                       <span class="count-badge">{{ (slot.facilitators || []).length }}</span>
                     </div>
                     <div class="facilitators-chips-grid" v-if="slot.facilitators && slot.facilitators.length > 0">
-                      <div 
-                        v-for="fac in slot.facilitators" 
-                        :key="fac.documentId || fac.id" 
+                      <div
+                        v-for="fac in slot.facilitators"
+                        :key="fac.documentId || fac.id"
                         class="person-chip facilitator-chip large"
-                        draggable="true"
-                        @dragstart="onDragStart($event, { type: 'facilitator', data: fac, fromSlotId: slot.documentId || slot.id })"
-                        @dragend="onDragEnd($event)"
                       >
                         <span class="person-name">{{ fac.firstName }} {{ fac.lastName }}</span>
                         <span v-if="getPersonSlotConflict(fac, slot, 'facilitator')" class="conflict-warn-dot" :title="getPersonSlotConflict(fac, slot, 'facilitator')">⚠️</span>
@@ -885,44 +766,32 @@
                         </button>
                       </div>
                     </div>
-                    <div v-else class="empty-drop-slot">
-                      <span>👉 Glisser un animateur ici</span>
+                    <div v-else class="empty-assignment-slot">
+                      <span>Aucun animateur assigné — modifiez l’animation pour en ajouter.</span>
                     </div>
                   </div>
                 </div>
 
                 <!-- Participants Section -->
-                <div 
-                  class="expanded-participants-section"
-                  :class="{ 
-                    'drop-target-active': activeDragType === 'participant' && !isDraggedPersonInSlot(slot),
-                    'drop-target-disabled': activeDragType === 'participant' && isDraggedPersonInSlot(slot)
-                  }"
-                  @dragover.prevent="onDragOver($event, ['participant'], slot)"
-                  @dragleave="onDragLeave($event)"
-                  @drop.prevent="onDropOnSlot($event, slot, 'participant')"
-                >
+                <div class="expanded-participants-section">
                   <div class="section-label-row">
                     <span class="label-text">👥 Bénéficiaires inscrits ({{ (slot.participants || []).length }} / {{ getMaxParticipants(slot) }})</span>
                     <button type="button" class="tool-btn small-btn no-print" @click="openQuickAddParticipants(slot)">➕ Ajouter des inscrits</button>
                   </div>
 
                   <div class="capacity-progress-track">
-                    <div 
-                      class="capacity-progress-fill" 
+                    <div
+                      class="capacity-progress-fill"
                       :style="{ width: getCapacityPercentage(slot) + '%' }"
                       :class="getCapacityClass(slot)"
                     ></div>
                   </div>
 
                   <div class="participants-chips-grid large-grid" v-if="slot.participants && slot.participants.length > 0">
-                    <div 
-                      v-for="part in slot.participants" 
-                      :key="part.documentId || part.id" 
+                    <div
+                      v-for="part in slot.participants"
+                      :key="part.documentId || part.id"
                       class="person-chip participant-chip large"
-                      draggable="true"
-                      @dragstart="onDragStart($event, { type: 'participant', data: part, fromSlotId: slot.documentId || slot.id })"
-                      @dragend="onDragEnd($event)"
                     >
                       <span class="person-avatar">👤</span>
                       <span class="person-name">{{ part.firstName }} {{ part.lastName }}</span>
@@ -931,10 +800,6 @@
                         <i class="mdi mdi-close"></i>
                       </button>
                     </div>
-                  </div>
-
-                  <div class="participants-drop-zone-cta large-cta">
-                    <span>📥 Glisser des bénéficiaires ici depuis la palette ou une autre animation</span>
                   </div>
                 </div>
               </div>
@@ -985,269 +850,6 @@
 
       </div>
 
-      <!-- ──────────────── DOCKABLE SIDE PALETTE (DRAG & DROP PALETTE) ──────────────── -->
-      <aside class="side-dnd-palette no-print" v-show="isPaletteOpen">
-        <!-- Palette Header with Tabs -->
-        <div class="palette-header">
-          <div class="palette-title-row">
-            <h3>✨ Palette Drag & Drop</h3>
-            <button type="button" class="close-palette-btn" @click="isPaletteOpen = false" title="Fermer la palette">✕</button>
-          </div>
-          <p class="palette-subtitle">Attrapez un élément et déposez-le sur le planning :</p>
-
-          <!-- Palette Navigation Tabs -->
-          <div class="palette-tabs">
-            <button 
-              type="button" 
-              class="palette-tab-btn" 
-              :class="{ active: paletteTab === 'activities' }" 
-              @click="paletteTab = 'activities'"
-            >
-              🎯 Activités <span class="tab-count-badge">{{ activities.length }}</span>
-            </button>
-            <button 
-              type="button" 
-              class="palette-tab-btn" 
-              :class="{ active: paletteTab === 'facilitators' }" 
-              @click="paletteTab = 'facilitators'"
-            >
-              👨‍🏫 Animateurs <span class="tab-count-badge">{{ facilitators.length }}</span>
-            </button>
-            <button 
-              type="button" 
-              class="palette-tab-btn" 
-              :class="{ active: paletteTab === 'participants' }" 
-              @click="paletteTab = 'participants'"
-            >
-              👥 Bénéficiaires <span class="tab-count-badge">{{ participants.length }}</span>
-            </button>
-            <button 
-              type="button" 
-              class="palette-tab-btn" 
-              :class="{ active: paletteTab === 'locations' }" 
-              @click="paletteTab = 'locations'"
-            >
-              📍 Salles <span class="tab-count-badge">{{ locations.length }}</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Palette Tab Content Area -->
-        <div class="palette-content-scroll">
-          
-          <!-- ─── TAB 1: ACTIVITIES ─── -->
-          <div v-if="paletteTab === 'activities'" class="palette-tab-pane">
-            <div class="palette-search-box">
-              <input 
-                type="text" 
-                v-model="activitySearchQuery" 
-                placeholder="🔍 Rechercher une activité..."
-                class="palette-search-input"
-              />
-              <button v-if="activitySearchQuery" class="clear-search-btn" @click="activitySearchQuery = ''">✕</button>
-            </div>
-
-            <!-- Activities Draggable List -->
-            <div class="palette-items-list">
-              <div 
-                v-for="act in filteredPaletteActivities" 
-                :key="act.documentId || act.id" 
-                class="draggable-palette-item activity-palette-item"
-                draggable="true"
-                @dragstart="onDragStart($event, { type: 'activity', data: act })"
-                @dragend="onDragEnd($event)"
-              >
-                <div class="item-drag-handle">⠿</div>
-                <div class="item-info">
-                  <div class="item-header-row">
-                    <strong class="item-title">🎯 {{ act.name }}</strong>
-                    <span class="duration-badge">⏱️ {{ act.standardDuration || 60 }} min</span>
-                  </div>
-                  <div class="item-meta-row">
-                    <span class="rule-chip">👥 {{ act.minParticipants || 0 }}-{{ act.maxParticipants || 10 }} pers.</span>
-                    <span v-if="getActivityTag({ activityTemplate: act })" class="tag-chip">
-                      {{ getActivityTag({ activityTemplate: act }) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="filteredPaletteActivities.length === 0" class="palette-empty-search">
-                <p>Aucune activité trouvée</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- ─── TAB 2: FACILITATORS ─── -->
-          <div v-if="paletteTab === 'facilitators'" class="palette-tab-pane">
-            <div class="palette-search-box">
-              <input 
-                type="text" 
-                v-model="facilitatorSearchQuery" 
-                placeholder="🔍 Rechercher un animateur..."
-                class="palette-search-input"
-              />
-              <button v-if="facilitatorSearchQuery" class="clear-search-btn" @click="facilitatorSearchQuery = ''">✕</button>
-            </div>
-
-            <!-- Facilitators Draggable List -->
-            <div class="palette-items-list">
-              <div 
-                v-for="fac in filteredPaletteFacilitators" 
-                :key="fac.documentId || fac.id" 
-                class="draggable-palette-item facilitator-palette-item"
-                draggable="true"
-                @dragstart="onDragStart($event, { type: 'facilitator', data: fac })"
-                @dragend="onDragEnd($event)"
-              >
-                <div class="item-drag-handle">⠿</div>
-                <div class="item-info">
-                  <div class="item-header-row">
-                    <strong class="item-title">👨‍🏫 {{ fac.firstName }} {{ fac.lastName }}</strong>
-                    <span class="availability-badge" :class="getFacilitatorAvailabilityClass(fac)">
-                      {{ getFacilitatorAvailabilityLabel(fac) }}
-                    </span>
-                  </div>
-                  <div class="item-meta-row">
-                    <span class="subtext-chip">📅 {{ getFacilitatorWeeklySlotsCount(fac) }} anim. cette semaine</span>
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="filteredPaletteFacilitators.length === 0" class="palette-empty-search">
-                <p>Aucun animateur trouvé</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- ─── TAB 3: PARTICIPANTS ─── -->
-          <div v-if="paletteTab === 'participants'" class="palette-tab-pane">
-            <div class="palette-search-box">
-              <input 
-                type="text" 
-                v-model="participantSearchQuery" 
-                placeholder="🔍 Rechercher un bénéficiaire..."
-                class="palette-search-input"
-              />
-              <button v-if="participantSearchQuery" class="clear-search-btn" @click="participantSearchQuery = ''">✕</button>
-            </div>
-
-            <!-- Participant Fast Filter Pills -->
-            <div class="participant-filter-pills">
-              <button 
-                type="button" 
-                class="filter-pill-btn" 
-                :class="{ active: participantFilterMode === 'all' }" 
-                @click="participantFilterMode = 'all'"
-              >
-                Tous ({{ participants.length }})
-              </button>
-              <button 
-                type="button" 
-                class="filter-pill-btn highlight-pill" 
-                :class="{ active: participantFilterMode === 'unassigned_week' }" 
-                @click="participantFilterMode = 'unassigned_week'"
-                title="Bénéficiaires sans aucune animation cette semaine"
-              >
-                ⚡ Non inscrits ({{ unassignedWeeklyParticipantsCount }})
-              </button>
-              <button 
-                type="button" 
-                class="filter-pill-btn" 
-                :class="{ active: participantFilterMode === 'available_today' }" 
-                @click="participantFilterMode = 'available_today'"
-              >
-                ✅ Dispos ce jour
-              </button>
-            </div>
-
-            <!-- Participants Draggable List -->
-            <div class="palette-items-list">
-              <div 
-                v-for="part in filteredPaletteParticipants" 
-                :key="part.documentId || part.id" 
-                class="draggable-palette-item participant-palette-item"
-                draggable="true"
-                @dragstart="onDragStart($event, { type: 'participant', data: part })"
-                @dragend="onDragEnd($event)"
-              >
-                <div class="item-drag-handle">⠿</div>
-                <div class="item-info">
-                  <div class="item-header-row">
-                    <strong class="item-title">👤 {{ part.firstName }} {{ part.lastName }}</strong>
-                    <span class="weekly-presence-pill" :class="{ 'zero-count': getParticipantWeeklySlotsCount(part) === 0 }">
-                      📅 {{ getParticipantWeeklySlotsCount(part) }} anim./sem.
-                    </span>
-                  </div>
-                  <div class="item-meta-row">
-                    <span class="availability-badge small" :class="getParticipantTodayAvailabilityClass(part)">
-                      {{ getParticipantTodayAvailabilityLabel(part) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="filteredPaletteParticipants.length === 0" class="palette-empty-search">
-                <p>Aucun bénéficiaire correspondant aux filtres</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- ─── TAB 4: LOCATIONS ─── -->
-          <div v-if="paletteTab === 'locations'" class="palette-tab-pane">
-            <div class="palette-search-box">
-              <input 
-                type="text" 
-                v-model="locationSearchQuery" 
-                placeholder="🔍 Rechercher une salle..."
-                class="palette-search-input"
-              />
-              <button v-if="locationSearchQuery" class="clear-search-btn" @click="locationSearchQuery = ''">✕</button>
-            </div>
-
-            <!-- Locations Draggable List -->
-            <div class="palette-items-list">
-              <div 
-                v-for="loc in filteredPaletteLocations" 
-                :key="loc.documentId || loc.id" 
-                class="draggable-palette-item location-palette-item"
-                draggable="true"
-                @dragstart="onDragStart($event, { type: 'location', data: loc })"
-                @dragend="onDragEnd($event)"
-              >
-                <div class="item-drag-handle">⠿</div>
-                <div class="item-info">
-                  <div class="item-header-row">
-                    <strong class="item-title">📍 {{ loc.name }}</strong>
-                    <span v-if="loc.capacity" class="cap-badge">Max {{ loc.capacity }}p</span>
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="filteredPaletteLocations.length === 0" class="palette-empty-search">
-                <p>Aucune salle trouvée</p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Palette Bottom Trash / Unassign Zone -->
-        <div 
-          class="palette-trash-zone"
-          :class="{ 'drop-trash-hover': activeDragType && isTrashHovered }"
-          @dragover.prevent="onTrashDragOver($event)"
-          @dragleave="onTrashDragLeave($event)"
-          @drop.prevent="onDropOnTrash($event)"
-        >
-          <span class="trash-icon">🗑️</span>
-          <div class="trash-text-block">
-            <strong>Zone de désaffectation</strong>
-            <small>Glissez un animateur, un résident ou une salle ici pour le retirer</small>
-          </div>
-        </div>
-      </aside>
-
     </div>
 
     <!-- ════════════════ MODALS ════════════════ -->
@@ -1264,9 +866,17 @@
           <!-- Activity Picker -->
           <div class="form-group">
             <label>🎯 Activité *</label>
+            <div class="entity-search-box">
+              <input
+                type="text"
+                v-model="activitySearchQuery"
+                placeholder="🔍 Rechercher une activité..."
+                class="entity-search-input"
+              />
+            </div>
             <select v-model="slotForm.activityTemplate" required class="form-input" @change="onModalActivityChange">
               <option value="" disabled>Sélectionner une activité...</option>
-              <option v-for="act in activities" :key="act.documentId || act.id" :value="act.documentId || act.id">
+              <option v-for="act in filteredActivities" :key="act.documentId || act.id" :value="act.documentId || act.id">
                 {{ act.name }} ({{ act.standardDuration || 60 }} min)
               </option>
             </select>
@@ -1300,9 +910,17 @@
             </div>
             <div class="form-group">
               <label>📍 Salle / Lieu</label>
+              <div class="entity-search-box">
+                <input
+                  type="text"
+                  v-model="locationSearchQuery"
+                  placeholder="🔍 Rechercher une salle..."
+                  class="entity-search-input"
+                />
+              </div>
               <select v-model="slotForm.location" class="form-input">
                 <option value="">Aucune salle assignée</option>
-                <option v-for="loc in locations" :key="loc.documentId || loc.id" :value="loc.documentId || loc.id">
+                <option v-for="loc in filteredLocations" :key="loc.documentId || loc.id" :value="loc.documentId || loc.id">
                   {{ loc.name }} (Capacité: {{ loc.capacity || 'N/A' }})
                 </option>
               </select>
@@ -1364,9 +982,17 @@
 
             <div class="form-group mt-2">
               <label>📍 Salle / Lieu</label>
+              <div class="entity-search-box">
+                <input
+                  type="text"
+                  v-model="locationSearchQuery"
+                  placeholder="🔍 Rechercher une salle..."
+                  class="entity-search-input"
+                />
+              </div>
               <select v-model="slotForm.location" class="form-input">
                 <option value="">Aucune salle assignée</option>
-                <option v-for="loc in locations" :key="loc.documentId || loc.id" :value="loc.documentId || loc.id">
+                <option v-for="loc in filteredLocations" :key="loc.documentId || loc.id" :value="loc.documentId || loc.id">
                   {{ loc.name }} (Capacité: {{ loc.capacity || 'N/A' }})
                 </option>
               </select>
@@ -1422,14 +1048,25 @@
           <!-- Facilitators Multi-select -->
           <div class="form-group">
             <label>👨‍🏫 Animateur(s) référent(s)</label>
+            <div class="entity-search-box">
+              <input
+                type="text"
+                v-model="facilitatorSearchQuery"
+                placeholder="🔍 Rechercher un animateur..."
+                class="entity-search-input"
+              />
+            </div>
             <div class="multi-select-box">
-              <label v-for="fac in facilitators" :key="fac.documentId || fac.id" class="checkbox-item">
+              <label v-for="fac in filteredFacilitators" :key="fac.documentId || fac.id" class="checkbox-item">
                 <input 
                   type="checkbox" 
                   :value="fac.documentId || fac.id" 
                   v-model="slotForm.facilitators" 
                 />
-                <span>{{ fac.firstName }} {{ fac.lastName }}</span>
+                <span>
+                  {{ fac.firstName }} {{ fac.lastName }}
+                  <small class="inline-entity-meta">{{ getFacilitatorWeeklySlotsCount(fac) }} anim./sem. — {{ getFacilitatorAvailabilityLabel(fac) }}</small>
+                </span>
               </label>
             </div>
           </div>
@@ -1443,14 +1080,25 @@
                 <button type="button" class="link-btn" @click="slotForm.participants = []">Aucun</button>
               </div>
             </div>
+            <div class="entity-search-box">
+              <input
+                type="text"
+                v-model="participantSearchQuery"
+                placeholder="🔍 Rechercher un bénéficiaire..."
+                class="entity-search-input"
+              />
+            </div>
             <div class="multi-select-box scrollable-select">
-              <label v-for="part in participants" :key="part.documentId || part.id" class="checkbox-item">
-                <input 
-                  type="checkbox" 
-                  :value="part.documentId || part.id" 
-                  v-model="slotForm.participants" 
+              <label v-for="part in filteredParticipants" :key="part.documentId || part.id" class="checkbox-item">
+                <input
+                  type="checkbox"
+                  :value="part.documentId || part.id"
+                  v-model="slotForm.participants"
                 />
-                <span>{{ part.firstName }} {{ part.lastName }}</span>
+                <span>
+                  {{ part.firstName }} {{ part.lastName }}
+                  <small class="inline-entity-meta">{{ getParticipantWeeklySlotsCount(part) }} anim./sem. — {{ getParticipantTodayAvailabilityLabel(part) }}</small>
+                </span>
               </label>
             </div>
           </div>
@@ -1542,23 +1190,54 @@
         <div class="modal-form">
           <p>Animation : <strong>{{ quickAddSlot?.activityTemplate?.name }}</strong> ({{ formatSlotTimeRange(quickAddSlot?.startDate, quickAddSlot?.endDate) }})</p>
 
-          <div class="palette-search-box">
-            <input 
-              type="text" 
-              v-model="quickAddSearch" 
+          <div class="quick-add-search-box">
+            <input
+              type="text"
+              v-model="quickAddSearch"
               placeholder="🔍 Filtrer les bénéficiaires..."
-              class="palette-search-input"
+              class="quick-add-search-input"
             />
+          </div>
+
+          <div class="participant-filter-pills">
+            <button
+              type="button"
+              class="filter-pill-btn"
+              :class="{ active: quickAddFilterMode === 'all' }"
+              @click="quickAddFilterMode = 'all'"
+            >
+              Tous ({{ participants.length }})
+            </button>
+            <button
+              type="button"
+              class="filter-pill-btn highlight-pill"
+              :class="{ active: quickAddFilterMode === 'unassigned_week' }"
+              @click="quickAddFilterMode = 'unassigned_week'"
+              title="Bénéficiaires sans aucune animation cette semaine"
+            >
+              ⚡ Non inscrits ({{ unassignedQuickAddParticipantsCount }})
+            </button>
+            <button
+              type="button"
+              class="filter-pill-btn"
+              :class="{ active: quickAddFilterMode === 'available_today' }"
+              @click="quickAddFilterMode = 'available_today'"
+            >
+              ✅ Dispos ce jour
+            </button>
           </div>
 
           <div class="multi-select-box scrollable-select">
             <label v-for="part in filteredQuickAddParticipants" :key="part.documentId || part.id" class="checkbox-item">
-              <input 
-                type="checkbox" 
-                :value="part.documentId || part.id" 
-                v-model="quickAddSelectedIds" 
+              <input
+                type="checkbox"
+                :value="part.documentId || part.id"
+                v-model="quickAddSelectedIds"
               />
-              <span>{{ part.firstName }} {{ part.lastName }}</span>
+              <span>
+                {{ part.firstName }} {{ part.lastName }}
+                <small class="inline-entity-meta">{{ getParticipantWeeklySlotsCount(part) }} anim./sem. — {{ getParticipantTodayAvailabilityLabel(part) }}</small>
+              </span>
             </label>
           </div>
 
@@ -1637,20 +1316,14 @@ export default {
     const viewMode = ref('week'); // 'week' | 'day' | 'month'
     const currentDate = ref(new Date());
     const lastNavAction = ref(null); // 'prev' | 'next' | 'today' | 'date-input' | null
-    const isPaletteOpen = ref(true);
-    const paletteTab = ref('activities'); // 'activities' | 'facilitators' | 'participants' | 'locations'
     const highlightedSlotId = ref(null);
     const isParticipantPlacementMode = ref(false);
 
-    const isPlacingParticipants = computed(() => {
-      return isParticipantPlacementMode.value || activeDragType.value === 'participant' || (isPaletteOpen.value && paletteTab.value === 'participants');
-    });
+    const isPlacingParticipants = computed(() => isParticipantPlacementMode.value);
 
     function toggleParticipantMode() {
       isParticipantPlacementMode.value = !isParticipantPlacementMode.value;
       if (isParticipantPlacementMode.value) {
-        isPaletteOpen.value = true;
-        paletteTab.value = 'participants';
         globalStore.addInfo('Mode Salle & Bénéficiaires : Les créneaux de salle sont mis au premier plan et les animations passent en transparence.', 'Créneaux de Salle');
       }
     }
@@ -1726,18 +1399,6 @@ export default {
       expandedSlotIds.value = nextSet;
     }
 
-    // Search queries in palette
-    const activitySearchQuery = ref('');
-    const facilitatorSearchQuery = ref('');
-    const participantSearchQuery = ref('');
-    const locationSearchQuery = ref('');
-    const participantFilterMode = ref('all'); // 'all' | 'unassigned_week' | 'available_today'
-
-    // Drag and Drop state
-    const activeDragType = ref(null); // 'activity' | 'facilitator' | 'participant' | 'location'
-    const draggedItem = ref(null);
-    const isTrashHovered = ref(false);
-
     // Modals state
     const showSlotModal = ref(false);
     const editingSlotId = ref(null);
@@ -1755,6 +1416,10 @@ export default {
       facilitators: [],
       participants: []
     });
+    const activitySearchQuery = ref('');
+    const facilitatorSearchQuery = ref('');
+    const participantSearchQuery = ref('');
+    const locationSearchQuery = ref('');
 
     const backgroundJob = ref({
       active: false,
@@ -1776,6 +1441,45 @@ export default {
     const quickAddSlot = ref(null);
     const quickAddSelectedIds = ref([]);
     const quickAddSearch = ref('');
+    const quickAddFilterMode = ref('all');
+
+    const filteredActivities = computed(() => {
+      const q = activitySearchQuery.value.trim().toLowerCase();
+      const selectedId = String(slotForm.value.activityTemplate || '');
+      return props.activities.filter(act => {
+        const id = String(act.documentId || act.id || '');
+        const matches = !q || (act.name || '').toLowerCase().includes(q) ||
+          (Array.isArray(act.tags) && act.tags.some(tag => (tag || '').toLowerCase().includes(q)));
+        return matches || id === selectedId;
+      });
+    });
+
+    const filteredLocations = computed(() => {
+      const q = locationSearchQuery.value.trim().toLowerCase();
+      const selectedId = String(slotForm.value.location || '');
+      return props.locations.filter(loc => {
+        const id = String(loc.documentId || loc.id || '');
+        return (!q || (loc.name || '').toLowerCase().includes(q)) || id === selectedId;
+      });
+    });
+
+    const filteredFacilitators = computed(() => {
+      const q = facilitatorSearchQuery.value.trim().toLowerCase();
+      const selectedIds = new Set((slotForm.value.facilitators || []).map(id => String(id)));
+      return props.facilitators.filter(fac => {
+        const full = `${fac.firstName || ''} ${fac.lastName || ''}`.toLowerCase();
+        return (!q || full.includes(q)) || selectedIds.has(String(fac.documentId || fac.id));
+      });
+    });
+
+    const filteredParticipants = computed(() => {
+      const q = participantSearchQuery.value.trim().toLowerCase();
+      const selectedIds = new Set((slotForm.value.participants || []).map(id => String(id)));
+      return props.participants.filter(part => {
+        const full = `${part.firstName || ''} ${part.lastName || ''}`.toLowerCase();
+        return (!q || full.includes(q)) || selectedIds.has(String(part.documentId || part.id));
+      });
+    });
 
     // Formatters
     const currentDateStr = computed(() => {
@@ -2044,11 +1748,6 @@ export default {
       };
     });
 
-    // Weekly presence counts for participants
-    const unassignedWeeklyParticipantsCount = computed(() => {
-      return props.participants.filter(p => getParticipantWeeklySlotsCount(p) === 0).length;
-    });
-
     function getParticipantWeeklySlotsCount(person) {
       const pId = person.documentId || person.id;
       const weekDates = new Set(weekDaysList.value.map(d => d.dateStr));
@@ -2231,278 +1930,6 @@ export default {
       return Math.max(15, Math.round(diff / 60000));
     }
 
-    // Palette filtered lists
-    const filteredPaletteActivities = computed(() => {
-      const q = activitySearchQuery.value.trim().toLowerCase();
-      if (!q) return props.activities;
-      return props.activities.filter(a => {
-        return (a.name || '').toLowerCase().includes(q) ||
-               (Array.isArray(a.tags) && a.tags.some(t => t.toLowerCase().includes(q)));
-      });
-    });
-
-    const filteredPaletteFacilitators = computed(() => {
-      const q = facilitatorSearchQuery.value.trim().toLowerCase();
-      if (!q) return props.facilitators;
-      return props.facilitators.filter(f => {
-        const full = `${f.firstName || ''} ${f.lastName || ''}`.toLowerCase();
-        return full.includes(q);
-      });
-    });
-
-    const filteredPaletteParticipants = computed(() => {
-      const q = participantSearchQuery.value.trim().toLowerCase();
-      let list = props.participants;
-
-      if (participantFilterMode.value === 'unassigned_week') {
-        list = list.filter(p => getParticipantWeeklySlotsCount(p) === 0);
-      } else if (participantFilterMode.value === 'available_today') {
-        list = list.filter(p => checkPersonDateAvailability(p, currentDateStr.value, 'participant', schedulerStore.timeslots).available);
-      }
-
-      if (q) {
-        list = list.filter(p => {
-          const full = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
-          return full.includes(q);
-        });
-      }
-      return list;
-    });
-
-    const filteredPaletteLocations = computed(() => {
-      const q = locationSearchQuery.value.trim().toLowerCase();
-      if (!q) return props.locations;
-      return props.locations.filter(l => (l.name || '').toLowerCase().includes(q));
-    });
-
-    // ──────────────── DRAG AND DROP HANDLERS (OPTIMIZED O(1) LOOKUPS) ────────────────
-    const draggedPersonOccupiedSlotIds = ref(new Set());
-
-    function onDragStart(event, payload) {
-      activeDragType.value = payload.type;
-      draggedItem.value = payload;
-      event.dataTransfer.effectAllowed = 'copyMove';
-      event.dataTransfer.setData('application/json', JSON.stringify(payload));
-
-      // Precompute set of slot IDs where this person is already assigned (O(1) lookups during drag)
-      const occupied = new Set();
-      if (payload && (payload.type === 'participant' || payload.type === 'facilitator') && payload.data) {
-        const personId = String(payload.data.documentId || payload.data.id);
-        const isPart = payload.type === 'participant';
-        (currentPeriodSlots.value || []).forEach(s => {
-          const list = isPart ? (s.participants || []) : (s.facilitators || []);
-          if (list.some(item => String(item.documentId || item.id) === personId)) {
-            occupied.add(String(s.documentId || s.id));
-          }
-        });
-      }
-      draggedPersonOccupiedSlotIds.value = occupied;
-    }
-
-    function onDragEnd() {
-      activeDragType.value = null;
-      draggedItem.value = null;
-      isTrashHovered.value = false;
-      draggedPersonOccupiedSlotIds.value = new Set();
-      document.querySelectorAll('.drop-hover').forEach(el => el.classList.remove('drop-hover'));
-    }
-
-    function isDraggedPersonInSlot(slot) {
-      if (!slot || draggedPersonOccupiedSlotIds.value.size === 0) return false;
-      return draggedPersonOccupiedSlotIds.value.has(String(slot.documentId || slot.id));
-    }
-
-    function onDragOver(event, acceptedTypes = [], slot = null) {
-      if (!activeDragType.value) return;
-      if (acceptedTypes.length > 0 && !acceptedTypes.includes(activeDragType.value)) {
-        event.dataTransfer.dropEffect = 'none';
-        return;
-      }
-      // If the person is already in this slot, block drop
-      if (slot && isDraggedPersonInSlot(slot)) {
-        event.dataTransfer.dropEffect = 'none';
-        return;
-      }
-      event.dataTransfer.dropEffect = 'copy';
-      const target = event.currentTarget;
-      if (target) target.classList.add('drop-hover');
-    }
-
-    function onDragLeave(event) {
-      const target = event.currentTarget;
-      if (target) target.classList.remove('drop-hover');
-    }
-
-    // Drop on Day Column (Propose to create a new slot with preset activity / person)
-    function onDropOnDay(event, dayObj) {
-      const target = event.currentTarget;
-      if (target) target.classList.remove('drop-hover');
-
-      if (!draggedItem.value) return;
-      const { type, data } = draggedItem.value;
-
-      if (type === 'activity') {
-        // Propose to create a timeslot with this activity pre-filled for this day
-        let suggestedStartTime = '10:00';
-        if (dayObj.slots && dayObj.slots.length > 0) {
-          const lastSlot = dayObj.slots[dayObj.slots.length - 1];
-          if (lastSlot.endDate) {
-            const endHour = new Date(lastSlot.endDate).getHours();
-            if (endHour <= 12) suggestedStartTime = '14:00';
-            else if (endHour <= 15) suggestedStartTime = '15:30';
-            else suggestedStartTime = '17:00';
-          }
-        }
-
-        openCreateModal({
-          activityTemplate: data.documentId || data.id,
-          date: dayObj.dateStr,
-          startTime: suggestedStartTime,
-          facilitators: (data.authorizedFacilitators || []).map(f => f.documentId || f.id || f)
-        });
-      } else if (type === 'facilitator') {
-        if (dayObj.slots.length === 0) {
-          if (confirm(`Aucun créneau d'animation n'existe le ${dayObj.dayName} ${dayObj.dayNumber}. Voulez-vous créer un créneau pour l'animateur ${data.firstName} ${data.lastName} ?`)) {
-            openCreateModal({
-              date: dayObj.dateStr,
-              facilitators: [data.documentId || data.id]
-            });
-          }
-        } else {
-          globalStore.addInfo('Glissez l\'animateur sur une carte d\'animation spécifique pour l\'assigner.', 'Information');
-        }
-      } else if (type === 'participant') {
-        if (dayObj.slots.length === 0) {
-          if (confirm(`Aucun créneau d'animation n'existe le ${dayObj.dayName} ${dayObj.dayNumber}. Voulez-vous créer un créneau pour inscrire ${data.firstName} ${data.lastName} ?`)) {
-            openCreateModal({
-              date: dayObj.dateStr,
-              participants: [data.documentId || data.id]
-            });
-          }
-        } else {
-          globalStore.addInfo('Glissez le bénéficiaire sur une carte d\'animation spécifique pour l\'inscrire.', 'Information');
-        }
-      }
-    }
-
-    // Drop directly on animation card
-    async function onDropOnCard(event, slot) {
-      const target = event.currentTarget;
-      if (target) target.classList.remove('drop-hover');
-
-      if (!draggedItem.value) return;
-      const { type, data, fromSlotId } = draggedItem.value;
-      const slotId = slot.documentId || slot.id;
-
-      // Prevent adding person if already in slot
-      if (isDraggedPersonInSlot(slot)) {
-        const personName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
-        globalStore.addWarning(`${type === 'participant' ? 'Le bénéficiaire' : 'L\'animateur'} "${personName}" est déjà inscrit sur ce créneau.`, 'Déjà présent');
-        return;
-      }
-
-      if (type === 'activity') {
-        const curName = slot.activityTemplate?.name || 'Activité actuelle';
-        const newName = data.name || 'Nouvelle activité';
-        if (confirm(`Voulez-vous remplacer l'activité "${curName}" par "${newName}" sur ce créneau ?`)) {
-          const start = new Date(slot.startDate);
-          const duration = data.standardDuration || 60;
-          const end = new Date(start.getTime() + duration * 60 * 1000);
-          try {
-            await schedulerStore.updateSlot(slotId, {
-              activityTemplate: data.documentId || data.id,
-              endDate: end.toISOString()
-            });
-            globalStore.addSuccess(`Activité remplacée par "${newName}" !`, 'Activité modifiée');
-          } catch (err) {
-            globalStore.addError(err.message || 'Erreur lors du remplacement de l\'activité.', 'Erreur');
-          }
-        }
-      } else if (type === 'facilitator') {
-        if (fromSlotId && fromSlotId !== slotId) {
-          await schedulerStore.removeFacilitatorFromSlot(fromSlotId, data.documentId || data.id);
-        }
-        await schedulerStore.addFacilitatorToSlot(slotId, data.documentId || data.id);
-      } else if (type === 'participant') {
-        if (fromSlotId && fromSlotId !== slotId) {
-          await schedulerStore.moveParticipantBetweenSlots(fromSlotId, slotId, data.documentId || data.id);
-        } else {
-          await schedulerStore.addParticipantToSlot(slotId, data.documentId || data.id);
-        }
-      } else if (type === 'location') {
-        await schedulerStore.setLocationForSlot(slotId, data.documentId || data.id);
-      }
-    }
-
-    // Drop on Slot Specific Target (Assign facilitator, participant, or location)
-    async function onDropOnSlot(event, slot, targetSection) {
-      const target = event.currentTarget;
-      if (target) target.classList.remove('drop-hover');
-
-      if (!draggedItem.value) return;
-      const { type, data, fromSlotId } = draggedItem.value;
-      const slotId = slot.documentId || slot.id;
-
-      // Prevent adding person if already in slot
-      if (isDraggedPersonInSlot(slot)) {
-        const personName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
-        globalStore.addWarning(`${type === 'participant' ? 'Le bénéficiaire' : 'L\'animateur'} "${personName}" est déjà inscrit sur ce créneau.`, 'Déjà présent');
-        return;
-      }
-
-      try {
-        if (type === 'facilitator') {
-          if (fromSlotId && fromSlotId !== slotId) {
-            await schedulerStore.removeFacilitatorFromSlot(fromSlotId, data.documentId || data.id);
-          }
-          await schedulerStore.addFacilitatorToSlot(slotId, data.documentId || data.id);
-        } else if (type === 'participant') {
-          if (fromSlotId && fromSlotId !== slotId) {
-            await schedulerStore.moveParticipantBetweenSlots(fromSlotId, slotId, data.documentId || data.id);
-          } else {
-            await schedulerStore.addParticipantToSlot(slotId, data.documentId || data.id);
-          }
-        } else if (type === 'location') {
-          await schedulerStore.setLocationForSlot(slotId, data.documentId || data.id);
-        }
-      } catch (err) {
-        globalStore.addError(err.message || 'Erreur lors de l\'affectation.', 'Erreur');
-      }
-    }
-
-    // Trash Drop
-    function onTrashDragOver(event) {
-      event.dataTransfer.dropEffect = 'move';
-      isTrashHovered.value = true;
-    }
-
-    function onTrashDragLeave() {
-      isTrashHovered.value = false;
-    }
-
-    async function onDropOnTrash(event) {
-      isTrashHovered.value = false;
-      if (!draggedItem.value) return;
-      const { type, data, fromSlotId } = draggedItem.value;
-
-      if (!fromSlotId) {
-        globalStore.addWarning('Cet élément n\'appartient à aucune animation.', 'Corbeille');
-        return;
-      }
-
-      try {
-        if (type === 'facilitator') {
-          await schedulerStore.removeFacilitatorFromSlot(fromSlotId, data.documentId || data.id);
-        } else if (type === 'participant') {
-          await schedulerStore.removeParticipantFromSlot(fromSlotId, data.documentId || data.id);
-        } else if (type === 'location') {
-          await schedulerStore.setLocationForSlot(fromSlotId, null);
-        }
-      } catch (err) {
-        globalStore.addError(err.message || 'Erreur lors du retrait.', 'Erreur');
-      }
-    }
-
     // Direct Removal Handlers
     async function removeFacilitator(slot, fac) {
       try {
@@ -2520,7 +1947,7 @@ export default {
       }
     }
 
-    async function clearSlotLocation(slot) {
+    async function removeLocation(slot) {
       try {
         await schedulerStore.setLocationForSlot(slot.documentId || slot.id, null);
       } catch (err) {
@@ -2687,6 +2114,10 @@ export default {
 
     function openCreateModal(defaults = {}) {
       editingSlotId.value = null;
+      activitySearchQuery.value = '';
+      facilitatorSearchQuery.value = '';
+      participantSearchQuery.value = '';
+      locationSearchQuery.value = '';
       const initialDate = defaults.date || currentDateStr.value;
       const firstAct = props.activities[0];
       const selectedActId = defaults.activityTemplate || (firstAct ? (firstAct.documentId || firstAct.id) : '');
@@ -2722,6 +2153,10 @@ export default {
 
     function openEditModal(slot) {
       editingSlotId.value = slot.documentId || slot.id;
+      activitySearchQuery.value = '';
+      facilitatorSearchQuery.value = '';
+      participantSearchQuery.value = '';
+      locationSearchQuery.value = '';
       const s = new Date(slot.startDate);
       const e = new Date(slot.endDate);
 
@@ -2941,16 +2376,32 @@ export default {
       quickAddSlot.value = slot;
       quickAddSelectedIds.value = (slot.participants || []).map(p => p.documentId || p.id);
       quickAddSearch.value = '';
+      quickAddFilterMode.value = 'all';
       showQuickAddModal.value = true;
     }
 
+    const unassignedQuickAddParticipantsCount = computed(() => {
+      return props.participants.filter(p => getParticipantWeeklySlotsCount(p) === 0).length;
+    });
+
     const filteredQuickAddParticipants = computed(() => {
+      let list = props.participants;
+      const selectedIds = new Set(quickAddSelectedIds.value.map(id => String(id)));
+
+      if (quickAddFilterMode.value === 'unassigned_week') {
+        list = list.filter(p => getParticipantWeeklySlotsCount(p) === 0);
+      } else if (quickAddFilterMode.value === 'available_today') {
+        list = list.filter(p => checkPersonDateAvailability(p, currentDateStr.value, 'participant', schedulerStore.timeslots).available);
+      }
+
       const q = quickAddSearch.value.trim().toLowerCase();
-      if (!q) return props.participants;
-      return props.participants.filter(p => {
-        const full = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
-        return full.includes(q);
-      });
+      if (q) {
+        list = list.filter(p => {
+          const full = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+          return full.includes(q) || selectedIds.has(String(p.documentId || p.id));
+        });
+      }
+      return list;
     });
 
     async function saveQuickAddParticipants() {
@@ -2985,36 +2436,31 @@ export default {
       monthCalendarDays,
       currentPeriodSlotsCount,
       metrics,
-      isPaletteOpen,
-      paletteTab,
       highlightedSlotId,
       isParticipantPlacementMode,
       isPlacingParticipants,
       toggleParticipantMode,
-      activitySearchQuery,
-      facilitatorSearchQuery,
-      participantSearchQuery,
-      locationSearchQuery,
-      participantFilterMode,
-      unassignedWeeklyParticipantsCount,
-      filteredPaletteActivities,
-      filteredPaletteFacilitators,
-      filteredPaletteParticipants,
-      filteredPaletteLocations,
-      activeDragType,
-      isDraggedPersonInSlot,
-      isTrashHovered,
       showSlotModal,
       editingSlotId,
       isSavingModal,
       slotForm,
-      showDuplicateModal,
+       activitySearchQuery,
+       facilitatorSearchQuery,
+       participantSearchQuery,
+       locationSearchQuery,
+       filteredActivities,
+       filteredLocations,
+       filteredFacilitators,
+       filteredParticipants,
+       showDuplicateModal,
       duplicateForm,
       showQuickAddModal,
       quickAddSlot,
       quickAddSelectedIds,
       quickAddSearch,
+      quickAddFilterMode,
       filteredQuickAddParticipants,
+      unassignedQuickAddParticipantsCount,
       getParticipantWeeklySlotsCount,
       getFacilitatorWeeklySlotsCount,
       getFacilitatorAvailabilityClass,
@@ -3033,18 +2479,9 @@ export default {
       getActivityTag,
       formatSlotTimeRange,
       getSlotDurationMinutes,
-      onDragStart,
-      onDragEnd,
-      onDragOver,
-      onDragLeave,
-      onDropOnDay,
-      onDropOnSlot,
-      onTrashDragOver,
-      onTrashDragLeave,
-      onDropOnTrash,
       removeFacilitator,
       removeParticipant,
-      clearSlotLocation,
+      removeLocation,
       confirmDeleteSlot,
       confirmClearCurrentPeriod,
       setViewMode,
@@ -3071,7 +2508,6 @@ export default {
       locationSlotCounts,
       modalContextTitle,
       applyTimePreset,
-      onDropOnCard,
       expandedSlotIds,
       isSlotExpanded,
       toggleSlotExpand,
@@ -3166,16 +2602,6 @@ export default {
   color: #cbd5e1;
   border-radius: 20px;
   text-transform: uppercase;
-}
-
-.dnd-badge-pill {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.2rem 0.65rem;
-  background: rgba(13, 148, 136, 0.15);
-  color: #5eead4;
-  border-radius: 20px;
-  border: 1px solid rgba(13, 148, 136, 0.35);
 }
 
 .subtitle {
@@ -3550,7 +2976,7 @@ export default {
   margin-left: 0.3rem;
 }
 
-/* ──────────────── MAIN PLANNING LAYOUT & SIDE PALETTE ──────────────── */
+/* ──────────────── MAIN PLANNING LAYOUT ──────────────── */
 .main-planning-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -3562,22 +2988,6 @@ export default {
   position: relative;
   width: 100%;
   min-width: 0;
-}
-
-.main-planning-layout.has-open-palette {
-  grid-template-columns: 1fr 340px;
-}
-
-@media (max-width: 1200px) {
-  .main-planning-layout.has-open-palette {
-    grid-template-columns: 1fr 300px;
-  }
-}
-
-@media (max-width: 900px) {
-  .main-planning-layout.has-open-palette {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ──────────────── KANBAN BOARD (WEEK VIEW) ──────────────── */
@@ -3607,16 +3017,6 @@ export default {
 
 .day-kanban-column.is-weekend {
   background: rgba(15, 23, 42, 0.55);
-}
-
-.day-kanban-column.drop-active-column {
-  border: 2px dashed #6366f1;
-  background: rgba(99, 102, 241, 0.06);
-}
-
-.day-kanban-column.drop-hover {
-  background: rgba(99, 102, 241, 0.12) !important;
-  border-color: #4f46e5 !important;
 }
 
 /* Column Header */
@@ -3718,17 +3118,6 @@ export default {
   flex-grow: 1;
 }
 
-.activity-drop-placeholder {
-  border: 2px dashed #6366f1;
-  background: rgba(99, 102, 241, 0.08);
-  border-radius: 10px;
-  padding: 0.75rem;
-  text-align: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #818cf8;
-}
-
 .empty-day-state {
   display: flex;
   flex-direction: column;
@@ -3782,11 +3171,6 @@ export default {
   background: #4f46e5;
   color: #ffffff;
   border-color: #4f46e5;
-}
-
-.empty-day-subtext {
-  font-size: 0.72rem;
-  color: #94a3b8;
 }
 
 /* ──────────────── ANIMATION CARDS (KANBAN) ──────────────── */
@@ -3884,67 +3268,6 @@ export default {
   box-shadow: 0 6px 18px rgba(2, 132, 199, 0.3);
 }
 
-/* ──────────────── ALREADY PRESENT IN SLOT (ORANGE HIGHLIGHT & NO-DROP) ──────────────── */
-.animation-card.is-already-present-slot,
-.day-slot-expanded-card.is-already-present-slot {
-  border-color: #ea580c !important;
-  border-left: 5px solid #f97316 !important;
-  background: linear-gradient(135deg, rgba(234, 88, 12, 0.2) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35), 0 4px 14px rgba(234, 88, 12, 0.2) !important;
-  cursor: not-allowed !important;
-  opacity: 0.92;
-}
-
-.animation-card.is-already-present-slot:hover,
-.day-slot-expanded-card.is-already-present-slot:hover {
-  border-color: #f97316 !important;
-  box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.45), 0 6px 18px rgba(234, 88, 12, 0.3) !important;
-}
-
-.already-present-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: rgba(234, 88, 12, 0.2);
-  border: 1.5px solid #f97316;
-  border-radius: 8px;
-  padding: 0.35rem 0.6rem;
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: #fed7aa;
-  margin-top: 0.2rem;
-  margin-bottom: 0.4rem;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
-  animation: pulse-orange 1.8s infinite alternate;
-  z-index: 2;
-}
-
-@keyframes pulse-orange {
-  from {
-    background-color: rgba(234, 88, 12, 0.2);
-    border-color: #f97316;
-  }
-  to {
-    background-color: rgba(234, 88, 12, 0.35);
-    border-color: #ea580c;
-  }
-}
-
-.already-present-icon {
-  font-size: 0.9rem;
-}
-
-.already-present-text {
-  line-height: 1.25;
-}
-
-.drop-target-disabled {
-  border-color: #f97316 !important;
-  background: rgba(249, 115, 22, 0.15) !important;
-  cursor: not-allowed !important;
-  opacity: 0.7;
-}
-
 /* Subtle transparent watermark of activity in background */
 .room-slot-activity-watermark {
   position: absolute;
@@ -4040,25 +3363,6 @@ export default {
   font-weight: 600;
   color: #e2e8f0;
   opacity: 0.9;
-}
-
-/* Drop hint when dragging participant */
-.room-placement-drop-hint {
-  background: rgba(14, 165, 233, 0.15);
-  border: 1.5px dashed #0284c7;
-  border-radius: 8px;
-  padding: 0.45rem 0.65rem;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #38bdf8;
-  text-align: center;
-  animation: pulse-drop-glow 1.5s infinite alternate;
-  z-index: 1;
-}
-
-@keyframes pulse-drop-glow {
-  from { background: rgba(14, 165, 233, 0.1); border-color: #38bdf8; }
-  to { background: rgba(14, 165, 233, 0.25); border-color: #0284c7; }
 }
 
 .participant-preview-names {
@@ -4285,16 +3589,6 @@ export default {
   transition: all 0.2s;
 }
 
-.anim-section.drop-target-active {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.1);
-}
-
-.anim-section.drop-hover {
-  background: rgba(99, 102, 241, 0.2) !important;
-  border-color: #4f46e5 !important;
-}
-
 .section-label-row {
   display: flex;
   align-items: center;
@@ -4351,13 +3645,7 @@ export default {
   border-radius: 6px;
   font-size: 0.74rem;
   font-weight: 600;
-  cursor: grab;
-  user-select: none;
   transition: all 0.2s;
-}
-
-.person-chip:active {
-  cursor: grabbing;
 }
 
 .facilitator-chip {
@@ -4398,8 +3686,7 @@ export default {
   cursor: help;
 }
 
-/* Empty drop slot invite */
-.empty-drop-slot {
+.empty-assignment-slot {
   border: 1px dashed rgba(255, 255, 255, 0.12);
   border-radius: 6px;
   padding: 0.35rem 0.45rem;
@@ -4407,18 +3694,6 @@ export default {
   font-size: 0.72rem;
   color: #94a3b8;
   background: rgba(0, 0, 0, 0.2);
-}
-
-.participants-drop-zone-cta {
-  border: 1px dashed rgba(16, 185, 129, 0.4);
-  background: rgba(16, 185, 129, 0.12);
-  border-radius: 6px;
-  padding: 0.3rem;
-  text-align: center;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #6ee7b7;
-  margin-top: 0.2rem;
 }
 
 /* Capacity gauge */
@@ -4543,24 +3818,6 @@ export default {
   font-weight: 600;
   color: #cbd5e1;
   border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.day-full-drop-banner {
-  border: 2px dashed rgba(255, 255, 255, 0.15);
-  background: rgba(15, 23, 42, 0.5);
-  padding: 1rem;
-  border-radius: 12px;
-  text-align: center;
-  font-weight: 600;
-  color: #94a3b8;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-}
-
-.day-full-drop-banner.drop-active {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.1);
-  color: #a5b4fc;
 }
 
 .day-slots-grid {
@@ -4724,11 +3981,6 @@ export default {
   font-size: 0.85rem;
 }
 
-.large-cta {
-  padding: 0.5rem;
-  font-size: 0.8rem;
-}
-
 /* ──────────────── MONTH VIEW ──────────────── */
 .month-calendar-board {
   background: var(--panel-bg-solid, #0f172a);
@@ -4835,116 +4087,14 @@ export default {
   font-weight: 600;
 }
 
-/* ──────────────── DOCKABLE SIDE PALETTE ──────────────── */
-.side-dnd-palette {
-  background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 120px);
-  max-height: 800px;
-  position: sticky;
-  top: 1rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
-  color: #f8fafc;
-}
-
-.palette-header {
-  padding: 1rem 1.1rem 0.5rem 1.1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.palette-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.palette-title-row h3 {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #f8fafc;
-}
-
-.close-palette-btn {
-  background: transparent;
-  border: none;
-  font-size: 0.9rem;
-  cursor: pointer;
-  color: #94a3b8;
-  border-radius: 4px;
-  padding: 0.2rem 0.4rem;
-  transition: all 0.15s;
-}
-
-.close-palette-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
-}
-
-.palette-subtitle {
-  margin: 0.2rem 0 0.6rem 0;
-  font-size: 0.78rem;
-  color: #94a3b8;
-}
-
-.palette-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
-}
-
-.palette-tab-btn {
-  border: none;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.4rem 0.5rem;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #94a3b8;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-}
-
-.palette-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
-}
-
-.palette-tab-btn.active {
-  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
-  color: #ffffff;
-  border-color: #5eead4;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35);
-}
-
-.tab-count-badge {
-  font-size: 0.68rem;
-  padding: 0.05rem 0.35rem;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.25);
-}
-
-.palette-content-scroll {
-  padding: 0.85rem;
-  overflow-y: auto;
-  flex-grow: 1;
-}
-
-.palette-search-box {
+.entity-search-box,
+.quick-add-search-box {
   position: relative;
   margin-bottom: 0.65rem;
 }
 
-.palette-search-input {
+.entity-search-input,
+.quick-add-search-input {
   width: 100%;
   padding: 0.45rem 1.8rem 0.45rem 0.7rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -4955,22 +4105,11 @@ export default {
   outline: none;
 }
 
-.palette-search-input:focus {
+.entity-search-input:focus,
+.quick-add-search-input:focus {
   border-color: #0d9488;
   background: rgba(0, 0, 0, 0.5);
   box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
-}
-
-.clear-search-btn {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  font-size: 0.75rem;
-  color: #94a3b8;
-  cursor: pointer;
 }
 
 .participant-filter-pills {
@@ -5014,159 +4153,12 @@ export default {
   color: #ffffff;
 }
 
-/* Draggable palette items */
-.palette-items-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.draggable-palette-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.55rem 0.65rem;
-  border-radius: 10px;
-  cursor: grab;
-  user-select: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.draggable-palette-item:hover {
-  border-color: #0d9488;
-  background: rgba(13, 148, 136, 0.1);
-  transform: translateX(2px);
-  box-shadow: 0 3px 8px rgba(13, 148, 136, 0.2);
-}
-
-.draggable-palette-item:active {
-  cursor: grabbing;
-}
-
-.item-drag-handle {
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  flex-grow: 1;
-}
-
-.item-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.item-title {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #f8fafc;
-}
-
-.item-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-}
-
-.duration-badge {
-  font-size: 0.7rem;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-  font-weight: 600;
-  color: #cbd5e1;
-}
-
-.rule-chip, .subtext-chip {
-  font-size: 0.68rem;
+.inline-entity-meta {
+  display: block;
+  margin-top: 0.15rem;
   color: #94a3b8;
-}
-
-.weekly-presence-pill {
-  font-size: 0.68rem;
-  font-weight: 700;
-  background: rgba(2, 132, 199, 0.2);
-  color: #38bdf8;
-  border: 1px solid rgba(2, 132, 199, 0.35);
-  padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-}
-
-.weekly-presence-pill.zero-count {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.availability-badge {
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-}
-
-.badge-available {
-  background: rgba(16, 185, 129, 0.18);
-  color: #6ee7b7;
-  border: 1px solid rgba(16, 185, 129, 0.35);
-}
-
-.badge-unavailable {
-  background: rgba(239, 68, 68, 0.18);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-}
-
-.palette-empty-search {
-  text-align: center;
-  padding: 1.5rem 0.5rem;
-  color: #64748b;
-  font-size: 0.82rem;
-}
-
-/* Palette Trash Zone */
-.palette-trash-zone {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  background: rgba(239, 68, 68, 0.08);
-  border-top: 1px dashed rgba(239, 68, 68, 0.3);
-  transition: all 0.2s;
-}
-
-.palette-trash-zone.drop-trash-hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-top-color: #ef4444;
-  transform: scale(1.02);
-}
-
-.trash-icon {
-  font-size: 1.6rem;
-}
-
-.trash-text-block {
-  display: flex;
-  flex-direction: column;
-}
-
-.trash-text-block strong {
-  font-size: 0.82rem;
-  color: #f87171;
-}
-
-.trash-text-block small {
-  font-size: 0.7rem;
-  color: #fca5a5;
+  font-size: 0.65rem;
+  font-weight: 500;
 }
 
 /* ──────────────── MODALS ──────────────── */

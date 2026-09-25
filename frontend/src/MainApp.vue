@@ -290,22 +290,20 @@
               class="nav-item dedicated-nav-item" 
               :class="{ active: currentPage === 'timeslots' }"
               @click="navigateTo('timeslots')"
-              title="Planning des animations et ateliers en glisser-déposer"
+              title="Gérer le planning des animations et ateliers"
             >
               <span class="nav-icon">🎯</span>
               <span class="nav-label">Planning Animations</span>
-              <span class="nav-badge-pill dnd-pill">✨ D&D</span>
             </button>
 
             <button 
               class="nav-item dedicated-nav-item" 
               :class="{ active: currentPage === 'room-sessions' }"
               @click="navigateTo('room-sessions')"
-              title="Gestion des ouvertures de salles et référents en glisser-déposer"
+              title="Gérer les ouvertures de salles et référents"
             >
               <span class="nav-icon">🚪</span>
               <span class="nav-label">Ouverture Salles</span>
-              <span class="nav-badge-pill dnd-pill">✨ D&D</span>
             </button>
 
             <button 
