@@ -36,16 +36,16 @@
         <!-- LOGIN FORM -->
         <form v-if="authTab === 'login'" @submit.prevent="handleLogin" class="auth-form">
           <div class="form-group">
-            <label for="loginEmail">Adresse email</label>
+            <label for="loginEmail">Adresse email ou nom d'utilisateur</label>
             <div class="input-wrapper">
-              <span class="input-icon">✉️</span>
+              <span class="input-icon">👤</span>
               <input 
-                type="email" 
+                type="text" 
                 id="loginEmail" 
                 v-model="loginForm.email" 
                 required 
-                autocomplete="email"
-                placeholder="Ex: jean.dupont@mail.com"
+                autocomplete="username"
+                placeholder="Ex: nom@exemple.com ou nom_utilisateur"
                 class="form-input"
               />
             </div>
@@ -2687,12 +2687,17 @@ export default {
       this.localAuthError = '';
       const email = (this.loginForm.email || this.loginForm.identifier || '').trim();
       if (!email) {
-        this.localAuthError = 'Veuillez saisir votre adresse email.';
+        this.localAuthError = 'Veuillez saisir votre adresse email ou nom d\'utilisateur.';
         return;
       }
       try {
         await this.authStore.login(email, this.loginForm.password);
         this.showToast('Connexion réussie !');
+        const redirectPath = sessionStorage.getItem('redirectPath') || '/timeslots';
+        sessionStorage.removeItem('redirectPath');
+        if (this.$router.currentRoute.value?.path !== redirectPath) {
+          this.$router.replace(redirectPath);
+        }
       } catch (err) {
         this.localAuthError = err.message;
       }
@@ -2714,6 +2719,11 @@ export default {
           this.registerForm.password
         );
         this.showToast('Compte créé avec succès !');
+        const redirectPath = sessionStorage.getItem('redirectPath') || '/timeslots';
+        sessionStorage.removeItem('redirectPath');
+        if (this.$router.currentRoute.value?.path !== redirectPath) {
+          this.$router.replace(redirectPath);
+        }
       } catch (err) {
         this.localAuthError = err.message;
       }

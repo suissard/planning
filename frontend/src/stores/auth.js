@@ -54,20 +54,27 @@ export const useAuthStore = defineStore('auth', {
         const res = await api.post(`/auth/local`, {
           identifier,
           password: pwd
-        });
+        }, { skipGlobalNotification: true });
         this.token = res.data.jwt;
         this.user = res.data.user;
+        this.error = null;
         localStorage.setItem('token', this.token);
         localStorage.setItem('user', JSON.stringify(this.user));
         return this.user;
       } catch (err) {
-        console.error(err);
+        console.error('Erreur login:', err);
         const backendMessage = err.response?.data?.error?.message;
+        const status = err.response?.status;
         if (
           backendMessage === 'Invalid identifier or password' ||
-          backendMessage === 'Invalid credentials'
+          backendMessage === 'Invalid credentials' ||
+          status === 400
         ) {
-          this.error = 'Email ou mot de passe incorrect.';
+          this.error = 'Email/identifiant ou mot de passe incorrect.';
+        } else if (backendMessage?.toLowerCase().includes('too many requests') || status === 429) {
+          this.error = 'Trop de tentatives de connexion. Veuillez patienter une minute avant de réessayer.';
+        } else if (!err.response) {
+          this.error = 'Impossible de contacter le serveur distant. Vérifiez votre connexion internet.';
         } else {
           this.error = backendMessage || 'Email ou mot de passe incorrect.';
         }
@@ -82,18 +89,29 @@ export const useAuthStore = defineStore('auth', {
       this.error = null;
       try {
         const res = await api.post(`/auth/local/register`, {
-          username,
-          email,
+          username: (typeof username === 'string' ? username : '')?.trim(),
+          email: (typeof email === 'string' ? email : '')?.trim(),
           password
-        });
+        }, { skipGlobalNotification: true });
         this.token = res.data.jwt;
         this.user = res.data.user;
+        this.error = null;
         localStorage.setItem('token', this.token);
         localStorage.setItem('user', JSON.stringify(this.user));
         return this.user;
       } catch (err) {
-        console.error(err);
-        this.error = err.response?.data?.error?.message || 'Erreur lors de la création du compte.';
+        console.error('Erreur register:', err);
+        const backendMessage = err.response?.data?.error?.message;
+        const status = err.response?.status;
+        if (backendMessage?.toLowerCase().includes('already taken') || backendMessage?.toLowerCase().includes('email is already taken')) {
+          this.error = 'Cet email ou nom d\'utilisateur est déjà utilisé.';
+        } else if (backendMessage?.toLowerCase().includes('too many requests') || status === 429) {
+          this.error = 'Trop de tentatives. Veuillez patienter une minute avant de réessayer.';
+        } else if (!err.response) {
+          this.error = 'Impossible de contacter le serveur distant.';
+        } else {
+          this.error = backendMessage || 'Erreur lors de la création du compte.';
+        }
         throw new Error(this.error);
       } finally {
         this.loading = false;

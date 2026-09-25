@@ -59,10 +59,24 @@ api.interceptors.request.use(
     const globalStore = useGlobalStore();
     globalStore.setLoading(true);
 
-    // Get token from localStorage or from environment variable
-    const token = localStorage.getItem('token') || import.meta.env.VITE_STRAPI_API_TOKEN;
-    if (token && token !== 'fake-token-admin') {
-      config.headers.Authorization = `Bearer ${token}`;
+    const url = config.url || '';
+    const isAuthRoute = (
+      url.includes('/auth/local') ||
+      url.includes('/auth/') ||
+      url.startsWith('auth/')
+    );
+
+    // Never attach Authorization header on authentication requests
+    if (isAuthRoute) {
+      delete config.headers.Authorization;
+    } else {
+      // Get token from localStorage (logged in user JWT)
+      const token = localStorage.getItem('token');
+      if (token && token !== 'fake-token-admin') {
+        config.headers.Authorization = `Bearer ${token}`;
+      } else if (import.meta.env.VITE_STRAPI_API_TOKEN) {
+        config.headers.Authorization = `Bearer ${import.meta.env.VITE_STRAPI_API_TOKEN}`;
+      }
     }
 
     return config;
@@ -97,7 +111,11 @@ api.interceptors.response.use(
 
     const status = error.response?.status;
     const url = error.config?.url || '';
-    const isAuthEndpoint = url.includes('/auth/local');
+    const isAuthEndpoint = (
+      url.includes('/auth/local') ||
+      url.includes('/auth/') ||
+      url.startsWith('auth/')
+    );
     const isInvalidCredentials = status === 401 || (
       status === 403 && (
         error.response?.data?.error?.message?.toLowerCase().includes('invalid credentials') ||
@@ -111,8 +129,8 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Format human-intelligible error based on HTTP status code & API response
-    if (!error.config?.skipGlobalNotification) {
+    // Format human-intelligible error based on HTTP status code & API response (skip on auth endpoints where form displays it)
+    if (!error.config?.skipGlobalNotification && !isAuthEndpoint) {
       const errorInfo = getIntelligibleErrorMessage(error);
       globalStore.addError(errorInfo.message, errorInfo.title, errorInfo.status);
     }
