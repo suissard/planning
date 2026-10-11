@@ -5,7 +5,28 @@
         <span class="text-h6">📍</span>
         <span class="text-h6 font-weight-bold">{{ location ? 'Modifier le Lieu' : 'Ajouter un Lieu' }}</span>
       </div>
-      <v-btn icon="mdi-close" variant="text" size="small" @click="$emit('cancel')"></v-btn>
+      <div class="d-flex align-center ga-2">
+        <v-btn 
+          color="primary" 
+          variant="flat" 
+          size="small" 
+          :disabled="!isFormDirty" 
+          @click="save" 
+          class="text-none"
+        >
+          💾 Enregistrer
+        </v-btn>
+        <v-btn 
+          color="grey-lighten-1" 
+          variant="tonal" 
+          size="small" 
+          @click="cancel" 
+          class="text-none"
+        >
+          Annuler
+        </v-btn>
+        <v-btn icon="mdi-close" variant="text" size="small" @click="cancel"></v-btn>
+      </div>
     </v-card-title>
 
     <v-card-text style="overflow-y: auto; flex: 1; padding: 1.25rem;">
@@ -116,7 +137,7 @@
               🚫 Fermé Samedi & Dimanche
             </v-chip>
             <v-chip size="small" variant="outlined" color="teal" class="clickable" @click="presetWedAfternoon">
-              🧹 Mercredi après-midi (13h-18h)
+              🧹 Mercredi après-midi (13h-16h)
             </v-chip>
           </div>
 
@@ -300,26 +321,18 @@
       </v-form>
     </v-card-text>
 
-    <v-divider></v-divider>
+    <v-divider v-if="weeklyClosures.length > 0 || specificClosures.length > 0"></v-divider>
 
-    <v-card-actions class="px-4 py-3 justify-space-between">
+    <v-card-actions v-if="weeklyClosures.length > 0 || specificClosures.length > 0" class="px-4 py-2">
       <span class="text-caption text-medium-emphasis">
         {{ weeklyClosures.length }} fermeture(s) hebdo • {{ specificClosures.length }} fermeture(s) exceptionnelle(s)
       </span>
-      <div class="d-flex ga-2">
-        <v-btn color="grey-lighten-1" variant="text" @click="$emit('cancel')" class="text-none">
-          Annuler
-        </v-btn>
-        <v-btn color="primary" variant="flat" @click="save" class="text-none px-5">
-          💾 Enregistrer le lieu
-        </v-btn>
-      </div>
     </v-card-actions>
   </v-card>
 </template>
 
 <script>
-import { ref, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 
 export default {
   name: 'LocationForm',
@@ -361,6 +374,7 @@ export default {
 
     const weeklyClosures = ref([]);
     const specificClosures = ref([]);
+    const initialState = ref(null);
 
     const daysOfWeekOptions = [
       { label: 'Lundi', value: 'Monday' },
@@ -419,8 +433,8 @@ export default {
             if (typeof item === 'string' || typeof item === 'number') {
               return {
                 dayOfWeek: normalizeDay(item),
-                startTime: '08:00',
-                endTime: '18:00',
+                startTime: '10:00',
+                endTime: '16:00',
                 reason: 'Fermeture hebd.'
               };
             }
@@ -458,6 +472,11 @@ export default {
         weeklyClosures.value = [];
         specificClosures.value = [];
       }
+      initialState.value = JSON.stringify({
+        form: formData.value,
+        weekly: weeklyClosures.value,
+        specific: specificClosures.value
+      });
     };
 
     onMounted(initForm);
@@ -499,8 +518,8 @@ export default {
         if (!exists) {
           weeklyClosures.value.push({
             dayOfWeek: day,
-            startTime: '08:00',
-            endTime: '18:00',
+            startTime: '10:00',
+            endTime: '16:00',
             reason: 'Fermé le week-end'
           });
         }
@@ -511,7 +530,7 @@ export default {
       weeklyClosures.value.push({
         dayOfWeek: 'Wednesday',
         startTime: '13:00',
-        endTime: '18:00',
+        endTime: '16:00',
         reason: 'Entretien & Nettoyage'
       });
     };
@@ -520,8 +539,8 @@ export default {
     const addSpecificClosure = () => {
       const now = new Date();
       const pad = (n) => String(n).padStart(2, '0');
-      const startStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T08:00`;
-      const endStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T18:00`;
+      const startStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T10:00`;
+      const endStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T16:00`;
       specificClosures.value.push({
         startDate: startStr,
         endDate: endStr,
@@ -548,8 +567,8 @@ export default {
       const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
       const endRenov = new Date(now.getFullYear(), now.getMonth() + 1, 4);
       specificClosures.value.push({
-        startDate: `${nextMonth.getFullYear()}-${pad(nextMonth.getMonth() + 1)}-${pad(nextMonth.getDate())}T08:00`,
-        endDate: `${endRenov.getFullYear()}-${pad(endRenov.getMonth() + 1)}-${pad(endRenov.getDate())}T18:00`,
+        startDate: `${nextMonth.getFullYear()}-${pad(nextMonth.getMonth() + 1)}-${pad(nextMonth.getDate())}T10:00`,
+        endDate: `${endRenov.getFullYear()}-${pad(endRenov.getMonth() + 1)}-${pad(endRenov.getDate())}T16:00`,
         reason: 'Travaux de rénovation & Peinture'
       });
     };
@@ -598,7 +617,34 @@ export default {
       emit('save', formattedData);
     };
 
+    const cancel = () => {
+      if (initialState.value) {
+        const curState = JSON.stringify({
+          form: formData.value,
+          weekly: weeklyClosures.value,
+          specific: specificClosures.value
+        });
+        if (curState !== initialState.value) {
+          if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer vos modifications ?')) {
+            return;
+          }
+        }
+      }
+      emit('cancel');
+    };
+
+    const isFormDirty = computed(() => {
+      if (!initialState.value) return false;
+      const curState = JSON.stringify({
+        form: formData.value,
+        weekly: weeklyClosures.value,
+        specific: specificClosures.value
+      });
+      return curState !== initialState.value;
+    });
+
     return {
+      isFormDirty,
       valid,
       form,
       formData,
@@ -616,6 +662,7 @@ export default {
       presetRenovationClosure,
       presetAnnualClosure,
       save,
+      cancel,
     };
   },
 };

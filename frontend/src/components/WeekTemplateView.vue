@@ -221,6 +221,45 @@
                 </div>
               </div>
 
+              <!-- Opening Hours Field (10h - 16h default) -->
+              <div class="form-group-field">
+                <div class="field-label">
+                  <span>🕒 Horaires d'ouverture</span>
+                  <button 
+                    type="button" 
+                    class="quick-preset-link"
+                    @click="setRoomHoursPreset(selectedDay, loc, '10:00', '16:00')"
+                    :disabled="!isRoomActive(selectedDay, loc)"
+                    title="Rétablir 10h00 - 16h00 (standard)"
+                  >
+                    ⚡ Défaut 10h–16h
+                  </button>
+                </div>
+                <div class="time-range-row">
+                  <div class="time-input-group">
+                    <span class="time-sub-label">Début :</span>
+                    <input 
+                      type="time" 
+                      class="form-input time-input"
+                      :value="getRoomStartTime(selectedDay, loc)"
+                      @input="setRoomStartTime(selectedDay, loc, $event.target.value)"
+                      :disabled="!isRoomActive(selectedDay, loc)"
+                    />
+                  </div>
+                  <span class="time-range-separator">à</span>
+                  <div class="time-input-group">
+                    <span class="time-sub-label">Fin :</span>
+                    <input 
+                      type="time" 
+                      class="form-input time-input"
+                      :value="getRoomEndTime(selectedDay, loc)"
+                      @input="setRoomEndTime(selectedDay, loc, $event.target.value)"
+                      :disabled="!isRoomActive(selectedDay, loc)"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <!-- Notes field -->
               <div class="form-group-field">
                 <label class="field-label">📝 Consigne / Note récurrente (optionnel)</label>
@@ -312,6 +351,10 @@
                         {{ fac.firstName }} {{ fac.lastName }}
                       </option>
                     </select>
+
+                    <div v-if="isRoomActive(d.id, loc)" class="matrix-time-badge" title="Horaires d'ouverture de la salle">
+                      🕒 {{ formatTimeDisplay(getRoomStartTime(d.id, loc)) }}–{{ formatTimeDisplay(getRoomEndTime(d.id, loc)) }}
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -328,7 +371,7 @@
     </div>
 
     <!-- ════════════════ MODAL 1 : DUPLICATION D'UN JOUR ════════════════ -->
-    <div v-if="showCopyModal" class="modal-backdrop" @click.self="showCopyModal = false">
+    <div v-if="showCopyModal" class="modal-backdrop" @click.self="closeCopyModal()">
       <div class="modal-card">
         <div class="modal-header">
           <div class="modal-title-box">
@@ -338,7 +381,21 @@
               <p class="modal-sub">Copiez les salles et gestionnaires du <strong>{{ daysList.find(d => d.id === copySourceDay)?.name }}</strong> vers d'autres jours.</p>
             </div>
           </div>
-          <button type="button" class="close-btn" @click="showCopyModal = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="copyTargetDays.length === 0" 
+              @click="applyDayDuplication"
+            >
+              <span>📋</span>
+              <span>Dupliquer</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeCopyModal()">
+              Annuler
+            </button>
+            <button type="button" class="close-btn" @click="closeCopyModal()">✕</button>
+          </div>
         </div>
 
         <div class="modal-form">
@@ -370,24 +427,12 @@
               <button type="button" class="tag-btn" @click="copyTargetDays = []">Tout décocher</button>
             </div>
           </div>
-
-          <div class="modal-actions">
-            <button type="button" class="secondary-btn" @click="showCopyModal = false">Annuler</button>
-            <button 
-              type="button" 
-              class="action-btn primary-btn" 
-              @click="applyDayDuplication"
-              :disabled="copyTargetDays.length === 0"
-            >
-              📋 Dupliquer vers {{ copyTargetDays.length }} jour(s)
-            </button>
-          </div>
         </div>
       </div>
     </div>
 
     <!-- ════════════════ MODAL 2 : GESTION DES BÉNÉFICIAIRES DU MODÈLE ════════════════ -->
-    <div v-if="showPartsModal" class="modal-backdrop" @click.self="showPartsModal = false">
+    <div v-if="showPartsModal" class="modal-backdrop" @click.self="closePartsModal()">
       <div class="modal-card modal-lg">
         <div class="modal-header">
           <div class="modal-title-box">
@@ -399,7 +444,21 @@
               </p>
             </div>
           </div>
-          <button type="button" class="close-btn" @click="showPartsModal = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="!isPartsModalDirty" 
+              @click="saveParticipantsModal"
+            >
+              <span>💾</span>
+              <span>Enregistrer</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closePartsModal()">
+              Annuler
+            </button>
+            <button type="button" class="close-btn" @click="closePartsModal()">✕</button>
+          </div>
         </div>
 
         <div class="modal-form">
@@ -433,9 +492,6 @@
 
           <div class="modal-actions">
             <span class="selected-parts-count">{{ activeModalSelectedParts.length }} bénéficiaire(s) sélectionné(s)</span>
-            <button type="button" class="action-btn primary-btn" @click="saveParticipantsModal">
-              Valider la liste
-            </button>
           </div>
         </div>
       </div>
@@ -452,7 +508,21 @@
               <p class="modal-sub">Générez automatiquement les ouvertures de salles sur le planning selon ce modèle enregistré.</p>
             </div>
           </div>
-          <button type="button" class="close-btn" @click="showApplyModal = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="calculatedTotalOpenings === 0 || applyingLoading" 
+              @click="executeApplyGeneration"
+            >
+              <span>⚡</span>
+              <span>Générer</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="showApplyModal = false">
+              Annuler
+            </button>
+            <button type="button" class="close-btn" @click="showApplyModal = false">✕</button>
+          </div>
         </div>
 
         <div class="modal-form">
@@ -566,18 +636,6 @@
               <span>Écraser / remplacer les ouvertures existantes sur ces dates</span>
             </label>
           </div>
-
-          <div class="modal-actions">
-            <button type="button" class="secondary-btn" @click="showApplyModal = false">Annuler</button>
-            <button 
-              type="button" 
-              class="action-btn primary-btn" 
-              @click="executeApplyGeneration" 
-              :disabled="calculatedTotalOpenings === 0 || applyingLoading"
-            >
-              {{ applyingLoading ? 'Génération en cours...' : `⚡ Générer les ${calculatedTotalOpenings} ouvertures` }}
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -627,10 +685,12 @@ const daysList = [
 
 // MODALS STATE
 const showCopyModal = ref(false);
+const initialCopyTargetDays = ref(null);
 const copySourceDay = ref(1);
 const copyTargetDays = ref([2, 3, 4, 5]);
 
 const showPartsModal = ref(false);
+const initialSelectedParts = ref(null);
 const activePartsDay = ref(1);
 const activePartsLocation = ref(null);
 const activeModalSelectedParts = ref([]);
@@ -665,6 +725,8 @@ function initMissingLocationTemplates() {
         const defaultFac = props.facilitators[idx % (props.facilitators.length || 1)] || null;
         templateStore.templates.push({
           dayOfWeek: day.id,
+          startTime: '10:00',
+          endTime: '16:00',
           location: loc,
           manager: defaultFac,
           participants: [],
@@ -744,6 +806,50 @@ function setRoomNotes(dayId, loc, notes) {
   });
 }
 
+function getRoomStartTime(dayId, loc) {
+  const item = getTemplateItem(dayId, loc);
+  return item?.startTime ? item.startTime.slice(0, 5) : '10:00';
+}
+
+function getRoomEndTime(dayId, loc) {
+  const item = getTemplateItem(dayId, loc);
+  return item?.endTime ? item.endTime.slice(0, 5) : '16:00';
+}
+
+function setRoomStartTime(dayId, loc, startTime) {
+  const locId = loc.documentId || loc.id;
+  templateStore.setTemplateEntry(dayId, locId, {
+    location: loc,
+    startTime: startTime || '10:00'
+  });
+}
+
+function setRoomEndTime(dayId, loc, endTime) {
+  const locId = loc.documentId || loc.id;
+  templateStore.setTemplateEntry(dayId, locId, {
+    location: loc,
+    endTime: endTime || '16:00'
+  });
+}
+
+function setRoomHoursPreset(dayId, loc, start, end) {
+  const locId = loc.documentId || loc.id;
+  templateStore.setTemplateEntry(dayId, locId, {
+    location: loc,
+    startTime: start,
+    endTime: end
+  });
+}
+
+function formatTimeDisplay(t) {
+  if (!t) return '';
+  const parts = t.split(':');
+  if (parts.length >= 2) {
+    return `${parts[0]}h${parts[1] === '00' ? '' : parts[1]}`;
+  }
+  return t;
+}
+
 function getRoomParticipants(dayId, loc) {
   const item = getTemplateItem(dayId, loc);
   return item?.participants || [];
@@ -788,7 +894,18 @@ function openCopyModal(srcDay) {
   } else {
     copyTargetDays.value = daysList.filter(d => d.id !== srcDay && d.id <= 5).map(d => d.id);
   }
+  initialCopyTargetDays.value = JSON.stringify(copyTargetDays.value);
   showCopyModal.value = true;
+}
+
+function closeCopyModal(force = false) {
+  if (force !== true && initialCopyTargetDays.value && JSON.stringify(copyTargetDays.value) !== initialCopyTargetDays.value) {
+    if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans dupliquer ?')) {
+      return;
+    }
+  }
+  showCopyModal.value = false;
+  initialCopyTargetDays.value = null;
 }
 
 function setWorkDaysTarget() {
@@ -801,7 +918,7 @@ function setAllDaysTarget() {
 
 function applyDayDuplication() {
   templateStore.duplicateDayToDays(copySourceDay.value, copyTargetDays.value);
-  showCopyModal.value = false;
+  closeCopyModal(true);
 }
 
 // PARTICIPANTS MODAL
@@ -829,8 +946,24 @@ function openParticipantsModal(dayId, loc) {
   participantSearch.value = '';
   const current = getRoomParticipants(dayId, loc);
   activeModalSelectedParts.value = current.map(p => p.documentId || p.id || p);
+  initialSelectedParts.value = JSON.stringify(activeModalSelectedParts.value);
   showPartsModal.value = true;
 }
+
+function closePartsModal(force = false) {
+  if (force !== true && initialSelectedParts.value && JSON.stringify(activeModalSelectedParts.value) !== initialSelectedParts.value) {
+    if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans valider la liste ?')) {
+      return;
+    }
+  }
+  showPartsModal.value = false;
+  initialSelectedParts.value = null;
+}
+
+const isPartsModalDirty = computed(() => {
+  if (!initialSelectedParts.value) return false;
+  return JSON.stringify(activeModalSelectedParts.value) !== initialSelectedParts.value;
+});
 
 function isParticipantSelected(part) {
   const pId = part.documentId || part.id;
@@ -861,7 +994,7 @@ function saveParticipantsModal() {
     participants: fullParts
   });
 
-  showPartsModal.value = false;
+  closePartsModal(true);
   globalStore.addSuccess('Liste des bénéficiaires récurrents mise à jour.', 'Bénéficiaires');
 }
 
@@ -1500,6 +1633,77 @@ input:checked ~ .toggle-label {
   color: var(--text-secondary, #cbd5e1);
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.quick-preset-link {
+  background: none;
+  border: none;
+  color: #38bdf8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+
+.quick-preset-link:hover:not(:disabled) {
+  color: #7dd3fc;
+}
+
+.quick-preset-link:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.time-range-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.time-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.time-sub-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.time-input {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.85rem;
+  background: var(--bg-surface-soft, #0f172a);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 6px;
+  color: var(--text-primary, #f8fafc);
+  width: 100%;
+}
+
+.time-range-separator {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  font-weight: 600;
+}
+
+.matrix-time-badge {
+  font-size: 0.7rem;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-top: 0.25rem;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .req-warn {

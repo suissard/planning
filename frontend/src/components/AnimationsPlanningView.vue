@@ -855,11 +855,25 @@
     <!-- ════════════════ MODALS ════════════════ -->
 
     <!-- 1. CREATE / EDIT SLOT MODAL -->
-    <div v-if="showSlotModal" class="modal-backdrop" @click.self="closeSlotModal">
+    <div v-if="showSlotModal" class="modal-backdrop" @click.self="closeSlotModal()">
       <div class="modal-card">
         <div class="modal-header">
           <h3>{{ editingSlotId ? '✏️ Modifier l\'Animation' : (modalContextTitle || '➕ Programmer une Animation') }}</h3>
-          <button type="button" class="close-modal-btn" @click="closeSlotModal">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="!isSlotFormDirty || isSavingModal || (!editingSlotId && slotForm.dateMode === 'range' && modalTargetDates.length === 0)" 
+              @click="saveSlotForm"
+            >
+              <span>💾</span>
+              <span>{{ isSavingModal ? 'Enregistrement...' : (editingSlotId ? 'Sauvegarder' : 'Créer') }}</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeSlotModal()">
+              Annuler
+            </button>
+            <button type="button" class="close-modal-btn" @click="closeSlotModal()">✕</button>
+          </div>
         </div>
 
         <form @submit.prevent="saveSlotForm" class="modal-form">
@@ -1108,27 +1122,30 @@
               <span>ℹ️ Les bénéficiaires sont automatiquement rattachés au créneau horaire et à l'ouverture de salle.</span>
             </div>
           </div>
-
-          <div class="modal-actions-footer">
-            <button type="button" class="tool-btn" @click="closeSlotModal">Annuler</button>
-            <button 
-              type="submit" 
-              class="action-btn primary-btn" 
-              :disabled="isSavingModal || (!editingSlotId && slotForm.dateMode === 'range' && modalTargetDates.length === 0)"
-            >
-              {{ isSavingModal ? 'Enregistrement...' : (editingSlotId ? 'Sauvegarder les modifications' : (slotForm.dateMode === 'range' ? `🚀 Valider la programmation (${modalTargetDates.length} séances)` : 'Créer l\'animation')) }}
-            </button>
-          </div>
         </form>
       </div>
     </div>
 
     <!-- 2. DUPLICATE MODAL -->
-    <div v-if="showDuplicateModal" class="modal-backdrop" @click.self="showDuplicateModal = false">
+    <div v-if="showDuplicateModal" class="modal-backdrop" @click.self="closeDuplicateModal()">
       <div class="modal-card">
         <div class="modal-header">
           <h3>📋 Dupliquer les Animations</h3>
-          <button type="button" class="close-modal-btn" @click="showDuplicateModal = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="!isDuplicateFormDirty || duplicateForm.targetDates.length === 0 || countSlotsOnDate(duplicateForm.sourceDate) === 0" 
+              @click="executeDuplication"
+            >
+              <span>📋</span>
+              <span>Dupliquer</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeDuplicateModal()">
+              Annuler
+            </button>
+            <button type="button" class="close-modal-btn" @click="closeDuplicateModal()">✕</button>
+          </div>
         </div>
 
         <form @submit.prevent="executeDuplication" class="modal-form">
@@ -1164,27 +1181,30 @@
               <span>Conserver les résidents/bénéficiaires inscrits</span>
             </label>
           </div>
-
-          <div class="modal-actions-footer">
-            <button type="button" class="tool-btn" @click="showDuplicateModal = false">Annuler</button>
-            <button 
-              type="submit" 
-              class="action-btn primary-btn" 
-              :disabled="duplicateForm.targetDates.length === 0 || countSlotsOnDate(duplicateForm.sourceDate) === 0"
-            >
-              Dupliquer sur {{ duplicateForm.targetDates.length }} jour(s)
-            </button>
-          </div>
         </form>
       </div>
     </div>
 
     <!-- 3. QUICK ADD PARTICIPANTS MODAL -->
-    <div v-if="showQuickAddModal" class="modal-backdrop" @click.self="showQuickAddModal = false">
+    <div v-if="showQuickAddModal" class="modal-backdrop" @click.self="closeQuickAddModal()">
       <div class="modal-card">
         <div class="modal-header">
           <h3>👥 Inscription Rapide aux Animations</h3>
-          <button type="button" class="close-modal-btn" @click="showQuickAddModal = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="!isQuickAddDirty" 
+              @click="saveQuickAddParticipants"
+            >
+              <span>💾</span>
+              <span>Enregistrer</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeQuickAddModal()">
+              Annuler
+            </button>
+            <button type="button" class="close-modal-btn" @click="closeQuickAddModal()">✕</button>
+          </div>
         </div>
 
         <div class="modal-form">
@@ -1239,13 +1259,6 @@
                 <small class="inline-entity-meta">{{ getParticipantWeeklySlotsCount(part) }} anim./sem. — {{ getParticipantTodayAvailabilityLabel(part) }}</small>
               </span>
             </label>
-          </div>
-
-          <div class="modal-actions-footer">
-            <button type="button" class="tool-btn" @click="showQuickAddModal = false">Annuler</button>
-            <button type="button" class="action-btn primary-btn" @click="saveQuickAddParticipants">
-              Valider les inscriptions ({{ quickAddSelectedIds.length }})
-            </button>
           </div>
         </div>
       </div>
@@ -1430,6 +1443,7 @@ export default {
     });
 
     const showDuplicateModal = ref(false);
+    const initialDuplicateForm = ref(null);
     const duplicateForm = ref({
       sourceDate: '',
       targetDates: [],
@@ -1438,10 +1452,12 @@ export default {
     });
 
     const showQuickAddModal = ref(false);
+    const initialQuickAddIds = ref(null);
     const quickAddSlot = ref(null);
     const quickAddSelectedIds = ref([]);
     const quickAddSearch = ref('');
     const quickAddFilterMode = ref('all');
+    const initialSlotForm = ref(null);
 
     const filteredActivities = computed(() => {
       const q = activitySearchQuery.value.trim().toLowerCase();
@@ -2148,6 +2164,7 @@ export default {
       };
 
       recomputeEndTime();
+      initialSlotForm.value = JSON.stringify(slotForm.value);
       showSlotModal.value = true;
     }
 
@@ -2182,13 +2199,35 @@ export default {
         participants: (slot.participants || []).map(p => p.documentId || p.id)
       };
 
+      initialSlotForm.value = JSON.stringify(slotForm.value);
       showSlotModal.value = true;
     }
 
-    function closeSlotModal() {
+    function closeSlotModal(force = false) {
+      if (force !== true && initialSlotForm.value && JSON.stringify(slotForm.value) !== initialSlotForm.value) {
+        if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer vos modifications ?')) {
+          return;
+        }
+      }
       showSlotModal.value = false;
       editingSlotId.value = null;
+      initialSlotForm.value = null;
     }
+
+    const isSlotFormDirty = computed(() => {
+      if (!initialSlotForm.value) return false;
+      return JSON.stringify(slotForm.value) !== initialSlotForm.value;
+    });
+
+    const isDuplicateFormDirty = computed(() => {
+      if (!initialDuplicateForm.value) return false;
+      return JSON.stringify(duplicateForm.value) !== initialDuplicateForm.value;
+    });
+
+    const isQuickAddDirty = computed(() => {
+      if (!initialQuickAddIds.value) return false;
+      return JSON.stringify(quickAddSelectedIds.value) !== initialQuickAddIds.value;
+    });
 
     function onModalActivityChange() {
       recomputeEndTime();
@@ -2236,7 +2275,7 @@ export default {
           };
 
           await schedulerStore.updateSlot(editingSlotId.value, payload);
-          closeSlotModal();
+          closeSlotModal(true);
         } catch (err) {
           globalStore.addError(err.message || 'Erreur lors de la modification.', 'Erreur');
         } finally {
@@ -2270,7 +2309,7 @@ export default {
           };
 
           await schedulerStore.createSlot(payload);
-          closeSlotModal();
+          closeSlotModal(true);
         } catch (err) {
           globalStore.addError(err.message || 'Erreur lors de la création.', 'Erreur');
         } finally {
@@ -2309,7 +2348,7 @@ export default {
         };
 
         // Fermeture immédiate de la modale pour rendre la main
-        closeSlotModal();
+        closeSlotModal(true);
 
         // Activation du bandeau flottant de progression
         backgroundJob.value = {
@@ -2351,7 +2390,18 @@ export default {
     function openDuplicateModal() {
       duplicateForm.value.sourceDate = currentDateStr.value;
       duplicateForm.value.targetDates = [];
+      initialDuplicateForm.value = JSON.stringify(duplicateForm.value);
       showDuplicateModal.value = true;
+    }
+
+    function closeDuplicateModal(force = false) {
+      if (force !== true && initialDuplicateForm.value && JSON.stringify(duplicateForm.value) !== initialDuplicateForm.value) {
+        if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans dupliquer ?')) {
+          return;
+        }
+      }
+      showDuplicateModal.value = false;
+      initialDuplicateForm.value = null;
     }
 
     function countSlotsOnDate(dateStr) {
@@ -2365,7 +2415,7 @@ export default {
           includeFacilitators: duplicateForm.value.includeFacilitators,
           includeParticipants: duplicateForm.value.includeParticipants
         });
-        showDuplicateModal.value = false;
+        closeDuplicateModal(true);
       } catch (err) {
         globalStore.addError(err.message || 'Erreur lors de la duplication.', 'Erreur');
       }
@@ -2377,7 +2427,18 @@ export default {
       quickAddSelectedIds.value = (slot.participants || []).map(p => p.documentId || p.id);
       quickAddSearch.value = '';
       quickAddFilterMode.value = 'all';
+      initialQuickAddIds.value = JSON.stringify(quickAddSelectedIds.value);
       showQuickAddModal.value = true;
+    }
+
+    function closeQuickAddModal(force = false) {
+      if (force !== true && initialQuickAddIds.value && JSON.stringify(quickAddSelectedIds.value) !== initialQuickAddIds.value) {
+        if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans valider les inscriptions ?')) {
+          return;
+        }
+      }
+      showQuickAddModal.value = false;
+      initialQuickAddIds.value = null;
     }
 
     const unassignedQuickAddParticipantsCount = computed(() => {
@@ -2410,7 +2471,7 @@ export default {
         await schedulerStore.updateSlot(quickAddSlot.value.documentId || quickAddSlot.value.id, {
           participants: quickAddSelectedIds.value
         });
-        showQuickAddModal.value = false;
+        closeQuickAddModal(true);
       } catch (err) {
         globalStore.addError(err.message || 'Erreur lors de l\'affectation.', 'Erreur');
       }
@@ -2497,9 +2558,11 @@ export default {
       selectAllParticipants,
       saveSlotForm,
       openDuplicateModal,
+      closeDuplicateModal,
       countSlotsOnDate,
       executeDuplication,
       openQuickAddParticipants,
+      closeQuickAddModal,
       saveQuickAddParticipants,
       printPage,
       selectedLocationFilter,
@@ -2525,7 +2588,10 @@ export default {
       toggleSlotDay,
       modalTargetDates,
       formatTargetDatesSummary,
-      backgroundJob
+      backgroundJob,
+      isSlotFormDirty,
+      isDuplicateFormDirty,
+      isQuickAddDirty
     };
   }
 };

@@ -202,8 +202,24 @@
             <div class="person-badge">
               <span class="badge-avatar">👤</span>
               <div>
-                <h3>{{ selectedParticipant.firstName }} {{ selectedParticipant.lastName }}</h3>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                  <h3>{{ selectedParticipant.firstName }} {{ selectedParticipant.lastName }}</h3>
+                  <span 
+                    class="extraction-transport-pill"
+                    :class="selectedParticipant.transport ? 'is-yes' : 'is-no'"
+                  >
+                    {{ selectedParticipant.transport ? '🚐 Transport requis' : '🚶 Transport non requis' }}
+                  </span>
+                </div>
                 <span class="date-label">{{ selectedParticipant.email || 'Bénéficiaire Accueil de Jour' }}</span>
+                <div v-if="selectedParticipant.address || selectedParticipant.other" class="participant-extra-meta mt-1">
+                  <div v-if="selectedParticipant.address" class="meta-inline-item" :title="selectedParticipant.address">
+                    📍 <strong>Adresse :</strong> {{ selectedParticipant.address }}
+                  </div>
+                  <div v-if="selectedParticipant.other" class="meta-inline-item meta-alert" :title="selectedParticipant.other">
+                    💊 <strong>Traitements & Infos :</strong> {{ selectedParticipant.other }}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -518,7 +534,10 @@
                   <span class="p-avatar">👤</span>
                   <div class="p-info">
                     <strong>{{ p.firstName }} {{ p.lastName }}</strong>
-                    <span class="p-email">{{ p.email || 'Bénéficiaire' }}</span>
+                    <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                      <span class="p-email">{{ p.email || 'Bénéficiaire' }}</span>
+                      <span v-if="p.transport" class="p-transport-chip" title="Transport requis">🚐 Transport</span>
+                    </div>
                   </div>
                   <button class="action-icon-btn delete-btn no-print" @click="removeParticipantFromManagerRoom(p)" title="Retirer de la salle">
                     <i class="mdi mdi-close"></i>
@@ -733,7 +752,10 @@
                 <div class="room-header-left">
                   <span class="badge-avatar">📍</span>
                   <div>
-                    <h3>{{ session.location?.name || 'Salle' }}</h3>
+                    <div class="room-title-hours-row">
+                      <h3>{{ session.location?.name || 'Salle' }}</h3>
+                      <span class="room-hours-tag">🕒 {{ formatSessionHours(session) }}</span>
+                    </div>
                     <span class="date-label">
                       Gestionnaire : 
                       <strong :class="{ 'name-unavail': getSessionConflictInfo(session).unavailableManager }">
@@ -1115,11 +1137,25 @@
     </div>
 
     <!-- 2. QUICK ROOM ASSIGN / OPEN MODAL -->
-    <div v-if="showRoomAssignModal" class="modal-backdrop" @click.self="showRoomAssignModal = false">
+    <div v-if="showRoomAssignModal" class="modal-backdrop" @click.self="closeRoomAssignModal()">
       <div class="modal-card">
         <div class="modal-header">
           <h3>{{ editingSession ? '✏️ Modifier la Session de Salle' : '🚪 Ouvrir / Affecter une Salle' }}</h3>
-          <button class="close-btn" @click="showRoomAssignModal = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="!isSessionFormDirty" 
+              @click="submitRoomSessionForm"
+            >
+              <span>💾</span>
+              <span>Enregistrer</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeRoomAssignModal()">
+              Annuler
+            </button>
+            <button class="close-btn" @click="closeRoomAssignModal()">✕</button>
+          </div>
         </div>
 
         <form @submit.prevent="submitRoomSessionForm" class="modal-form">
@@ -1137,6 +1173,17 @@
               placeholder="Rechercher une salle..." 
               empty-message="Aucune salle trouvée"
             />
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>🕒 Heure d'ouverture</label>
+              <input type="time" v-model="sessionForm.startTime" class="form-input" required />
+            </div>
+            <div class="form-group">
+              <label>🕒 Heure de fermeture</label>
+              <input type="time" v-model="sessionForm.endTime" class="form-input" required />
+            </div>
           </div>
 
           <div class="form-group">
@@ -1247,11 +1294,6 @@
               ⚠️ <strong>{{ checkedExtractionUnavailableCount }}</strong> bénéficiaire(s) <strong>indisponible(s)</strong> sélectionné(s) pour cette date.
             </div>
           </div>
-
-          <div class="modal-footer">
-            <button type="button" class="action-btn secondary-btn" @click="showRoomAssignModal = false">Annuler</button>
-            <button type="submit" class="action-btn primary-btn">Enregistrer</button>
-          </div>
         </form>
       </div>
     </div>
@@ -1306,11 +1348,25 @@
     </div>
 
     <!-- 4. EDIT SLOT MODAL (In-place slot editing) -->
-    <div v-if="showEditSlotModal" class="modal-backdrop" @click.self="showEditSlotModal = false">
+    <div v-if="showEditSlotModal" class="modal-backdrop" @click.self="closeEditSlotModal()">
       <div class="modal-card">
         <div class="modal-header">
           <h3>✏️ Modifier le Créneau d'Activité</h3>
-          <button class="close-btn" @click="showEditSlotModal = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="!isEditSlotFormDirty" 
+              @click="submitEditSlotForm"
+            >
+              <span>💾</span>
+              <span>Enregistrer</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeEditSlotModal()">
+              Annuler
+            </button>
+            <button class="close-btn" @click="closeEditSlotModal()">✕</button>
+          </div>
         </div>
 
         <form @submit.prevent="submitEditSlotForm" class="modal-form">
@@ -1362,11 +1418,6 @@
               </label>
             </div>
           </div>
-
-          <div class="modal-footer">
-            <button type="button" class="action-btn secondary-btn" @click="showEditSlotModal = false">Annuler</button>
-            <button type="submit" class="action-btn primary-btn">Enregistrer les modifications</button>
-          </div>
         </form>
       </div>
     </div>
@@ -1416,8 +1467,10 @@ const summarySearch = ref('');
 // Modals State
 const showSmartFillModal = ref(false);
 const showRoomAssignModal = ref(false);
+const initialSessionForm = ref(null);
 const showSlotAssignModal = ref(false);
 const showEditSlotModal = ref(false);
+const initialEditSlotForm = ref(null);
 
 const duplicateTargetDate = ref(new Date().toISOString().slice(0, 10));
 const editingSession = ref(null);
@@ -1683,16 +1736,30 @@ async function fetchPeriodData() {
         params: {
           'filters[startDate][$gte]': startOfDay,
           'filters[startDate][$lte]': endOfDay,
-          'populate[0]': 'activityTemplate',
-          'populate[1]': 'location',
-          'populate[2]': 'facilitators',
-          'populate[3]': 'participants',
-          'populate[4]': 'roomSession',
-          'populate[5]': 'roomSession.manager',
+          'populate[location]': 'true',
+          'populate[facilitators]': 'true',
+          'populate[participants]': 'true',
+          'populate[roomSession][populate]': '*',
+          'populate[scheduledActivities][populate]': '*',
           'pagination[pageSize]': 5000
         }
       });
-      allTimeSlots.value = res.data.data || [];
+      const rawSlots = res.data.data || [];
+      allTimeSlots.value = rawSlots
+        .map(slot => {
+          const firstSchAct = (slot.scheduledActivities || [])[0];
+          const fallbackTemplate = firstSchAct?.activityTemplate 
+            || (firstSchAct ? { name: firstSchAct.name, tags: firstSchAct.tags, description: firstSchAct.description } : null) 
+            || slot.activityTemplate 
+            || null;
+
+          return {
+            ...slot,
+            name: firstSchAct?.name || slot.name || fallbackTemplate?.name || 'Activité',
+            activityTemplate: fallbackTemplate
+          };
+        })
+        .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
     }
   } catch (err) {
     console.error('Erreur chargement extractions:', err);
@@ -2003,6 +2070,22 @@ function getRoomOccupancyColorClass(session) {
   return 'bar-low';
 }
 
+function formatTimeStr(timeStr) {
+  if (!timeStr) return '';
+  const parts = timeStr.split(':');
+  if (parts.length >= 2) {
+    return `${parts[0]}h${parts[1] === '00' ? '' : parts[1]}`;
+  }
+  return timeStr;
+}
+
+function formatSessionHours(session) {
+  if (!session) return '10h – 16h';
+  const start = session.startTime ? formatTimeStr(session.startTime) : '10h';
+  const end = session.endTime ? formatTimeStr(session.endTime) : '16h';
+  return `${start} – ${end}`;
+}
+
 function getActivitiesForSession(session) {
   const sessId = session.documentId || session.id;
   const locId = session.location?.documentId || session.location?.id;
@@ -2158,10 +2241,13 @@ function openOpenRoomModal() {
 
   sessionForm.value = {
     date: selectedDate.value,
+    startTime: '10:00',
+    endTime: '16:00',
     location: selectedLocationId.value || (props.locations[0]?.documentId || props.locations[0]?.id || ''),
     manager: defaultFacId,
     participants: []
   };
+  initialSessionForm.value = JSON.stringify(sessionForm.value);
   showRoomAssignModal.value = true;
 }
 
@@ -2171,17 +2257,36 @@ function openEditSessionModal(session) {
   extractionRoomModalSearch.value = '';
   sessionForm.value = {
     date: session.date,
+    startTime: session.startTime ? session.startTime.slice(0, 5) : '10:00',
+    endTime: session.endTime ? session.endTime.slice(0, 5) : '16:00',
     location: session.location?.documentId || session.location?.id,
     manager: session.manager?.documentId || session.manager?.id,
     participants: (session.participants || []).map(p => p.documentId || p.id)
   };
+  initialSessionForm.value = JSON.stringify(sessionForm.value);
   showRoomAssignModal.value = true;
 }
+
+function closeRoomAssignModal(force = false) {
+  if (force !== true && initialSessionForm.value && JSON.stringify(sessionForm.value) !== initialSessionForm.value) {
+    if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer vos modifications ?')) {
+      return;
+    }
+  }
+  showRoomAssignModal.value = false;
+  initialSessionForm.value = null;
+}
+
+const isSessionFormDirty = computed(() => {
+  if (!initialSessionForm.value) return false;
+  return JSON.stringify(sessionForm.value) !== initialSessionForm.value;
+});
 
 function openQuickRoomAssignModal() {
   openOpenRoomModal();
   if (selectedParticipantId.value) {
     sessionForm.value.participants = [selectedParticipantId.value];
+    initialSessionForm.value = JSON.stringify(sessionForm.value);
   }
 }
 
@@ -2193,6 +2298,7 @@ function openCreateSessionForManagerModal() {
   openOpenRoomModal();
   if (selectedFacilitatorId.value) {
     sessionForm.value.manager = selectedFacilitatorId.value;
+    initialSessionForm.value = JSON.stringify(sessionForm.value);
   }
 }
 
@@ -2216,8 +2322,24 @@ function openEditSlotModal(slot) {
     facilitators: (slot.facilitators || []).map(f => f.documentId || f.id),
     participants: (slot.participants || []).map(p => p.documentId || p.id)
   };
+  initialEditSlotForm.value = JSON.stringify(editSlotForm.value);
   showEditSlotModal.value = true;
 }
+
+function closeEditSlotModal(force = false) {
+  if (force !== true && initialEditSlotForm.value && JSON.stringify(editSlotForm.value) !== initialEditSlotForm.value) {
+    if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer vos modifications ?')) {
+      return;
+    }
+  }
+  showEditSlotModal.value = false;
+  initialEditSlotForm.value = null;
+}
+
+const isEditSlotFormDirty = computed(() => {
+  if (!initialEditSlotForm.value) return false;
+  return JSON.stringify(editSlotForm.value) !== initialEditSlotForm.value;
+});
 
 function quickAssignSlotOnDate(dateKey) {
   selectedDate.value = dateKey;
@@ -2233,7 +2355,7 @@ async function submitRoomSessionForm() {
     } else {
       await roomSessionStore.createSession(sessionForm.value);
     }
-    showRoomAssignModal.value = false;
+    closeRoomAssignModal(true);
     await fetchPeriodData();
     emit('refresh-data');
   } catch (err) {
@@ -2247,7 +2369,7 @@ async function submitEditSlotForm() {
     const docId = editingSlot.value.documentId || editingSlot.value.id;
     await activeSchedulerStore.updateSlot(docId, editSlotForm.value);
     globalStore.addSuccess('Créneau d\'activité mis à jour avec succès !', 'Créneau modifié');
-    showEditSlotModal.value = false;
+    closeEditSlotModal(true);
     await fetchPeriodData();
     emit('refresh-data');
   } catch (err) {
@@ -3595,6 +3717,61 @@ select.form-input option {
   margin-top: 0.5rem;
 }
 
+.extraction-transport-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.extraction-transport-pill.is-yes {
+  background: rgba(13, 148, 136, 0.2);
+  color: #5eead4;
+  border: 1px solid rgba(13, 148, 136, 0.4);
+}
+
+.extraction-transport-pill.is-no {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.participant-extra-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+}
+
+.meta-inline-item {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #0284c7;
+  white-space: pre-line;
+}
+
+.meta-inline-item.meta-alert {
+  border-left-color: #f59e0b;
+  color: #fef08a;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.p-transport-chip {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-pill);
+  background: rgba(13, 148, 136, 0.2);
+  color: #5eead4;
+  border: 1px solid rgba(13, 148, 136, 0.4);
+}
+
 /* ─── PRINT STYLES ─── */
 .print-official-header { display: none; }
 
@@ -3658,5 +3835,21 @@ select.form-input option {
     background: #000000;
   }
   .sig-line { background: #000000 !important; }
+}
+
+.room-title-hours-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.room-hours-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
 }
 </style>

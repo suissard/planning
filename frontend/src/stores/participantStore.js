@@ -50,6 +50,9 @@ export const useParticipantStore = defineStore('participant', {
             firstName: participantData.firstName,
             lastName: participantData.lastName,
             email: participantData.email,
+            transport: Boolean(participantData.transport),
+            address: participantData.address || participantData.postalAddress || '',
+            other: participantData.other || participantData.notes || '',
             weeklyAvailabilities: participantData.weeklyAvailabilities || {},
             specificUnavailabilities: participantData.specificUnavailabilities || []
           }
@@ -86,6 +89,9 @@ export const useParticipantStore = defineStore('participant', {
             firstName: participantData.firstName,
             lastName: participantData.lastName,
             email: participantData.email,
+            transport: Boolean(participantData.transport),
+            address: participantData.address !== undefined ? participantData.address : (participantData.postalAddress || ''),
+            other: participantData.other !== undefined ? participantData.other : (participantData.notes || ''),
             weeklyAvailabilities: participantData.weeklyAvailabilities || {},
             specificUnavailabilities: participantData.specificUnavailabilities || []
           }

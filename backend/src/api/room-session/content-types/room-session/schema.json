@@ -15,6 +15,14 @@
       "type": "date",
       "required": true
     },
+    "startTime": {
+      "type": "time",
+      "default": "10:00:00.000"
+    },
+    "endTime": {
+      "type": "time",
+      "default": "16:00:00.000"
+    },
     "location": {
       "type": "relation",
       "relation": "manyToOne",

@@ -343,6 +343,13 @@
                     </div>
                   </div>
 
+                  <!-- Horaires d'ouverture -->
+                  <div class="kcard-time-row">
+                    <span class="kcard-time-pill" title="Horaires d'ouverture de la salle">
+                      🕒 {{ formatSessionHours(session) }}
+                    </span>
+                  </div>
+
                   <!-- Capacity Pill & Progress Mini-Bar -->
                   <div class="kcard-capacity-row">
                     <span class="kcard-cap-badge" :class="getCapacityClass(session)">
@@ -561,6 +568,10 @@
                         </span>
                       </div>
 
+                      <div class="matrix-pill-time" title="Horaires d'ouverture">
+                        🕒 {{ formatSessionHours(getSessionForRoomAndDate(loc, day.dateKey)) }}
+                      </div>
+
                       <div v-if="getSessionConflictInfo(getSessionForRoomAndDate(loc, day.dateKey)).hasConflict" class="matrix-conflict-sub-tag">
                         ⚠️ Conflit détecté
                       </div>
@@ -698,6 +709,9 @@
                   <span class="room-icon-badge">📍</span>
                   <div>
                     <h3 class="room-name">{{ getRoomName(session) }}</h3>
+                    <div class="day-card-time-badge" title="Horaires d'ouverture de la salle">
+                      🕒 {{ formatSessionHours(session) }}
+                    </div>
                     <span class="room-type-sub" v-if="getLocation(session)?.description">
                       {{ getLocation(session)?.description }}
                     </span>
@@ -1096,7 +1110,7 @@
 
     <!-- ════════════════ MODAL 1: CRÉER / MODIFIER UNE SESSION DE SALLE      -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <div v-if="showModal" class="modal-backdrop no-print" @click.self="closeModal">
+    <div v-if="showModal" class="modal-backdrop no-print" @click.self="closeModal()">
       <div class="modal-card">
         <div class="modal-header">
           <div class="modal-title-box">
@@ -1106,7 +1120,21 @@
               <p class="modal-sub">Désignez le lieu, le professionnel référent et les bénéficiaires.</p>
             </div>
           </div>
-          <button type="button" class="close-btn" @click="closeModal">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="!isRoomSessionDirty || saving || (!isEditing && form.dateMode === 'range' && modalTargetDates.length === 0)" 
+              @click="saveSession"
+            >
+              <span>💾</span>
+              <span>{{ saving ? 'Enregistrement...' : 'Enregistrer' }}</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeModal()">
+              Annuler
+            </button>
+            <button type="button" class="close-btn" @click="closeModal()">✕</button>
+          </div>
         </div>
 
         <div class="modal-form">
@@ -1232,6 +1260,29 @@
             </p>
           </div>
 
+          <!-- HORAIRES D'OUVERTURE DE LA SALLE (DÉFAUT: 10H - 16H) -->
+          <div class="form-row-2 opening-hours-row">
+            <div class="form-group">
+              <label>🕒 Heure d'ouverture :</label>
+              <input type="time" v-model="form.startTime" class="form-input" required />
+            </div>
+
+            <div class="form-group">
+              <div class="label-with-action">
+                <label>🕒 Heure de fermeture :</label>
+                <button 
+                  type="button" 
+                  class="quick-hours-preset-btn" 
+                  @click="form.startTime = '10:00'; form.endTime = '16:00'" 
+                  title="Rétablir les horaires par défaut de l'accueil de jour (10h00 - 16h00)"
+                >
+                  ⚡ Standard 10h–16h
+                </button>
+              </div>
+              <input type="time" v-model="form.endTime" class="form-input" required />
+            </div>
+          </div>
+
           <div class="form-group">
             <label class="form-label-with-badge">
               <span>👨‍💼 Professionnel Référent :</span>
@@ -1342,25 +1393,13 @@
               </div>
             </div>
           </div>
-
-          <div class="modal-actions">
-            <button type="button" class="secondary-btn" @click="closeModal">Annuler</button>
-            <button 
-              type="button" 
-              class="action-btn primary-btn" 
-              @click="saveSession" 
-              :disabled="saving || (!isEditing && form.dateMode === 'range' && modalTargetDates.length === 0)"
-            >
-              {{ saving ? 'Enregistrement...' : (isEditing ? '💾 Mettre à jour' : (form.dateMode === 'range' ? `🚀 Valider les ouvertures (${modalTargetDates.length} jours)` : '➕ Valider l\'ouverture')) }}
-            </button>
-          </div>
         </div>
       </div>
     </div>
 
     <!-- ════════════════ MODAL 2: SEMAINE TYPE (APPLICATION DU MODÈLE)       -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <div v-if="showTemplateModal" class="modal-backdrop no-print" @click.self="showTemplateModal = false">
+    <div v-if="showTemplateModal" class="modal-backdrop no-print" @click.self="closeTemplateModal()">
       <div class="modal-card modal-lg">
         <div class="modal-header">
           <div class="modal-title-box">
@@ -1370,7 +1409,21 @@
               <p class="modal-sub">Générez automatiquement les ouvertures de salles et référents à partir du modèle récurrent.</p>
             </div>
           </div>
-          <button type="button" class="close-btn" @click="showTemplateModal = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="calculatedTemplateTotalOpenings === 0 || saving" 
+              @click="applyTemplateGeneration"
+            >
+              <span>⚡</span>
+              <span>Générer</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeTemplateModal()">
+              Annuler
+            </button>
+            <button type="button" class="close-btn" @click="closeTemplateModal()">✕</button>
+          </div>
         </div>
 
         <div class="modal-form">
@@ -1458,25 +1511,13 @@
               <span>Écraser / remplacer les ouvertures existantes sur la période sélectionnée</span>
             </label>
           </div>
-
-          <div class="modal-actions">
-            <button type="button" class="secondary-btn" @click="showTemplateModal = false">Annuler</button>
-            <button 
-              type="button" 
-              class="action-btn primary-btn" 
-              @click="applyTemplateGeneration" 
-              :disabled="calculatedTemplateTotalOpenings === 0 || saving"
-            >
-              {{ saving ? 'Génération en cours...' : `⚡ Générer les ${calculatedTemplateTotalOpenings} ouvertures` }}
-            </button>
-          </div>
         </div>
       </div>
     </div>
 
     <!-- ════════════════ MODAL 3: DUPLICATION RAPIDE                         -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <div v-if="showDuplicateModal" class="modal-backdrop no-print" @click.self="showDuplicateModal = false">
+    <div v-if="showDuplicateModal" class="modal-backdrop no-print" @click.self="closeDuplicateModal()">
       <div class="modal-card">
         <div class="modal-header">
           <div class="modal-title-box">
@@ -1486,7 +1527,21 @@
               <p class="modal-sub">Copiez les ouvertures d'une journée vers d'autres dates.</p>
             </div>
           </div>
-          <button type="button" class="close-btn" @click="showDuplicateModal = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="saving" 
+              @click="submitDuplicate"
+            >
+              <span>📋</span>
+              <span>Dupliquer</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeDuplicateModal()">
+              Annuler
+            </button>
+            <button type="button" class="close-btn" @click="closeDuplicateModal()">✕</button>
+          </div>
         </div>
 
         <div class="modal-form">
@@ -1540,13 +1595,6 @@
               <input type="checkbox" v-model="duplicateOverwrite" />
               <span>Écraser les sessions existantes sur les dates cibles</span>
             </label>
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" class="secondary-btn" @click="showDuplicateModal = false">Annuler</button>
-            <button type="button" class="action-btn primary-btn" @click="submitDuplicate" :disabled="saving">
-              {{ saving ? 'Duplication en cours...' : '📋 Lancer la duplication' }}
-            </button>
           </div>
         </div>
       </div>
@@ -1606,6 +1654,7 @@ const currentDate = ref(new Date());
 const weekSubView = ref('kanban'); // 'kanban' | 'matrix'
 const lastNavAction = ref(null); // 'prev' | 'next' | 'today' | 'date-input' | 'view-mode' | null
 const showModal = ref(false);
+const initialForm = ref(null);
 const isEditing = ref(false);
 const saving = ref(false);
 const formError = ref('');
@@ -1625,6 +1674,7 @@ const modalParticipantFilterTab = ref('all'); // 'all' | 'available' | 'unavaila
 
 // MODAL TOOL STATES (SEMAINE TYPE)
 const showTemplateModal = ref(false);
+const initialTemplateState = ref(null);
 const templateTargetPeriod = ref('current-week');
 const templateCustomStartDate = ref(new Date().toISOString().slice(0, 10));
 const templateCustomEndDate = ref(new Date().toISOString().slice(0, 10));
@@ -1642,6 +1692,7 @@ const templateDaysList = [
 ];
 
 const showDuplicateModal = ref(false);
+const initialDuplicateState = ref(null);
 const duplicateSourceDate = ref(new Date().toISOString().slice(0, 10));
 const duplicateTargetPreset = ref('tomorrow');
 const duplicateCopyManager = ref(true);
@@ -2327,6 +2378,22 @@ function getRateClass(rate) {
   return 'low';
 }
 
+function formatTime(timeStr) {
+  if (!timeStr) return '';
+  const parts = timeStr.split(':');
+  if (parts.length >= 2) {
+    return `${parts[0]}h${parts[1] === '00' ? '' : parts[1]}`;
+  }
+  return timeStr;
+}
+
+function formatSessionHours(session) {
+  if (!session) return '10h – 16h';
+  const start = session.startTime ? formatTime(session.startTime) : '10h';
+  const end = session.endTime ? formatTime(session.endTime) : '16h';
+  return `${start} – ${end}`;
+}
+
 // MODAL OPEN / EDIT
 function openCreateModal(defaultDate = null) {
   isEditing.value = false;
@@ -2356,11 +2423,14 @@ function openCreateModal(defaultDate = null) {
     startDate: dateToUse,
     endDate: defaultEndDate,
     daysOfWeek: [1, 2, 3, 4, 5],
+    startTime: '10:00',
+    endTime: '16:00',
     overwriteExisting: false,
     location: props.locations.length > 0 ? (props.locations[0].documentId || props.locations[0].id) : '',
     manager: defaultFacId,
     participants: []
   };
+  initialForm.value = JSON.stringify(form.value);
   showModal.value = true;
 }
 
@@ -2376,11 +2446,14 @@ function editSession(session) {
     startDate: session.date || currentDateStr.value,
     endDate: session.date || currentDateStr.value,
     daysOfWeek: [1, 2, 3, 4, 5],
+    startTime: session.startTime ? session.startTime.slice(0, 5) : '10:00',
+    endTime: session.endTime ? session.endTime.slice(0, 5) : '16:00',
     overwriteExisting: false,
     location: session.location?.documentId || session.location?.id || '',
     manager: session.manager?.documentId || session.manager?.id || '',
     participants: (session.participants || []).map(p => p.documentId || p.id)
   };
+  initialForm.value = JSON.stringify(form.value);
   showModal.value = true;
 }
 
@@ -2411,17 +2484,31 @@ function openRoomForDay(location, dateStr) {
     startDate: dateStr,
     endDate: defaultEndDate,
     daysOfWeek: [1, 2, 3, 4, 5],
+    startTime: '10:00',
+    endTime: '16:00',
     overwriteExisting: false,
     location: location.documentId || location.id,
     manager: defaultFacId,
     participants: []
   };
+  initialForm.value = JSON.stringify(form.value);
   showModal.value = true;
 }
 
-function closeModal() {
+function closeModal(force = false) {
+  if (force !== true && initialForm.value && JSON.stringify(form.value) !== initialForm.value) {
+    if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer vos modifications ?')) {
+      return;
+    }
+  }
   showModal.value = false;
+  initialForm.value = null;
 }
+
+const isRoomSessionDirty = computed(() => {
+  if (!initialForm.value) return false;
+  return JSON.stringify(form.value) !== initialForm.value;
+});
 
 function selectAllParticipants() {
   const allFilteredIds = filteredModalParticipants.value.map(p => p.documentId || p.id);
@@ -2458,11 +2545,13 @@ async function saveSession() {
     try {
       await roomSessionStore.updateSession(currentEditingId.value, {
         date: form.value.date,
+        startTime: form.value.startTime || '10:00',
+        endTime: form.value.endTime || '16:00',
         location: form.value.location,
         manager: form.value.manager,
         participants: form.value.participants
       });
-      closeModal();
+      closeModal(true);
       await loadDataForCurrentView();
     } catch (err) {
       formError.value = err.message || "Erreur lors de la modification.";
@@ -2482,11 +2571,13 @@ async function saveSession() {
     try {
       await roomSessionStore.createSession({
         date: form.value.date,
+        startTime: form.value.startTime || '10:00',
+        endTime: form.value.endTime || '16:00',
         location: form.value.location,
         manager: form.value.manager,
         participants: form.value.participants
       });
-      closeModal();
+      closeModal(true);
       await loadDataForCurrentView();
     } catch (err) {
       formError.value = err.message || "Erreur lors de l'enregistrement.";
@@ -2516,6 +2607,8 @@ async function saveSession() {
     const roomName = loc ? loc.name : 'la salle';
     const payload = {
       dates: targetDates,
+      startTime: form.value.startTime || '10:00',
+      endTime: form.value.endTime || '16:00',
       location: form.value.location,
       manager: form.value.manager,
       participants: [...form.value.participants],
@@ -2523,7 +2616,7 @@ async function saveSession() {
     };
 
     // Fermer immédiatement la modale pour libérer l'utilisateur
-    closeModal();
+    closeModal(true);
 
     // Activer le bandeau de progression en arrière-plan
     backgroundJob.value = {
@@ -2649,7 +2742,33 @@ function openDuplicateModal(session = null) {
   } else {
     duplicateSourceDate.value = currentDateStr.value;
   }
+  initialDuplicateState.value = JSON.stringify({
+    sourceDate: duplicateSourceDate.value,
+    targetPreset: duplicateTargetPreset.value,
+    copyManager: duplicateCopyManager.value,
+    copyParticipants: duplicateCopyParticipants.value,
+    overwrite: duplicateOverwrite.value
+  });
   showDuplicateModal.value = true;
+}
+
+function closeDuplicateModal(force = false) {
+  if (force !== true && initialDuplicateState.value) {
+    const curState = JSON.stringify({
+      sourceDate: duplicateSourceDate.value,
+      targetPreset: duplicateTargetPreset.value,
+      copyManager: duplicateCopyManager.value,
+      copyParticipants: duplicateCopyParticipants.value,
+      overwrite: duplicateOverwrite.value
+    });
+    if (curState !== initialDuplicateState.value) {
+      if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans dupliquer ?')) {
+        return;
+      }
+    }
+  }
+  showDuplicateModal.value = false;
+  initialDuplicateState.value = null;
 }
 
 function setDuplicatePreset(preset) {
@@ -2695,7 +2814,7 @@ async function submitDuplicate() {
       copyParticipants: duplicateCopyParticipants.value,
       overwrite: duplicateOverwrite.value
     });
-    showDuplicateModal.value = false;
+    closeDuplicateModal(true);
     await loadDataForCurrentView();
   } finally {
     saving.value = false;
@@ -2703,7 +2822,29 @@ async function submitDuplicate() {
 }
 
 function openTemplateModal() {
+  initialTemplateState.value = JSON.stringify({
+    period: templateTargetPeriod.value,
+    allowedDays: templateAllowedDays.value,
+    overwrite: templateOverwriteExisting.value
+  });
   showTemplateModal.value = true;
+}
+
+function closeTemplateModal(force = false) {
+  if (force !== true && initialTemplateState.value) {
+    const curState = JSON.stringify({
+      period: templateTargetPeriod.value,
+      allowedDays: templateAllowedDays.value,
+      overwrite: templateOverwriteExisting.value
+    });
+    if (curState !== initialTemplateState.value) {
+      if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans appliquer le modèle ?')) {
+        return;
+      }
+    }
+  }
+  showTemplateModal.value = false;
+  initialTemplateState.value = null;
 }
 
 function onTemplatePeriodPresetChange() {
@@ -2793,7 +2934,7 @@ async function applyTemplateGeneration() {
       allowedDays: templateAllowedDays.value,
       overwrite: templateOverwriteExisting.value
     });
-    showTemplateModal.value = false;
+    closeTemplateModal(true);
     await loadDataForCurrentView();
   } finally {
     saving.value = false;
@@ -3489,6 +3630,24 @@ function printPage() {
   gap: 0.25rem;
 }
 
+.kcard-time-row {
+  display: flex;
+  align-items: center;
+}
+
+.kcard-time-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .mini-icon-btn {
   background: transparent;
   border: none;
@@ -3946,6 +4105,21 @@ function printPage() {
   margin: 0;
 }
 
+.day-card-time-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.2rem;
+  margin-bottom: 0.15rem;
+}
+
 .room-type-sub {
   font-size: 0.75rem;
   color: var(--text-muted, #64748b);
@@ -4241,6 +4415,12 @@ function printPage() {
 }
 
 .matrix-pill-manager {
+  font-weight: 600;
+}
+
+.matrix-pill-time {
+  font-size: 0.68rem;
+  color: #38bdf8;
   font-weight: 600;
 }
 
@@ -4722,6 +4902,41 @@ select.form-input optgroup {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+}
+
+.opening-hours-row {
+  background: rgba(56, 189, 248, 0.05);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: var(--radius-sm, 0.5rem);
+  padding: 0.75rem 0.85rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.label-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label-with-action label {
+  margin: 0;
+}
+
+.quick-hours-preset-btn {
+  background: none;
+  border: none;
+  color: #38bdf8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+
+.quick-hours-preset-btn:hover {
+  color: #7dd3fc;
 }
 
 .days-selector-group {

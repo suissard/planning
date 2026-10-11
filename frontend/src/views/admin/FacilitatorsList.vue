@@ -95,7 +95,29 @@
           <span class="text-h6 font-weight-bold d-flex align-center ga-2">
             <span>👨‍🏫</span> {{ formTitle }}
           </span>
-          <v-btn icon="mdi-close" variant="text" size="small" @click="closeDialog"></v-btn>
+          <div class="d-flex align-center ga-2">
+            <v-btn 
+              color="primary" 
+              variant="flat" 
+              size="small" 
+              :disabled="!isFormDirty || saving" 
+              :loading="saving"
+              @click="saveItem" 
+              class="text-none"
+            >
+              💾 Enregistrer
+            </v-btn>
+            <v-btn 
+              color="grey-lighten-1" 
+              variant="tonal" 
+              size="small" 
+              @click="closeDialog()" 
+              class="text-none"
+            >
+              Annuler
+            </v-btn>
+            <v-btn icon="mdi-close" variant="text" size="small" @click="closeDialog()"></v-btn>
+          </div>
         </v-card-title>
 
         <v-card-text style="overflow-y: auto; flex: 1; padding: 1.25rem;">
@@ -283,16 +305,7 @@
           </v-container>
         </v-card-text>
 
-        <v-divider></v-divider>
 
-        <v-card-actions class="px-4 py-3 justify-end ga-2">
-          <v-btn color="grey-lighten-1" variant="text" @click="closeDialog" class="text-none">
-            Annuler
-          </v-btn>
-          <v-btn color="primary" variant="flat" @click="saveItem" :loading="saving" class="text-none px-5 font-weight-bold">
-            💾 Enregistrer l'animateur
-          </v-btn>
-        </v-card-actions>
       </v-card>
     </v-dialog>
   </div>
@@ -312,6 +325,7 @@ export default {
     const { facilitators, loading } = storeToRefs(store);
 
     const dialog = ref(false);
+    const initialState = ref(null);
     const saving = ref(false);
     const search = ref('');
 
@@ -413,16 +427,44 @@ export default {
         });
         isEditing.value = false;
       }
+      initialState.value = JSON.stringify({
+        item: editedItem.value,
+        checks: availabilityChecks.value,
+        hours: editedAvailabilities.value
+      });
       dialog.value = true;
     };
 
-    const closeDialog = () => {
+    const closeDialog = (force = false) => {
+      if (force !== true && initialState.value) {
+        const curState = JSON.stringify({
+          item: editedItem.value,
+          checks: availabilityChecks.value,
+          hours: editedAvailabilities.value
+        });
+        if (curState !== initialState.value) {
+          if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer vos modifications ?')) {
+            return;
+          }
+        }
+      }
       dialog.value = false;
+      initialState.value = null;
       setTimeout(() => {
         editedItem.value = { ...defaultItem };
         isEditing.value = false;
       }, 300);
     };
+
+    const isFormDirty = computed(() => {
+      if (!initialState.value) return false;
+      const curState = JSON.stringify({
+        item: editedItem.value,
+        checks: availabilityChecks.value,
+        hours: editedAvailabilities.value
+      });
+      return curState !== initialState.value;
+    });
 
     const toggleDay = (dayValue) => {
       if (availabilityChecks.value[dayValue] && !editedAvailabilities.value[dayValue]) {
@@ -504,7 +546,7 @@ export default {
         } else {
           await store.createFacilitator(payload);
         }
-        closeDialog();
+        closeDialog(true);
       } catch (error) {
         console.error('Save failed', error);
       } finally {
@@ -540,7 +582,8 @@ export default {
       applyFullWeek,
       clearAllDays,
       addUnavailability,
-      removeUnavailability
+      removeUnavailability,
+      isFormDirty
     };
   }
 };

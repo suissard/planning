@@ -279,6 +279,8 @@ async function seedRoomSessions(locationsMap, facilitatorsMap, participantsMap) 
       body: {
         data: {
           date,
+          startTime: sess.startTime || '10:00:00.000',
+          endTime: sess.endTime || '16:00:00.000',
           location: locationId,
           manager: managerId,
           participants: participantIds,
@@ -318,6 +320,8 @@ async function seedRoomSessionTemplates(locationsMap, facilitatorsMap, participa
         body: {
           data: {
             dayOfWeek,
+            startTime: t.startTime || '10:00:00.000',
+            endTime: t.endTime || '16:00:00.000',
             location: locationId,
             manager: managerId,
             participants: participantIds,

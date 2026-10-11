@@ -486,6 +486,9 @@ Gère les participants, élèves, clients ou bénéficiaires inscrits aux activi
 | `firstName` | String | **Oui** | Non vide | Prénom du participant |
 | `lastName` | String | **Oui** | Non vide | Nom de famille |
 | `email` | Email | **Oui** | `unique: true` | Adresse e-mail (unique) |
+| `transport` | Boolean | Non | Défaut: `false` | Prise en charge du transport requise (Oui/Non) |
+| `address` | Text | Non | Texte long | Adresse postale avec code de portail / digicode |
+| `other` | Text | Non | Texte long | Traitements médicaux et autres informations utiles |
 | `weeklyAvailabilities` | JSON | Non | Objet | Plages de présence/disponibilité récurrentes |
 | `specificUnavailabilities` | JSON (Array) | Non | Objets dates ISO | Absences déclarées |
 | `timeSlots` | Relation `manyToMany` | Non | - | Créneaux d'activités auxquels il participe |
@@ -511,6 +514,8 @@ Représente l'ouverture journalière d'une salle avec un animateur référent (`
 | Attribut | Type | Requis | Description |
 |---|---|---|---|
 | `date` | Date (YYYY-MM-DD) | **Oui** | Date du jour de la session |
+| `startTime` | Time (HH:mm:ss.SSS) | Non | Heure d'ouverture de la salle (Défaut: `10:00:00.000`, 10h00) |
+| `endTime` | Time (HH:mm:ss.SSS) | Non | Heure de fermeture de la salle (Défaut: `16:00:00.000`, 16h00) |
 | `location` | Relation `manyToOne` | Non | Salle concernée |
 | `manager` | Relation `manyToOne` | Non | Animateur référent responsable de la salle ce jour-là |
 | `participants` | Relation `manyToMany` | Non | Bénéficiaires affectés à la salle pour la journée |
@@ -519,6 +524,7 @@ Représente l'ouverture journalière d'une salle avec un animateur référent (`
 #### 🛡️ Règles Métier & Bonnes Pratiques
 - **Filtrage par date :** `GET /api/room-sessions?filters[date][$eq]=2026-08-26&populate=*`
 - **Filtrage par période :** `GET /api/room-sessions?filters[date][$gte]=2026-08-01&filters[date][$lte]=2026-08-31&populate=*`
+- **Horaires par défaut :** Les ouvertures de salles de l'Accueil de Jour sont configurées par défaut de 10h00 à 16h00 (`startTime: 10:00`, `endTime: 16:00`).
 - **Non-duplication du référent :** Un même animateur ne doit pas être manager de deux salles distinctes le même jour.
 - **Non-duplication du participant :** Un participant ne doit pas être affecté à deux salles différentes sur la même journée.
 
@@ -543,6 +549,8 @@ Permet de définir la **semaine type** (gabarit récurrent) pour préconfigurer 
 | Attribut | Type | Requis | Contraintes | Description |
 |---|---|---|---|---|
 | `dayOfWeek` | Integer | **Oui** | `min: 1, max: 7` | Jour de la semaine (1 = Lundi, 2 = Mardi, ..., 7 = Dimanche) |
+| `startTime` | Time (HH:mm:ss.SSS) | Non | Défaut: `10:00:00.000` | Heure habituelle d'ouverture (10h00) |
+| `endTime` | Time (HH:mm:ss.SSS) | Non | Défaut: `16:00:00.000` | Heure habituelle de fermeture (16h00) |
 | `location` | Relation `manyToOne` | Non | - | Salle assignée récurrente |
 | `manager` | Relation `manyToOne` | Non | - | Animateur référent récurrent |
 | `participants` | Relation `manyToMany` | Non | - | Bénéficiaires réguliers affectés |

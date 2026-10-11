@@ -54,6 +54,8 @@ export const useRoomSessionStore = defineStore('roomSession', {
           documentId: `room_sess_${i}`,
           id: `room_sess_${i}`,
           date: s.date,
+          startTime: s.startTime || '10:00',
+          endTime: s.endTime || '16:00',
           location: loc,
           manager: mgr,
           participants: parts,
@@ -175,6 +177,8 @@ export const useRoomSessionStore = defineStore('roomSession', {
           documentId: `room_sess_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
           id: `room_sess_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
           date: sessionData.date,
+          startTime: sessionData.startTime || '10:00',
+          endTime: sessionData.endTime || '16:00',
           location: loc,
           manager: mgr,
           participants: parts,
@@ -190,6 +194,8 @@ export const useRoomSessionStore = defineStore('roomSession', {
       try {
         const payload = {
           date: sessionData.date,
+          startTime: sessionData.startTime || '10:00',
+          endTime: sessionData.endTime || '16:00',
           participants: (sessionData.participants || []).filter(Boolean)
         };
         if (sessionData.location) payload.location = sessionData.location;
@@ -218,6 +224,8 @@ export const useRoomSessionStore = defineStore('roomSession', {
           this.mockSessions[idx] = {
             ...this.mockSessions[idx],
             date: sessionData.date || this.mockSessions[idx].date,
+            startTime: sessionData.startTime !== undefined ? sessionData.startTime : (this.mockSessions[idx].startTime || '10:00'),
+            endTime: sessionData.endTime !== undefined ? sessionData.endTime : (this.mockSessions[idx].endTime || '16:00'),
             location: loc,
             manager: mgr,
             participants: parts
@@ -231,6 +239,8 @@ export const useRoomSessionStore = defineStore('roomSession', {
       try {
         const payload = {};
         if (sessionData.date) payload.date = sessionData.date;
+        if (sessionData.startTime !== undefined) payload.startTime = sessionData.startTime;
+        if (sessionData.endTime !== undefined) payload.endTime = sessionData.endTime;
         if (sessionData.participants !== undefined) payload.participants = sessionData.participants.filter(Boolean);
         if (sessionData.location) payload.location = sessionData.location;
         if (sessionData.manager) payload.manager = sessionData.manager;
@@ -298,7 +308,7 @@ export const useRoomSessionStore = defineStore('roomSession', {
       }
     },
 
-    async openRoomForDate(locationId, dateStr, managerId = null, participantIds = [], silent = false) {
+    async openRoomForDate(locationId, dateStr, managerId = null, participantIds = [], silent = false, startTime = '10:00', endTime = '16:00') {
       const existing = this.sessions.find(s => 
         s.date === dateStr && (s.location?.documentId === locationId || s.location?.id === locationId)
       );
@@ -310,6 +320,8 @@ export const useRoomSessionStore = defineStore('roomSession', {
       }
       return await this.createSession({
         date: dateStr,
+        startTime: startTime || '10:00',
+        endTime: endTime || '16:00',
         location: locationId,
         manager: managerId,
         participants: participantIds
@@ -401,6 +413,8 @@ export const useRoomSessionStore = defineStore('roomSession', {
 
             const sessionPayload = {
               date: targetDate,
+              startTime: src.startTime || '10:00',
+              endTime: src.endTime || '16:00',
               location: locId,
               manager: copyManager ? (src.manager?.documentId || src.manager?.id) : null,
               participants: copyParticipants ? (src.participants || []).map(p => p.documentId || p.id) : []
@@ -484,6 +498,8 @@ export const useRoomSessionStore = defineStore('roomSession', {
 
             const sessionPayload = {
               date: targetDate,
+              startTime: item.startTime || '10:00',
+              endTime: item.endTime || '16:00',
               location: locId,
               manager: mgrId,
               participants: partIds
@@ -517,6 +533,8 @@ export const useRoomSessionStore = defineStore('roomSession', {
     async openRoomForDateRange(payload, onProgress = null) {
       const {
         dates = [],
+        startTime = '10:00',
+        endTime = '16:00',
         location,
         manager = null,
         participants = [],
@@ -558,6 +576,8 @@ export const useRoomSessionStore = defineStore('roomSession', {
 
           const sessionPayload = {
             date: targetDate,
+            startTime: payload.startTime || startTime || '10:00',
+            endTime: payload.endTime || endTime || '16:00',
             location,
             manager: manager || null,
             participants: (participants || []).filter(Boolean)

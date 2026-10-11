@@ -12,7 +12,7 @@
               <span class="checkin-badge-pill">✨ Salles, Créneaux & Activités</span>
             </div>
             <p class="subtitle">
-              Chaque salle dispose de créneaux d'accueil (ex: 10h–17h). Les bénéficiaires sont inscrits sur le créneau de salle et participent à ses activités programmées.
+              Chaque salle dispose de créneaux d'accueil (ex: 10h–16h). Les bénéficiaires sont inscrits sur le créneau de salle et participent à ses activités programmées.
             </p>
           </div>
         </div>
@@ -446,8 +446,15 @@
                         >
                           {{ getStatusLabel(checkInStore.getParticipantStatus(slot.documentId || slot.id, p.documentId || p.id)) }}
                         </span>
+                        <span v-if="p.transport" class="transport-badge" title="Transport / Navette requise">
+                          🚐 Transport
+                        </span>
                       </div>
-                      <span class="participant-email">{{ p.email }}</span>
+                      <div class="participant-sub-info">
+                        <span class="participant-email">{{ p.email }}</span>
+                        <span v-if="p.address" class="meta-tag address-tag" :title="p.address">📍 {{ p.address.split('\n')[0] }}</span>
+                        <span v-if="p.other" class="meta-tag other-tag" :title="p.other">💊 {{ p.other.split('\n')[0] }}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -615,11 +622,25 @@
     </div>
 
     <!-- ════════════════ ADD SCHEDULED ACTIVITY MODAL ════════════════ -->
-    <div class="modal-overlay" v-if="isAddActivityModalOpen" @click.self="isAddActivityModalOpen = false">
+    <div class="modal-overlay" v-if="isAddActivityModalOpen" @click.self="closeAddActivityModal()">
       <div class="modal-card">
         <div class="modal-header">
           <h3>🎯 Programmer une Activité dans ce Créneau</h3>
-          <button class="modal-close-btn" @click="isAddActivityModalOpen = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="!isAddActivityDirty || !newActivityName.trim()" 
+              @click="confirmAddScheduledActivity"
+            >
+              <span>💾</span>
+              <span>Enregistrer</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeAddActivityModal()">
+              Annuler
+            </button>
+            <button class="modal-close-btn" @click="closeAddActivityModal()">✕</button>
+          </div>
         </div>
 
         <div class="modal-body">
@@ -667,29 +688,29 @@
             <input type="text" v-model="newActivityDescription" placeholder="Ex: Matériel ballons souples..." class="form-input" />
           </div>
         </div>
-
-        <div class="modal-footer">
-          <button type="button" class="tool-btn" @click="isAddActivityModalOpen = false">
-            Annuler
-          </button>
-          <button 
-            type="button" 
-            class="action-btn primary-btn" 
-            :disabled="!newActivityName.trim()" 
-            @click="confirmAddScheduledActivity"
-          >
-            Enregistrer l'Activité
-          </button>
-        </div>
       </div>
     </div>
 
     <!-- ════════════════ ADD WALK-IN PARTICIPANT MODAL ════════════════ -->
-    <div class="modal-overlay" v-if="isAddWalkInModalOpen" @click.self="isAddWalkInModalOpen = false">
+    <div class="modal-overlay" v-if="isAddWalkInModalOpen" @click.self="closeAddWalkInModal()">
       <div class="modal-card">
         <div class="modal-header">
           <h3>➕ Inscrire un Bénéficiaire au Créneau de Salle</h3>
-          <button class="modal-close-btn" @click="isAddWalkInModalOpen = false">✕</button>
+          <div class="modal-header-actions">
+            <button 
+              type="button" 
+              class="modal-header-save-btn" 
+              :disabled="!isAddWalkInDirty || !selectedWalkInParticipantId" 
+              @click="confirmAddWalkInParticipant"
+            >
+              <span>💾</span>
+              <span>Valider</span>
+            </button>
+            <button type="button" class="modal-header-cancel-btn" @click="closeAddWalkInModal()">
+              Annuler
+            </button>
+            <button class="modal-close-btn" @click="closeAddWalkInModal()">✕</button>
+          </div>
         </div>
 
         <div class="modal-body">
@@ -744,20 +765,6 @@
             />
           </div>
         </div>
-
-        <div class="modal-footer">
-          <button type="button" class="tool-btn" @click="isAddWalkInModalOpen = false">
-            Annuler
-          </button>
-          <button 
-            type="button" 
-            class="action-btn primary-btn" 
-            :disabled="!selectedWalkInParticipantId" 
-            @click="confirmAddWalkInParticipant"
-          >
-            Valider l'Ajout
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -806,6 +813,7 @@ const localPassageComments = ref({});
 
 // Walk-in modal state
 const isAddWalkInModalOpen = ref(false);
+const initialAddWalkInState = ref(null);
 const targetSlotForWalkIn = ref(null);
 const selectedWalkInParticipantId = ref('');
 const walkInIsPresent = ref(true);
@@ -813,6 +821,7 @@ const walkInComment = ref('Ajout ponctuel');
 
 // Add Scheduled Activity modal state
 const isAddActivityModalOpen = ref(false);
+const initialAddActivityState = ref(null);
 const targetSlotForActivity = ref(null);
 const newActivityTemplateId = ref('');
 const newActivityName = ref('');
@@ -1220,8 +1229,40 @@ function openAddWalkInModal(slot) {
   selectedWalkInParticipantId.value = '';
   walkInIsPresent.value = true;
   walkInComment.value = 'Ajout ponctuel';
+  initialAddWalkInState.value = JSON.stringify({
+    participantId: selectedWalkInParticipantId.value,
+    isPresent: walkInIsPresent.value,
+    comment: walkInComment.value
+  });
   isAddWalkInModalOpen.value = true;
 }
+
+function closeAddWalkInModal(force = false) {
+  if (force !== true && initialAddWalkInState.value) {
+    const curState = JSON.stringify({
+      participantId: selectedWalkInParticipantId.value,
+      isPresent: walkInIsPresent.value,
+      comment: walkInComment.value
+    });
+    if (curState !== initialAddWalkInState.value) {
+      if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans inscrire le bénéficiaire ?')) {
+        return;
+      }
+    }
+  }
+  isAddWalkInModalOpen.value = false;
+  initialAddWalkInState.value = null;
+}
+
+const isAddWalkInDirty = computed(() => {
+  if (!initialAddWalkInState.value) return false;
+  const curState = JSON.stringify({
+    participantId: selectedWalkInParticipantId.value,
+    isPresent: walkInIsPresent.value,
+    comment: walkInComment.value
+  });
+  return curState !== initialAddWalkInState.value;
+});
 
 // Confirm addition of walk-in participant
 async function confirmAddWalkInParticipant() {
@@ -1242,7 +1283,7 @@ async function confirmAddWalkInParticipant() {
     comment: walkInComment.value
   });
 
-  isAddWalkInModalOpen.value = false;
+  closeAddWalkInModal(true);
   globalStore.addSuccess(`${p.firstName} ${p.lastName} ajouté(e) avec succès au créneau.`, 'Participant ajouté');
 }
 
@@ -1255,8 +1296,49 @@ function openAddActivityModal(slot) {
   newActivityEndTime.value = slot?.endDate ? toTimeInputValue(slot.endDate) : '11:30';
   newActivityFacilitatorIds.value = (slot?.facilitators || []).map(f => f.documentId || f.id);
   newActivityDescription.value = '';
+  initialAddActivityState.value = JSON.stringify({
+    templateId: newActivityTemplateId.value,
+    name: newActivityName.value,
+    startTime: newActivityStartTime.value,
+    endTime: newActivityEndTime.value,
+    facilitatorIds: newActivityFacilitatorIds.value,
+    description: newActivityDescription.value
+  });
   isAddActivityModalOpen.value = true;
 }
+
+function closeAddActivityModal(force = false) {
+  if (force !== true && initialAddActivityState.value) {
+    const curState = JSON.stringify({
+      templateId: newActivityTemplateId.value,
+      name: newActivityName.value,
+      startTime: newActivityStartTime.value,
+      endTime: newActivityEndTime.value,
+      facilitatorIds: newActivityFacilitatorIds.value,
+      description: newActivityDescription.value
+    });
+    if (curState !== initialAddActivityState.value) {
+      if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer l\'activité ?')) {
+        return;
+      }
+    }
+  }
+  isAddActivityModalOpen.value = false;
+  initialAddActivityState.value = null;
+}
+
+const isAddActivityDirty = computed(() => {
+  if (!initialAddActivityState.value) return false;
+  const curState = JSON.stringify({
+    templateId: newActivityTemplateId.value,
+    name: newActivityName.value,
+    startTime: newActivityStartTime.value,
+    endTime: newActivityEndTime.value,
+    facilitatorIds: newActivityFacilitatorIds.value,
+    description: newActivityDescription.value
+  });
+  return curState !== initialAddActivityState.value;
+});
 
 function onSelectActivityTemplate() {
   if (!newActivityTemplateId.value) return;
@@ -1318,7 +1400,7 @@ async function confirmAddScheduledActivity() {
   }
   slot.scheduledActivities.push(newActivityObj);
 
-  isAddActivityModalOpen.value = false;
+  closeAddActivityModal(true);
   globalStore.addSuccess(`Activité "${newActivityName.value}" programmée dans le créneau.`, 'Activité ajoutée');
 }
 
@@ -2204,6 +2286,48 @@ onMounted(async () => {
 .participant-email {
   font-size: 0.75rem;
   color: #64748b;
+}
+
+.transport-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 1rem;
+  background: rgba(13, 148, 136, 0.2);
+  color: #5eead4;
+  border: 1px solid rgba(13, 148, 136, 0.4);
+}
+
+.participant-sub-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+}
+
+.meta-tag {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta-tag.address-tag {
+  color: #7dd3fc;
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  background: rgba(2, 132, 199, 0.1);
+}
+
+.meta-tag.other-tag {
+  color: #fde047;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.1);
 }
 
 .participant-header-actions {

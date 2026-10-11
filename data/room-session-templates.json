@@ -5,7 +5,9 @@
     "_manager": "marc.lefevre@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Accueil principal et activités collectives du Lundi"
+    "notes": "Accueil principal et activités collectives du Lundi",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 1,
@@ -13,7 +15,9 @@
     "_manager": "claire.dubois@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Maintien de l'autonomie et gymnastique adaptée"
+    "notes": "Maintien de l'autonomie et gymnastique adaptée",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 1,
@@ -21,7 +25,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Stimulation cognitive"
+    "notes": "Stimulation cognitive",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 1,
@@ -29,7 +35,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Relaxation sensorielle"
+    "notes": "Relaxation sensorielle",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 1,
@@ -37,7 +45,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Ateliers culinaires"
+    "notes": "Ateliers culinaires",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 1,
@@ -45,7 +55,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Activités plein air"
+    "notes": "Activités plein air",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 2,
@@ -53,7 +65,9 @@
     "_manager": "marc.lefevre@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Accueil et jeux de société"
+    "notes": "Accueil et jeux de société",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 2,
@@ -61,7 +75,9 @@
     "_manager": "claire.dubois@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Psychomotricité du Mardi"
+    "notes": "Psychomotricité du Mardi",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 2,
@@ -69,7 +85,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Atelier réminiscence"
+    "notes": "Atelier réminiscence",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 2,
@@ -77,7 +95,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Détente et aromathérapie"
+    "notes": "Détente et aromathérapie",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 2,
@@ -85,7 +105,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Pâtisserie et mémoire gustative"
+    "notes": "Pâtisserie et mémoire gustative",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 2,
@@ -93,7 +115,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Entretien du potager"
+    "notes": "Entretien du potager",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 3,
@@ -101,7 +125,9 @@
     "_manager": "marc.lefevre@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Convivialité et chant"
+    "notes": "Convivialité et chant",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 3,
@@ -109,7 +135,9 @@
     "_manager": "claire.dubois@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Renforcement musculaire"
+    "notes": "Renforcement musculaire",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 3,
@@ -117,7 +145,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Lecture et revue de presse"
+    "notes": "Lecture et revue de presse",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 3,
@@ -125,7 +155,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Stimulation multisensorielle"
+    "notes": "Stimulation multisensorielle",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 3,
@@ -133,7 +165,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Préparation du goûter"
+    "notes": "Préparation du goûter",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 3,
@@ -141,7 +175,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Balade sensorielle"
+    "notes": "Balade sensorielle",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 4,
@@ -149,7 +185,9 @@
     "_manager": "marc.lefevre@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Activités manuelles et créatives"
+    "notes": "Activités manuelles et créatives",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 4,
@@ -157,7 +195,9 @@
     "_manager": "claire.dubois@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Équilibre et parcours moteur"
+    "notes": "Équilibre et parcours moteur",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 4,
@@ -165,7 +205,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Calcul et jeux de lettres"
+    "notes": "Calcul et jeux de lettres",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 4,
@@ -173,7 +215,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Bain sonore et lumière douce"
+    "notes": "Bain sonore et lumière douce",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 4,
@@ -181,7 +225,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Dégustation thématique"
+    "notes": "Dégustation thématique",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 4,
@@ -189,7 +235,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Hortithérapie"
+    "notes": "Hortithérapie",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 5,
@@ -197,7 +245,9 @@
     "_manager": "marc.lefevre@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Bilan de la semaine et spectacle"
+    "notes": "Bilan de la semaine et spectacle",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 5,
@@ -205,7 +255,9 @@
     "_manager": "claire.dubois@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Gym sur chaise et étirements"
+    "notes": "Gym sur chaise et étirements",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 5,
@@ -213,7 +265,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Quiz culturel et musique"
+    "notes": "Quiz culturel et musique",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 5,
@@ -221,7 +275,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Séance apaisante de fin de semaine"
+    "notes": "Séance apaisante de fin de semaine",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 5,
@@ -229,7 +285,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermeture le vendredi après-midi"
+    "notes": "Fermeture le vendredi après-midi",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 5,
@@ -237,7 +295,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": true,
-    "notes": "Récolte et observation"
+    "notes": "Récolte et observation",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 6,
@@ -245,7 +305,9 @@
     "_manager": "marc.lefevre@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Permanence week-end si besoin"
+    "notes": "Permanence week-end si besoin",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 6,
@@ -253,7 +315,9 @@
     "_manager": "claire.dubois@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le week-end"
+    "notes": "Fermé le week-end",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 6,
@@ -261,7 +325,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le week-end"
+    "notes": "Fermé le week-end",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 6,
@@ -269,7 +335,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le week-end"
+    "notes": "Fermé le week-end",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 6,
@@ -277,7 +345,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le week-end"
+    "notes": "Fermé le week-end",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 6,
@@ -285,7 +355,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le week-end"
+    "notes": "Fermé le week-end",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 7,
@@ -293,7 +365,9 @@
     "_manager": "marc.lefevre@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le dimanche"
+    "notes": "Fermé le dimanche",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 7,
@@ -301,7 +375,9 @@
     "_manager": "claire.dubois@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le dimanche"
+    "notes": "Fermé le dimanche",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 7,
@@ -309,7 +385,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le dimanche"
+    "notes": "Fermé le dimanche",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 7,
@@ -317,7 +395,9 @@
     "_manager": "sophie.martin@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le dimanche"
+    "notes": "Fermé le dimanche",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 7,
@@ -325,7 +405,9 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le dimanche"
+    "notes": "Fermé le dimanche",
+    "startTime": "10:00",
+    "endTime": "16:00"
   },
   {
     "dayOfWeek": 7,
@@ -333,6 +415,8 @@
     "_manager": "pierre.moreau@ehpad-accueil.fr",
     "_participants": [],
     "isActive": false,
-    "notes": "Fermé le dimanche"
+    "notes": "Fermé le dimanche",
+    "startTime": "10:00",
+    "endTime": "16:00"
   }
 ]

@@ -196,6 +196,9 @@ const CONTENT_TYPES_DEFINITIONS = [
         firstName: { type: 'string', required: true },
         lastName: { type: 'string', required: true },
         email: { type: 'email', required: true, unique: true },
+        transport: { type: 'boolean', default: false },
+        address: { type: 'text' },
+        other: { type: 'text' },
         weeklyAvailabilities: { type: 'json' },
         specificUnavailabilities: { type: 'json' },
         user: {
@@ -243,6 +246,8 @@ const CONTENT_TYPES_DEFINITIONS = [
       description: 'Daily room opening session with assigned manager and beneficiaries',
       attributes: {
         date: { type: 'date', required: true },
+        startTime: { type: 'time', default: '10:00:00.000' },
+        endTime: { type: 'time', default: '16:00:00.000' },
         location: {
           type: 'relation',
           relation: 'manyToOne',
@@ -275,6 +280,8 @@ const CONTENT_TYPES_DEFINITIONS = [
       description: 'Standard recurring week template configuration for room openings',
       attributes: {
         dayOfWeek: { type: 'integer', required: true, min: 1, max: 7 },
+        startTime: { type: 'time', default: '10:00:00.000' },
+        endTime: { type: 'time', default: '16:00:00.000' },
         isActive: { type: 'boolean', default: true },
         notes: { type: 'string' },
         location: {
@@ -407,37 +414,71 @@ const CONTENT_TYPES_DEFINITIONS = [
   },
 ];
 
-// ─── 1. CRÉATION DES COLLECTIONS ────────────────────────────────────────────
+// ─── 1. CRÉATION & SYNCHRONISATION DES COLLECTIONS ──────────────────────────
 async function createCollections() {
-  log('📦', `${C.cyan}${C.bold}Étape 1 : Création des 9 collections via Content-Type Builder...${C.reset}`);
+  log('📦', `${C.cyan}${C.bold}Étape 1 : Création et synchronisation des collections via Content-Type Builder...${C.reset}`);
 
   const ctList = await adminRequest('/content-type-builder/content-types');
-  const existingUids = new Set(ctList.data.map(c => c.uid));
+  const existingMap = new Map(ctList.data.map(c => [c.uid, c]));
 
   for (const def of CONTENT_TYPES_DEFINITIONS) {
     const uid = `api::${def.singularName}.${def.singularName}`;
-    if (existingUids.has(uid)) {
-      log('ℹ️', `${C.dim}Collection ${uid} déjà présente, ignorée.${C.reset}`);
-      continue;
-    }
+    const existing = existingMap.get(uid);
 
-    log('⏳', `Création de ${C.bold}${uid}${C.reset}...`);
-    try {
-      await adminRequest('/content-type-builder/content-types', {
-        method: 'POST',
-        body: { contentType: def.contentType },
-      });
-    } catch (err) {
-      // Si la connexion se coupe lors du restart ou renvoie 502/201
-      log('ℹ️', `${C.dim}Requête envoyée (${err.message})...${C.reset}`);
-    }
+    if (!existing) {
+      log('⏳', `Création de ${C.bold}${uid}${C.reset}...`);
+      try {
+        await adminRequest('/content-type-builder/content-types', {
+          method: 'POST',
+          body: { contentType: def.contentType },
+        });
+      } catch (err) {
+        // Si la connexion se coupe lors du restart ou renvoie 502/201
+        log('ℹ️', `${C.dim}Requête envoyée (${err.message})...${C.reset}`);
+      }
 
-    log('🔄', `Attente du redémarrage du serveur Strapi...`);
-    await waitHealthy();
-    log('✅', `${C.green}Collection ${uid} créée et serveur synchronisé.${C.reset}`);
+      log('🔄', `Attente du redémarrage du serveur Strapi...`);
+      await waitHealthy();
+      log('✅', `${C.green}Collection ${uid} créée et serveur synchronisé.${C.reset}`);
+    } else {
+      // Vérifier les attributs manquants
+      const existingAttrs = existing.schema?.attributes || {};
+      const missingAttrs = Object.keys(def.contentType.attributes).filter(k => !(k in existingAttrs));
+
+      if (missingAttrs.length > 0) {
+        log('🔄', `Mise à jour du schéma ${C.bold}${uid}${C.reset} (nouveaux attributs : ${missingAttrs.join(', ')})...`);
+        const updatedContentType = {
+          displayName: existing.schema.displayName || def.contentType.displayName,
+          singularName: existing.schema.singularName || def.contentType.singularName,
+          pluralName: existing.schema.pluralName || def.contentType.pluralName,
+          draftAndPublish: existing.schema.draftAndPublish ?? def.contentType.draftAndPublish,
+          kind: existing.schema.kind || def.contentType.kind,
+          collectionName: existing.schema.collectionName || def.contentType.collectionName,
+          description: existing.schema.description || def.contentType.description,
+          attributes: {
+            ...existingAttrs,
+            ...def.contentType.attributes,
+          },
+        };
+
+        try {
+          await adminRequest(`/content-type-builder/content-types/${uid}`, {
+            method: 'PUT',
+            body: { contentType: updatedContentType },
+          });
+          log('🔄', `Attente du redémarrage du serveur Strapi...`);
+          await waitHealthy();
+          log('✅', `${C.green}Collection ${uid} mise à jour avec succès.${C.reset}`);
+        } catch (err) {
+          log('⚠️', `${C.yellow}Attention : échec de mise à jour du schéma via l'API pour ${uid} : ${err.message}${C.reset}`);
+        }
+      } else {
+        log('ℹ️', `${C.dim}Collection ${uid} déjà à jour.${C.reset}`);
+      }
+    }
   }
 
-  log('🎉', `${C.green}${C.bold}Toutes les collections sont en ligne et opérationnelles !${C.reset}\n`);
+  log('🎉', `${C.green}${C.bold}Toutes les collections sont vérifiées !${C.reset}\n`);
 }
 
 // ─── 2. CONFIGURATION DES RÔLES & PERMISSIONS ────────────────────────────────
@@ -550,17 +591,23 @@ async function seedData() {
   log('🌱', `${C.cyan}${C.bold}Étape 3 : Injection des données complètes (Seed)...${C.reset}`);
 
   // 1. Lieux
-  log('📍', `Création des lieux...`);
+  log('📍', `Synchronisation des lieux...`);
   const locations = loadJSON('locations.json');
+  const existingLocsRes = await contentApiRequest('/api/locations?pagination[pageSize]=100');
+  const existingLocs = new Map((existingLocsRes.data || []).map(l => [l.name, l.documentId]));
   const locationsMap = {};
   for (const loc of locations) {
-    const res = await contentApiRequest('/api/locations', {
-      method: 'POST',
-      body: { data: loc },
-    });
-    locationsMap[loc.name] = res.data.documentId;
+    if (existingLocs.has(loc.name)) {
+      locationsMap[loc.name] = existingLocs.get(loc.name);
+    } else {
+      const res = await contentApiRequest('/api/locations', {
+        method: 'POST',
+        body: { data: loc },
+      });
+      locationsMap[loc.name] = res.data.documentId;
+    }
   }
-  log('✅', `${C.green}${Object.keys(locationsMap).length} lieux créés${C.reset}`);
+  log('✅', `${C.green}${Object.keys(locationsMap).length} lieux synchronisés${C.reset}`);
 
   // Récupérer les rôles pour l'attribution des utilisateurs
   const rolesRes = await adminRequest('/users-permissions/roles');
@@ -600,46 +647,84 @@ async function seedData() {
   }
 
   // 2. Animateurs
-  log('👨‍🏫', `Création des animateurs avec comptes utilisateurs associés...`);
+  log('👨‍🏫', `Synchronisation des animateurs avec comptes utilisateurs associés...`);
   const facilitators = loadJSON('facilitators.json');
+  const existingFacsRes = await contentApiRequest('/api/facilitators?pagination[pageSize]=100');
+  const existingFacs = new Map((existingFacsRes.data || []).map(f => [f.email?.toLowerCase(), f]));
   const facilitatorsMap = {};
   for (const fac of facilitators) {
     const { _authorizedActivities, ...data } = fac;
     const user = await getOrCreateUser(fac.firstName, fac.lastName, fac.email, facRole.id);
-    const res = await contentApiRequest('/api/facilitators', {
-      method: 'POST',
-      body: {
-        data: {
-          ...data,
-          user: user.documentId,
+    const existingFac = existingFacs.get(fac.email.toLowerCase());
+    if (existingFac) {
+      facilitatorsMap[fac.email] = {
+        documentId: existingFac.documentId,
+        _authorizedActivities: _authorizedActivities || [],
+      };
+    } else {
+      const res = await contentApiRequest('/api/facilitators', {
+        method: 'POST',
+        body: {
+          data: {
+            ...data,
+            user: user.documentId,
+          },
         },
-      },
-    });
-    facilitatorsMap[fac.email] = {
-      documentId: res.data.documentId,
-      _authorizedActivities: _authorizedActivities || [],
-    };
+      });
+      facilitatorsMap[fac.email] = {
+        documentId: res.data.documentId,
+        _authorizedActivities: _authorizedActivities || [],
+      };
+    }
   }
-  log('✅', `${C.green}${Object.keys(facilitatorsMap).length} animateurs créés et liés à un utilisateur${C.reset}`);
+  log('✅', `${C.green}${Object.keys(facilitatorsMap).length} animateurs synchronisés et liés à un utilisateur${C.reset}`);
 
   // 3. Participants
-  log('👥', `Création des participants avec comptes utilisateurs associés...`);
+  log('👥', `Création et mise à jour des participants avec comptes associés...`);
   const participants = loadJSON('participants.json');
   const participantsMap = {};
   for (const part of participants) {
     const user = await getOrCreateUser(part.firstName, part.lastName, part.email, authRole.id);
-    const res = await contentApiRequest('/api/participants', {
-      method: 'POST',
-      body: {
-        data: {
-          ...part,
-          user: user.documentId,
-        },
-      },
-    });
-    participantsMap[part.email] = res.data.documentId;
+    let existingPart = null;
+    try {
+      const existingRes = await contentApiRequest(`/api/participants?filters[email][$eq]=${encodeURIComponent(part.email)}`);
+      if (existingRes.data && existingRes.data.length > 0) {
+        existingPart = existingRes.data[0];
+      }
+    } catch (e) {}
+
+    try {
+      if (existingPart) {
+        const updateRes = await contentApiRequest(`/api/participants/${existingPart.documentId}`, {
+          method: 'PUT',
+          body: {
+            data: {
+              ...part,
+              user: user.documentId,
+            },
+          },
+        });
+        participantsMap[part.email] = updateRes.data.documentId;
+      } else {
+        const res = await contentApiRequest('/api/participants', {
+          method: 'POST',
+          body: {
+            data: {
+              ...part,
+              user: user.documentId,
+            },
+          },
+        });
+        participantsMap[part.email] = res.data.documentId;
+      }
+    } catch (err) {
+      log('⚠️', `${C.yellow}Participant ${part.email} non synchronisé : ${err.message}${C.reset}`);
+      if (existingPart) {
+        participantsMap[part.email] = existingPart.documentId;
+      }
+    }
   }
-  log('✅', `${C.green}${Object.keys(participantsMap).length} participants créés et liés à un utilisateur${C.reset}`);
+  log('✅', `${C.green}${Object.keys(participantsMap).length} participants synchronisés et liés à un utilisateur${C.reset}`);
 
   // 4. Modèles d'activité
   log('🎯', `Création des modèles d'activités...`);
@@ -651,21 +736,26 @@ async function seedData() {
       .map(email => facilitatorsMap[email]?.documentId)
       .filter(Boolean);
 
-    const res = await contentApiRequest('/api/activity-templates', {
-      method: 'POST',
-      body: {
-        data: {
-          ...data,
-          authorizedFacilitators: facilitatorIds,
+    const existingActRes = await contentApiRequest(`/api/activity-templates?filters[name][$eq]=${encodeURIComponent(tpl.name)}`);
+    if (existingActRes.data && existingActRes.data.length > 0) {
+      activitiesMap[tpl.name] = existingActRes.data[0].documentId;
+    } else {
+      const res = await contentApiRequest('/api/activity-templates', {
+        method: 'POST',
+        body: {
+          data: {
+            ...data,
+            authorizedFacilitators: facilitatorIds,
+          },
         },
-      },
-    });
-    activitiesMap[tpl.name] = res.data.documentId;
+      });
+      activitiesMap[tpl.name] = res.data.documentId;
+    }
   }
-  log('✅', `${C.green}${Object.keys(activitiesMap).length} modèles d'activités créés${C.reset}`);
+  log('✅', `${C.green}${Object.keys(activitiesMap).length} modèles d'activités synchronisés${C.reset}`);
 
   // 5. Sessions de salle
-  log('🚪', `Création des sessions de salle...`);
+  log('🚪', `Synchronisation des sessions de salle...`);
   const sessions = loadJSON('room-sessions.json');
   const roomSessionsMap = {};
   for (const sess of sessions) {
@@ -678,23 +768,30 @@ async function seedData() {
 
     if (!locationId || !managerId) continue;
 
-    const res = await contentApiRequest('/api/room-sessions', {
-      method: 'POST',
-      body: {
-        data: {
-          date,
-          location: locationId,
-          manager: managerId,
-          participants: participantIds,
+    const existingSessionRes = await contentApiRequest(`/api/room-sessions?filters[date][$eq]=${date}&filters[location][documentId][$eq]=${locationId}`);
+    if (existingSessionRes.data && existingSessionRes.data.length > 0) {
+      roomSessionsMap[`${date}|${locationId}`] = existingSessionRes.data[0].documentId;
+    } else {
+      const res = await contentApiRequest('/api/room-sessions', {
+        method: 'POST',
+        body: {
+          data: {
+            date,
+            startTime: sess.startTime || '10:00:00.000',
+            endTime: sess.endTime || '16:00:00.000',
+            location: locationId,
+            manager: managerId,
+            participants: participantIds,
+          },
         },
-      },
-    });
-    roomSessionsMap[`${date}|${locationId}`] = res.data.documentId;
+      });
+      roomSessionsMap[`${date}|${locationId}`] = res.data.documentId;
+    }
   }
-  log('✅', `${C.green}${Object.keys(roomSessionsMap).length} sessions de salle créées${C.reset}`);
+  log('✅', `${C.green}${Object.keys(roomSessionsMap).length} sessions de salle synchronisées${C.reset}`);
 
   // 6. Modèles de semaine type
-  log('⚡', `Création des modèles de semaine type...`);
+  log('⚡', `Synchronisation des modèles de semaine type...`);
   let roomSessionTemplates = [];
   try {
     roomSessionTemplates = loadJSON('room-session-templates.json');
@@ -710,22 +807,29 @@ async function seedData() {
 
     if (!locationId) continue;
 
-    await contentApiRequest('/api/room-session-templates', {
-      method: 'POST',
-      body: {
-        data: {
-          dayOfWeek,
-          location: locationId,
-          manager: managerId,
-          participants: participantIds,
-          isActive: isActive !== false,
-          notes: notes || '',
+    const existingRstRes = await contentApiRequest(`/api/room-session-templates?filters[dayOfWeek][$eq]=${dayOfWeek}&filters[location][documentId][$eq]=${locationId}`);
+    if (existingRstRes.data && existingRstRes.data.length > 0) {
+      rstCount++;
+    } else {
+      await contentApiRequest('/api/room-session-templates', {
+        method: 'POST',
+        body: {
+          data: {
+            dayOfWeek,
+            startTime: t.startTime || '10:00:00.000',
+            endTime: t.endTime || '16:00:00.000',
+            location: locationId,
+            manager: managerId,
+            participants: participantIds,
+            isActive: isActive !== false,
+            notes: notes || '',
+          },
         },
-      },
-    });
-    rstCount++;
+      });
+      rstCount++;
+    }
   }
-  log('✅', `${C.green}${rstCount} modèles de semaine type créés${C.reset}`);
+  log('✅', `${C.green}${rstCount} modèles de semaine type synchronisés${C.reset}`);
 
   // 7. Créneaux (TimeSlots) & Activités programmées
   log('📅', `Création des créneaux et activités programmées...`);

@@ -880,6 +880,12 @@
                     <div>
                       <h3>👥 {{ part.firstName }} {{ part.lastName }}</h3>
                       <span class="email-text">✉️ {{ part.email }}</span>
+                      <div class="participant-transport-row mt-1">
+                        <span class="transport-pill-badge" :class="part.transport ? 'is-transport-yes' : 'is-transport-no'">
+                          <span class="t-badge-icon">{{ part.transport ? '🚐' : '🚶' }}</span>
+                          <span class="t-badge-text">Transport : <strong>{{ part.transport ? 'Oui (Requis)' : 'Non (Autonome)' }}</strong></span>
+                        </span>
+                      </div>
                     </div>
                     <div v-if="appSettingsStore.isAdminMode" class="card-actions" style="display: flex; gap: 0.4rem;">
                       <button class="action-icon-btn edit-btn" @click.stop="openParticipantModal(part)" title="Modifier ce participant">
@@ -892,6 +898,22 @@
                   </div>
                 </div>
                 <div class="card-content">
+                  <!-- Postal Address Block -->
+                  <div class="info-group" v-if="part.address">
+                    <span class="info-label">📍 Adresse postale & Accès</span>
+                    <div class="participant-meta-box address-box">
+                      <p class="whitespace-pre-line">{{ part.address }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Other / Medical Treatments Block -->
+                  <div class="info-group" v-if="part.other">
+                    <span class="info-label">💊 Traitements & Informations utiles</span>
+                    <div class="participant-meta-box other-box">
+                      <p class="whitespace-pre-line">{{ part.other }}</p>
+                    </div>
+                  </div>
+
                   <div class="info-group">
                     <span class="info-label">Disponibilités Hebdomadaires</span>
                     <div class="mini-week-container mt-1">
@@ -1028,11 +1050,25 @@
       </div>
 
       <!-- ACTIVITY MODAL -->
-      <div class="modal-backdrop" v-if="showActivityModal" @click.self="closeActivityModal">
+      <div class="modal-backdrop" v-if="showActivityModal" @click.self="closeActivityModal()">
         <div class="modal-card">
           <div class="modal-header">
             <h3>{{ editingActivityId ? '✏️ Modifier l\'Activité' : '🎯 Nouvelle Activité' }}</h3>
-            <button class="close-modal-btn" @click="closeActivityModal">✕</button>
+            <div class="modal-header-actions">
+              <button 
+                type="button" 
+                class="modal-header-save-btn" 
+                :disabled="!isActivityFormDirty || activityModalLoading"
+                @click="submitActivityForm"
+              >
+                <span>💾</span>
+                <span>{{ activityModalLoading ? 'Enregistrement...' : 'Enregistrer' }}</span>
+              </button>
+              <button type="button" class="modal-header-cancel-btn" @click="closeActivityModal()">
+                Annuler
+              </button>
+              <button type="button" class="close-modal-btn" @click="closeActivityModal()">✕</button>
+            </div>
           </div>
 
           <div class="modal-body">
@@ -1279,24 +1315,31 @@
                   </div>
                 </div>
               </div>
-
-              <div class="modal-footer">
-                <button type="button" class="cancel-btn" @click="closeActivityModal">Annuler</button>
-                <button type="submit" class="submit-btn" :disabled="activityModalLoading">
-                  {{ activityModalLoading ? 'Enregistrement...' : 'Enregistrer l\'activité' }}
-                </button>
-              </div>
             </form>
           </div>
         </div>
       </div>
 
       <!-- FACILITATOR MODAL (CARDS VIEW & ADMIN) -->
-      <div class="modal-backdrop" v-if="showFacilitatorModal" @click.self="closeFacilitatorModal">
+      <div class="modal-backdrop" v-if="showFacilitatorModal" @click.self="closeFacilitatorModal()">
         <div class="modal-card" style="max-width: 680px;">
           <div class="modal-header">
             <h3>{{ editingFacilitatorId ? '✏️ Modifier l\'Animateur' : '👨‍🏫 Nouvel Animateur' }}</h3>
-            <button class="close-modal-btn" @click="closeFacilitatorModal">✕</button>
+            <div class="modal-header-actions">
+              <button 
+                type="button" 
+                class="modal-header-save-btn" 
+                :disabled="!isFacilitatorFormDirty || facilitatorModalLoading"
+                @click="submitFacilitatorForm"
+              >
+                <span>💾</span>
+                <span>{{ facilitatorModalLoading ? 'Enregistrement...' : 'Enregistrer' }}</span>
+              </button>
+              <button type="button" class="modal-header-cancel-btn" @click="closeFacilitatorModal()">
+                Annuler
+              </button>
+              <button type="button" class="close-modal-btn" @click="closeFacilitatorModal()">✕</button>
+            </div>
           </div>
 
           <div class="modal-body">
@@ -1388,24 +1431,31 @@
                   </div>
                 </div>
               </div>
-
-              <div class="modal-footer">
-                <button type="button" class="cancel-btn" @click="closeFacilitatorModal">Annuler</button>
-                <button type="submit" class="submit-btn" :disabled="facilitatorModalLoading">
-                  {{ facilitatorModalLoading ? 'Enregistrement...' : 'Enregistrer l\'animateur' }}
-                </button>
-              </div>
             </form>
           </div>
         </div>
       </div>
 
       <!-- PARTICIPANT MODAL -->
-      <div class="modal-backdrop" v-if="showParticipantModal" @click.self="closeParticipantModal">
+      <div class="modal-backdrop" v-if="showParticipantModal" @click.self="closeParticipantModal()">
         <div class="modal-card" style="max-width: 680px;">
           <div class="modal-header">
             <h3>{{ editingParticipantId ? '✏️ Modifier le Participant' : '👥 Nouveau Participant' }}</h3>
-            <button class="close-modal-btn" @click="closeParticipantModal">✕</button>
+            <div class="modal-header-actions">
+              <button 
+                type="button" 
+                class="modal-header-save-btn" 
+                :disabled="!isParticipantFormDirty || participantModalLoading"
+                @click="submitParticipantForm"
+              >
+                <span>💾</span>
+                <span>{{ participantModalLoading ? 'Enregistrement...' : 'Enregistrer' }}</span>
+              </button>
+              <button type="button" class="modal-header-cancel-btn" @click="closeParticipantModal()">
+                Annuler
+              </button>
+              <button type="button" class="close-modal-btn" @click="closeParticipantModal()">✕</button>
+            </div>
           </div>
 
           <div class="modal-body">
@@ -1433,6 +1483,95 @@
               <div class="form-group mt-2">
                 <label for="partEmail">Adresse Email *</label>
                 <input type="email" id="partEmail" v-model="participantForm.email" required class="form-input" placeholder="Ex: jeanne.dupont@senior.dev" />
+              </div>
+
+              <!-- Transport (Oui / Non) -->
+              <div class="form-group mt-3">
+                <div class="field-header-row">
+                  <label style="margin-bottom: 0;">🚐 Transport requis (Navette / Accompagnement) *</label>
+                  <span class="field-status-badge" :class="participantForm.transport ? 'badge-transport-yes' : 'badge-transport-no'">
+                    {{ participantForm.transport ? '✓ Oui (Transport requis)' : '✕ Non (Autonome)' }}
+                  </span>
+                </div>
+                <div class="transport-choice-grid mt-1">
+                  <button 
+                    type="button" 
+                    class="transport-option-card"
+                    :class="{ selected: !participantForm.transport }"
+                    @click="participantForm.transport = false"
+                  >
+                    <span class="toc-icon">🚶</span>
+                    <div class="toc-body">
+                      <strong class="toc-title">Non</strong>
+                      <span class="toc-desc">Autonome (déplacement par ses propres moyens)</span>
+                    </div>
+                    <span class="toc-indicator" v-if="!participantForm.transport">✓</span>
+                  </button>
+
+                  <button 
+                    type="button" 
+                    class="transport-option-card"
+                    :class="{ selected: participantForm.transport }"
+                    @click="participantForm.transport = true"
+                  >
+                    <span class="toc-icon">🚐</span>
+                    <div class="toc-body">
+                      <strong class="toc-title">Oui</strong>
+                      <span class="toc-desc">Transport nécessaire (prise en charge navette)</span>
+                    </div>
+                    <span class="toc-indicator" v-if="participantForm.transport">✓</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Adresse postale (Texte long) -->
+              <div class="form-group mt-3">
+                <div class="field-header-row">
+                  <label for="partAddress" style="margin-bottom: 0;">📍 Adresse postale</label>
+                  <span class="field-hint-pill">🚪 Indiquer le code de portail / digicode</span>
+                </div>
+                <div class="field-help-box">
+                  💡 Indiquez l'adresse postale complète. Si la résidence ou le domicile comporte un <strong>code de portail, digicode, interphone ou numéro de bâtiment</strong>, précisez-le ci-dessous.
+                </div>
+                <div class="quick-tags-container mb-1">
+                  <span class="quick-tags-label">Suggestions rapides :</span>
+                  <button type="button" class="quick-tag-btn" @click="insertParticipantAddressTag('Code portail : ')">+ Code portail</button>
+                  <button type="button" class="quick-tag-btn" @click="insertParticipantAddressTag('Digicode : ')">+ Digicode</button>
+                  <button type="button" class="quick-tag-btn" @click="insertParticipantAddressTag('Interphone : ')">+ Interphone</button>
+                  <button type="button" class="quick-tag-btn" @click="insertParticipantAddressTag('Bâtiment / Étage : ')">+ Bâtiment</button>
+                </div>
+                <textarea 
+                  id="partAddress" 
+                  v-model="participantForm.address" 
+                  rows="3" 
+                  class="form-input form-textarea" 
+                  placeholder="Ex : 14 Rue des Lilas, 44350 Guérande&#10;Code portail : 3591A, sonnette Dupont au RDC..."
+                ></textarea>
+              </div>
+
+              <!-- Autre (Texte long : Traitements et toutes autres infos utiles) -->
+              <div class="form-group mt-3">
+                <div class="field-header-row">
+                  <label for="partOther" style="margin-bottom: 0;">📝 Autre : Traitements & Informations utiles</label>
+                  <span class="field-hint-pill">💊 Traitements, santé & consignes</span>
+                </div>
+                <div class="field-help-box">
+                  💡 Notez ici les <strong>traitements médicaux</strong> (prises de médicaments, pilulier, horaires), allergies, régimes alimentaires, mobilité, et toute autre consigne utile à l'équipe.
+                </div>
+                <div class="quick-tags-container mb-1">
+                  <span class="quick-tags-label">Suggestions rapides :</span>
+                  <button type="button" class="quick-tag-btn" @click="insertParticipantOtherTag('Traitement : pilulier à midi')">+ Traitement midi</button>
+                  <button type="button" class="quick-tag-btn" @click="insertParticipantOtherTag('Mobilité : marche avec canne')">+ Mobilité</button>
+                  <button type="button" class="quick-tag-btn" @click="insertParticipantOtherTag('Régime alimentaire : ')">+ Régime</button>
+                  <button type="button" class="quick-tag-btn" @click="insertParticipantOtherTag('Contact d\'urgence : ')">+ Contact urgence</button>
+                </div>
+                <textarea 
+                  id="partOther" 
+                  v-model="participantForm.other" 
+                  rows="3" 
+                  class="form-input form-textarea" 
+                  placeholder="Ex : Traitement : pilulier à midi (antihypertenseur). Régime sans sel. Personne de confiance : 06 12 34 56 78..."
+                ></textarea>
               </div>
 
               <!-- Weekly Availabilities Section -->
@@ -1492,24 +1631,31 @@
                   </div>
                 </div>
               </div>
-
-              <div class="modal-footer">
-                <button type="button" class="cancel-btn" @click="closeParticipantModal">Annuler</button>
-                <button type="submit" class="submit-btn" :disabled="participantModalLoading">
-                  {{ participantModalLoading ? 'Enregistrement...' : 'Enregistrer le participant' }}
-                </button>
-              </div>
             </form>
           </div>
         </div>
       </div>
 
       <!-- NEW TIME SLOT MODAL -->
-      <div class="modal-backdrop" v-if="showModal" @click.self="closeCreateModal">
+      <div class="modal-backdrop" v-if="showModal" @click.self="closeCreateModal()">
         <div class="modal-card">
           <div class="modal-header">
             <h3>📅 Planifier un Nouveau Créneau</h3>
-            <button class="close-modal-btn" @click="closeCreateModal">✕</button>
+            <div class="modal-header-actions">
+              <button 
+                type="button" 
+                class="modal-header-save-btn" 
+                :disabled="!isSlotFormDirty || modalLoading"
+                @click="submitForm"
+              >
+                <span>💾</span>
+                <span>{{ modalLoading ? 'Planification...' : 'Enregistrer' }}</span>
+              </button>
+              <button type="button" class="modal-header-cancel-btn" @click="closeCreateModal()">
+                Annuler
+              </button>
+              <button type="button" class="close-modal-btn" @click="closeCreateModal()">✕</button>
+            </div>
           </div>
 
           <div class="modal-body">
@@ -1698,24 +1844,31 @@
                   </div>
                 </div>
               </div>
-
-              <div class="modal-footer">
-                <button type="button" class="cancel-btn" @click="closeCreateModal">Annuler</button>
-                <button type="submit" class="submit-btn" :disabled="modalLoading">
-                  {{ modalLoading ? 'Validation des contraintes...' : 'Planifier' }}
-                </button>
-              </div>
             </form>
           </div>
         </div>
       </div>
 
       <!-- EMAIL MODAL -->
-      <div class="modal-backdrop" v-if="showEmailModal" @click.self="closeEmailModal">
+      <div class="modal-backdrop" v-if="showEmailModal" @click.self="closeEmailModal()">
         <div class="modal-card" style="max-width: 550px;">
           <div class="modal-header">
             <h3>✉️ Envoyer le planning par e-mail</h3>
-            <button class="close-modal-btn" @click="closeEmailModal">✕</button>
+            <div class="modal-header-actions">
+              <button 
+                type="button" 
+                class="modal-header-save-btn" 
+                :disabled="!isEmailFormDirty || emailLoading || emailSuccess"
+                @click="sendEmailDirect"
+              >
+                <span>🚀</span>
+                <span>{{ emailLoading ? 'Envoi...' : 'Envoyer' }}</span>
+              </button>
+              <button type="button" class="modal-header-cancel-btn" @click="closeEmailModal()">
+                Annuler
+              </button>
+              <button type="button" class="close-modal-btn" @click="closeEmailModal()">✕</button>
+            </div>
           </div>
 
           <div class="modal-body">
@@ -1765,12 +1918,8 @@
               </div>
 
               <div class="modal-footer" style="margin-top: 1rem; padding-top: 1rem;">
-                <button type="button" class="cancel-btn" @click="closeEmailModal">Annuler</button>
                 <button type="button" class="email-send-mailto-btn" @click="sendEmailMailto">
-                  ✉️ Ouvrir Messagerie
-                </button>
-                <button type="submit" class="email-send-direct-btn">
-                  🚀 Envoyer Direct
+                  ✉️ Ouvrir Messagerie locale
                 </button>
               </div>
             </form>
@@ -1952,6 +2101,7 @@ export default {
       activityModalLoading: false,
       activityModalError: '',
       editingActivityId: null,
+      initialActivityForm: null,
       modalActivityFacSearch: '',
       showFacDropdown: false,
       activityForm: {
@@ -1979,6 +2129,7 @@ export default {
       facilitatorModalLoading: false,
       facilitatorModalError: '',
       editingFacilitatorId: null,
+      initialFacilitatorState: null,
       facilitatorForm: {
         firstName: '',
         lastName: '',
@@ -2003,10 +2154,14 @@ export default {
       participantModalLoading: false,
       participantModalError: '',
       editingParticipantId: null,
+      initialParticipantState: null,
       participantForm: {
         firstName: '',
         lastName: '',
         email: '',
+        transport: false,
+        address: '',
+        other: '',
         weeklyAvailabilities: {},
         specificUnavailabilities: []
       },
@@ -2025,6 +2180,7 @@ export default {
       showModal: false,
       modalLoading: false,
       modalError: '',
+      initialSlotForm: null,
       modalFacilitatorSearch: '',
       modalParticipantSearch: '',
       successMessage: '',
@@ -2044,6 +2200,7 @@ export default {
       scheduleStartDate: '',
       scheduleEndDate: '',
       showEmailModal: false,
+      initialEmailForm: null,
       emailForm: {
         to: '',
         subject: '',
@@ -2054,6 +2211,36 @@ export default {
     };
   },
   computed: {
+    isActivityFormDirty() {
+      if (!this.initialActivityForm) return false;
+      return JSON.stringify(this.activityForm) !== this.initialActivityForm;
+    },
+    isFacilitatorFormDirty() {
+      if (!this.initialFacilitatorState) return false;
+      const cur = JSON.stringify({
+        form: this.facilitatorForm,
+        checks: this.facilitatorWeeklyChecks,
+        hours: this.facilitatorWeeklyHours
+      });
+      return cur !== this.initialFacilitatorState;
+    },
+    isParticipantFormDirty() {
+      if (!this.initialParticipantState) return false;
+      const cur = JSON.stringify({
+        form: this.participantForm,
+        checks: this.participantWeeklyChecks,
+        hours: this.participantWeeklyHours
+      });
+      return cur !== this.initialParticipantState;
+    },
+    isSlotFormDirty() {
+      if (!this.initialSlotForm) return false;
+      return JSON.stringify(this.form) !== this.initialSlotForm;
+    },
+    isEmailFormDirty() {
+      if (!this.initialEmailForm) return false;
+      return JSON.stringify(this.emailForm) !== this.initialEmailForm;
+    },
     searchPlaceholder() {
       switch (this.currentPage) {
         case 'timeslots': return 'Rechercher par activité, lieu ou animateur...';
@@ -2432,7 +2619,9 @@ export default {
           const q = this.searchQuery.toLowerCase();
           baseList = baseList.filter(p => 
             `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
-            p.email.toLowerCase().includes(q)
+            (p.email || '').toLowerCase().includes(q) ||
+            (p.address || '').toLowerCase().includes(q) ||
+            (p.other || '').toLowerCase().includes(q)
           );
         }
       }
@@ -2846,11 +3035,18 @@ export default {
       );
       this.emailSuccess = false;
       this.emailLoading = false;
+      this.initialEmailForm = JSON.stringify(this.emailForm);
       this.showEmailModal = true;
     },
 
-    closeEmailModal() {
+    closeEmailModal(force = false) {
+      if (force !== true && !this.emailSuccess && this.initialEmailForm && JSON.stringify(this.emailForm) !== this.initialEmailForm) {
+        if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans envoyer ?')) {
+          return;
+        }
+      }
       this.showEmailModal = false;
+      this.initialEmailForm = null;
     },
 
     async sendEmailDirect() {
@@ -2866,7 +3062,7 @@ export default {
         
         // Close modal after a brief delay
         setTimeout(() => {
-          this.closeEmailModal();
+          this.closeEmailModal(true);
         }, 1200);
       } catch (err) {
         this.emailLoading = false;
@@ -2880,7 +3076,7 @@ export default {
       const body = this.emailForm.body;
       const mailtoUrl = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.open(mailtoUrl, '_blank');
-      this.closeEmailModal();
+      this.closeEmailModal(true);
     },
 
     formatDateFr(dateStr) {
@@ -3127,12 +3323,19 @@ export default {
         facilitators: [],
         participants: []
       };
+      this.initialSlotForm = JSON.stringify(this.form);
       this.showModal = true;
     },
-    closeCreateModal() {
+    closeCreateModal(force = false) {
+      if (force !== true && this.initialSlotForm && JSON.stringify(this.form) !== this.initialSlotForm) {
+        if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer vos modifications ?')) {
+          return;
+        }
+      }
       this.showModal = false;
       this.modalFacilitatorSearch = '';
       this.modalParticipantSearch = '';
+      this.initialSlotForm = null;
     },
     async submitForm() {
       this.modalLoading = true;
@@ -3141,7 +3344,7 @@ export default {
       try {
         const createdItem = await this.schedulerStore.createSlot(this.form);
         this.showToast('Créneau planifié avec succès !');
-        this.closeCreateModal();
+        this.closeCreateModal(true);
         
         // Highlight the newly created item
         if (createdItem?.documentId) {
@@ -3316,14 +3519,21 @@ export default {
           newTagInput: ''
         };
       }
+      this.initialActivityForm = JSON.stringify(this.activityForm);
       this.showActivityModal = true;
     },
 
-    closeActivityModal() {
+    closeActivityModal(force = false) {
+      if (force !== true && this.initialActivityForm && JSON.stringify(this.activityForm) !== this.initialActivityForm) {
+        if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer vos modifications ?')) {
+          return;
+        }
+      }
       this.showActivityModal = false;
       this.modalActivityFacSearch = '';
       this.showFacDropdown = false;
       this.showQuickFacilitatorPanel = false;
+      this.initialActivityForm = null;
     },
 
     async submitActivityForm() {
@@ -3337,7 +3547,7 @@ export default {
           await this.activityStore.createActivity(this.activityForm);
           this.showToast('Activité créée avec succès !');
         }
-        this.closeActivityModal();
+        this.closeActivityModal(true);
       } catch (err) {
         console.error(err);
         this.activityModalError = err.message || 'Erreur lors de la sauvegarde de l\'activité.';
@@ -3418,11 +3628,29 @@ export default {
           this.facilitatorWeeklyChecks[d] = true;
         });
       }
+      this.initialFacilitatorState = JSON.stringify({
+        form: this.facilitatorForm,
+        checks: this.facilitatorWeeklyChecks,
+        hours: this.facilitatorWeeklyHours
+      });
       this.showFacilitatorModal = true;
     },
 
-    closeFacilitatorModal() {
+    closeFacilitatorModal(force = false) {
+      if (force !== true && this.initialFacilitatorState) {
+        const curState = JSON.stringify({
+          form: this.facilitatorForm,
+          checks: this.facilitatorWeeklyChecks,
+          hours: this.facilitatorWeeklyHours
+        });
+        if (curState !== this.initialFacilitatorState) {
+          if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer vos modifications ?')) {
+            return;
+          }
+        }
+      }
       this.showFacilitatorModal = false;
+      this.initialFacilitatorState = null;
     },
 
     applyFacilitatorWeeklyPreset(mode) {
@@ -3492,7 +3720,7 @@ export default {
           await this.facilitatorStore.createFacilitator(payload);
           this.showToast('Animateur créé avec succès !');
         }
-        this.closeFacilitatorModal();
+        this.closeFacilitatorModal(true);
       } catch (err) {
         this.facilitatorModalError = err.message || 'Erreur lors de la sauvegarde de l\'animateur.';
       } finally {
@@ -3530,6 +3758,9 @@ export default {
           firstName: part.firstName || '',
           lastName: part.lastName || '',
           email: part.email || '',
+          transport: Boolean(part.transport),
+          address: part.address || part.postalAddress || '',
+          other: part.other || part.notes || '',
           weeklyAvailabilities: part.weeklyAvailabilities ? JSON.parse(JSON.stringify(part.weeklyAvailabilities)) : {},
           specificUnavailabilities: rawUnavails.map(u => ({
             startDate: this.formatIsoForInput(u.startDate),
@@ -3552,6 +3783,9 @@ export default {
           firstName: '',
           lastName: '',
           email: '',
+          transport: false,
+          address: '',
+          other: '',
           weeklyAvailabilities: {},
           specificUnavailabilities: []
         };
@@ -3560,11 +3794,45 @@ export default {
           this.participantWeeklyChecks[d] = true;
         });
       }
+      this.initialParticipantState = JSON.stringify({
+        form: this.participantForm,
+        checks: this.participantWeeklyChecks,
+        hours: this.participantWeeklyHours
+      });
       this.showParticipantModal = true;
     },
 
-    closeParticipantModal() {
+    closeParticipantModal(force = false) {
+      if (force !== true && this.initialParticipantState) {
+        const curState = JSON.stringify({
+          form: this.participantForm,
+          checks: this.participantWeeklyChecks,
+          hours: this.participantWeeklyHours
+        });
+        if (curState !== this.initialParticipantState) {
+          if (!confirm('Des modifications ne sont pas enregistrées. Voulez-vous vraiment fermer sans enregistrer vos modifications ?')) {
+            return;
+          }
+        }
+      }
       this.showParticipantModal = false;
+      this.initialParticipantState = null;
+    },
+
+    insertParticipantAddressTag(tag) {
+      if (!this.participantForm.address) {
+        this.participantForm.address = tag;
+      } else {
+        this.participantForm.address = this.participantForm.address.trim() + '\n' + tag;
+      }
+    },
+
+    insertParticipantOtherTag(tag) {
+      if (!this.participantForm.other) {
+        this.participantForm.other = tag;
+      } else {
+        this.participantForm.other = this.participantForm.other.trim() + '\n' + tag;
+      }
     },
 
     applyParticipantWeeklyPreset(mode) {
@@ -3621,6 +3889,9 @@ export default {
         firstName: this.participantForm.firstName.trim(),
         lastName: this.participantForm.lastName.trim(),
         email: this.participantForm.email.trim(),
+        transport: Boolean(this.participantForm.transport),
+        address: (this.participantForm.address || '').trim(),
+        other: (this.participantForm.other || '').trim(),
         weeklyAvailabilities: formattedWeekly,
         specificUnavailabilities: formattedUnavails
       };
@@ -3633,7 +3904,7 @@ export default {
           await this.participantStore.createParticipant(payload);
           this.showToast('Participant créé avec succès !');
         }
-        this.closeParticipantModal();
+        this.closeParticipantModal(true);
       } catch (err) {
         this.participantModalError = err.message || 'Erreur lors de la sauvegarde du participant.';
       } finally {
@@ -6379,9 +6650,213 @@ export default {
   letter-spacing: 0.05em;
 }
 
-.relation-value {
-  font-size: 0.85rem;
+/* ════════════════ PARTICIPANT ENHANCEMENTS (TRANSPORT, ADDRESS, OTHER) ════════════════ */
+.participant-transport-row {
+  display: flex;
+  align-items: center;
+  margin-top: 0.35rem;
+}
+
+.transport-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+}
+
+.transport-pill-badge.is-transport-yes {
+  background: rgba(13, 148, 136, 0.18);
+  border: 1px solid rgba(13, 148, 136, 0.45);
+  color: #5eead4;
+  box-shadow: 0 0 10px rgba(13, 148, 136, 0.15);
+}
+
+.transport-pill-badge.is-transport-no {
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  color: var(--text-secondary);
+}
+
+.participant-meta-box {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
   color: var(--text-primary);
+  margin-top: 0.2rem;
+}
+
+.participant-meta-box.address-box {
+  border-left: 3px solid #0284c7;
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.06), rgba(0, 0, 0, 0.2));
+}
+
+.participant-meta-box.other-box {
+  border-left: 3px solid #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(0, 0, 0, 0.2));
+}
+
+.whitespace-pre-line {
+  white-space: pre-line;
+  word-break: break-word;
+  margin: 0;
+}
+
+/* Modal form controls for Transport, Address, Other */
+.field-status-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+}
+
+.field-status-badge.badge-transport-yes {
+  background: rgba(13, 148, 136, 0.25);
+  color: #5eead4;
+  border: 1px solid rgba(13, 148, 136, 0.4);
+}
+
+.field-status-badge.badge-transport-no {
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.transport-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.transport-option-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.transport-option-card:hover {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.transport-option-card.selected {
+  border-color: #0d9488;
+  background: rgba(13, 148, 136, 0.14);
+  box-shadow: 0 0 14px rgba(13, 148, 136, 0.2);
+}
+
+.transport-option-card .toc-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.transport-option-card .toc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+}
+
+.transport-option-card .toc-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.transport-option-card .toc-desc {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.transport-option-card .toc-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.6rem;
+  width: 18px;
+  height: 18px;
+  background: #0d9488;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 0.68rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.field-hint-pill {
+  font-size: 0.72rem;
+  color: #7dd3fc;
+  background: rgba(2, 132, 199, 0.15);
+  border: 1px solid rgba(2, 132, 199, 0.35);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+}
+
+.field-help-box {
+  background: rgba(2, 132, 199, 0.08);
+  border-left: 3px solid #0284c7;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0 0.35rem 0.35rem 0;
+  font-size: 0.78rem;
+  color: #bae6fd;
+  margin-top: 0.35rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.quick-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.quick-tags-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-right: 0.2rem;
+}
+
+.quick-tag-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quick-tag-btn:hover {
+  background: rgba(13, 148, 136, 0.2);
+  border-color: rgba(13, 148, 136, 0.4);
+  color: #5eead4;
+}
+
+.form-textarea {
+  min-height: 72px;
+  resize: vertical;
+  line-height: 1.45;
 }
 
 /* Print CSS overrides */

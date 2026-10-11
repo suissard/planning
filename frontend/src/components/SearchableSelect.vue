@@ -78,6 +78,7 @@
                 <span :class="{ 'name-unavail': item.isAvailable === false }" v-html="highlightMatches(getItemLabel(item))"></span>
                 <span v-if="item.skills" class="option-badge skills-badge">{{ item.skills }}</span>
                 <span v-if="item.capacity" class="option-badge capacity-badge">{{ item.capacity }} pers.</span>
+                <span v-if="item.transport" class="option-badge transport-badge">🚐 Transport</span>
                 <span v-if="item.isAvailable === false" class="option-badge unavail-badge">
                   ⚠️ Indisponible ({{ item.unavailabilityReason }})
                 </span>
@@ -184,13 +185,17 @@ export default {
         const skills = this.removeAccents((item.skills || '').toLowerCase());
         const desc = this.removeAccents((item.description || '').toLowerCase());
         const locationName = this.removeAccents((item.name || '').toLowerCase());
+        const address = this.removeAccents((item.address || '').toLowerCase());
+        const other = this.removeAccents((item.other || '').toLowerCase());
 
         return (
           fullName.includes(this.normalizedQuery) ||
           email.includes(this.normalizedQuery) ||
           skills.includes(this.normalizedQuery) ||
           desc.includes(this.normalizedQuery) ||
-          locationName.includes(this.normalizedQuery)
+          locationName.includes(this.normalizedQuery) ||
+          address.includes(this.normalizedQuery) ||
+          other.includes(this.normalizedQuery)
         );
       });
     }
@@ -574,6 +579,13 @@ export default {
   background: rgba(168, 85, 247, 0.15);
   color: #c084fc;
   border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.transport-badge {
+  background: rgba(13, 148, 136, 0.15);
+  color: #5eead4;
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  font-weight: 600;
 }
 
 .unavail-badge {

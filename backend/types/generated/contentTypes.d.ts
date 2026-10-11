@@ -666,6 +666,9 @@ export interface ApiParticipantParticipant extends Struct.CollectionTypeSchema {
       'manyToMany',
       'api::time-slot.time-slot'
     >;
+    transport: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    address: Schema.Attribute.Text;
+    other: Schema.Attribute.Text;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

@@ -35,7 +35,13 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
         this.facilitators = deepCopy(facilitatorsData)
           .map((f, i) => ({ ...f, documentId: `fac_${i}` }))
           .sort((a, b) => (a.lastName || '').localeCompare(b.lastName || '', 'fr', { sensitivity: 'base' }) || (a.firstName || '').localeCompare(b.firstName || '', 'fr', { sensitivity: 'base' }));
-        this.participants = deepCopy(participantsData).map((p, i) => ({ ...p, documentId: `part_${i}` }));
+        this.participants = deepCopy(participantsData).map((p, i) => ({
+          transport: false,
+          address: '',
+          other: '',
+          ...p,
+          documentId: `part_${i}`
+        }));
 
         const slots = deepCopy(timeSlotsData).map((t, i) => {
             const loc = this.locations.find(l => l.name === t._location) || null;
@@ -462,6 +468,9 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
         firstName: participantData.firstName,
         lastName: participantData.lastName,
         email: participantData.email,
+        transport: Boolean(participantData.transport),
+        address: participantData.address || participantData.postalAddress || '',
+        other: participantData.other || participantData.notes || '',
         weeklyAvailabilities: participantData.weeklyAvailabilities || {},
         specificUnavailabilities: participantData.specificUnavailabilities || []
       };
@@ -479,6 +488,9 @@ export const useMockSchedulerStore = defineStore('mockScheduler', {
           firstName: participantData.firstName,
           lastName: participantData.lastName,
           email: participantData.email,
+          transport: Boolean(participantData.transport),
+          address: participantData.address !== undefined ? participantData.address : (participantData.postalAddress !== undefined ? participantData.postalAddress : (this.participants[index].address || '')),
+          other: participantData.other !== undefined ? participantData.other : (participantData.notes !== undefined ? participantData.notes : (this.participants[index].other || '')),
           weeklyAvailabilities: participantData.weeklyAvailabilities || {},
           specificUnavailabilities: participantData.specificUnavailabilities || []
         };

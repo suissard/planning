@@ -47,7 +47,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": true,
+    "address": "14 Rue des Lilas, 44350 Guérande\nCode portail : 3591A, sonnette Dupont au RDC",
+    "other": "Traitement : pilulier à midi (antihypertenseur). Légère perte auditive à l'oreille gauche."
   },
   {
     "firstName": "Robert",
@@ -97,7 +100,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": false,
+    "address": "8 Avenue des Platanes, 44500 La Baule\nDigicode : B204 - Bâtiment C, 2ème étage avec ascenseur",
+    "other": "Régime pauvre en sel. Préfère les activités calmes l'après-midi."
   },
   {
     "firstName": "Marcelle",
@@ -147,7 +153,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": true,
+    "address": "27 Boulevard de l'Océan, 44490 Le Croisic\nPortail automatique (télécommande chez la gardienne, code piéton : 7820)",
+    "other": "Traitement pour la tension. Mobilité réduite : canne de marche."
   },
   {
     "firstName": "Henri",
@@ -197,7 +206,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": false,
+    "address": "3 Place du Marché, 44350 Guérande\nAccès direct rue, pas de code",
+    "other": "Allergie aux fruits à coque. Personne de confiance : fille Sophie (06 12 34 56 78)."
   },
   {
     "firstName": "Germaine",
@@ -247,7 +259,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": true,
+    "address": "19 Rue de Bretagne, 44740 Batz-sur-Mer\nCode portail : 1248 (portail vert en bois)",
+    "other": "Traitement quotidien à 13h. Très créative, adore la peinture et le chant."
   },
   {
     "firstName": "Lucien",
@@ -297,7 +312,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": false,
+    "address": "5 Allée des Marais, 44350 Guérande\nCode interphone : 402 - Bât A",
+    "other": "Lunettes de lecture indispensables. Pas de traitement particulier en journée."
   },
   {
     "firstName": "Suzanne",
@@ -347,7 +365,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": true,
+    "address": "12 Avenue du Parc, 44500 La Baule\nCode portail : 9812B, maison au fond de l'allée",
+    "other": "Traitement cardiovasculaire à 12h30. Déplacement lent mais autonome."
   },
   {
     "firstName": "Raymond",
@@ -397,7 +418,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": true,
+    "address": "6 Rue Saint-Michel, 44350 Guérande\nCode portail : 4410",
+    "other": "Traitement diabète : vérifier collation de 16h. Contact d'urgence : 06 98 76 54 32."
   },
   {
     "firstName": "Colette",
@@ -447,7 +471,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": false,
+    "address": "22 Rue des Paludiers, 44740 Batz-sur-Mer\nCode portail : 1973A",
+    "other": "Sensibilité aux bruits forts. Aime le jardinage et les jeux de société."
   },
   {
     "firstName": "Gaston",
@@ -497,7 +524,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": true,
+    "address": "11 Rue du Menhir, 44420 Piriac-sur-Mer\nCode portail : 8520, interphone Gaston L.",
+    "other": "Traitement gouttes pour les yeux à 14h. Marche avec déambulateur."
   },
   {
     "firstName": "Pierrette",
@@ -547,7 +577,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": false,
+    "address": "17 Boulevard Clemenceau, 44500 La Baule\nCode entrée : 6321",
+    "other": "Pas de contrainte médicale. Participante très dynamique et ponctuelle."
   },
   {
     "firstName": "André",
@@ -597,7 +630,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": true,
+    "address": "31 Avenue des Pins, 44380 Pornichet\nCode portail : 7410, sonnette portillon",
+    "other": "Traitement pour l'arthrose le matin. Besoin d'aide pour monter dans le minibus."
   },
   {
     "firstName": "Monique",
@@ -647,7 +683,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": false,
+    "address": "4 Rue du Calvaire, 44350 Guérande\nPas de digicode, sonner à la barrière",
+    "other": "Régime diabétique. Préfère les tables au rez-de-chaussée."
   },
   {
     "firstName": "Jacques",
@@ -697,7 +736,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": true,
+    "address": "9 Route de Saint-Lyphard, 44410 Saint-Lyphard\nCode portail : 5632B",
+    "other": "Traitement mémoire à midi. Famille demande à être prévenue des retards."
   },
   {
     "firstName": "Simone",
@@ -747,7 +789,10 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": false,
+    "address": "15 Rue de la Plage, 44510 Le Pouliguen\nCode interphone : 108",
+    "other": "Traitement d'appoint si fatigue. Passionnée de lecture et d'échecs."
   },
   {
     "firstName": "Émile",
@@ -797,6 +842,9 @@
         }
       ]
     },
-    "specificUnavailabilities": []
+    "specificUnavailabilities": [],
+    "transport": true,
+    "address": "2 Rue de l'Église, 44350 Guérande\nCode portail : 2580A",
+    "other": "Traitement à 12h. Port d'un appareil auditif droit."
   }
 ]

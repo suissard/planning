@@ -56,6 +56,8 @@ export const useRoomSessionTemplateStore = defineStore('roomSessionTemplate', {
           documentId: `tmpl_${i}`,
           id: `tmpl_${i}`,
           dayOfWeek: t.dayOfWeek,
+          startTime: t.startTime || '10:00',
+          endTime: t.endTime || '16:00',
           location: loc,
           manager: mgr,
           participants: parts,
@@ -148,6 +150,8 @@ export const useRoomSessionTemplateStore = defineStore('roomSessionTemplate', {
           const locId = src.location?.documentId || src.location?.id || src.location;
           this.setTemplateEntry(targetDay, locId, {
             location: src.location,
+            startTime: src.startTime || '10:00',
+            endTime: src.endTime || '16:00',
             manager: src.manager,
             participants: src.participants ? [...src.participants] : [],
             isActive: src.isActive,
@@ -196,6 +200,8 @@ export const useRoomSessionTemplateStore = defineStore('roomSessionTemplate', {
 
           const payload = {
             dayOfWeek: Number(item.dayOfWeek),
+            startTime: item.startTime || '10:00',
+            endTime: item.endTime || '16:00',
             location: locId,
             manager: mgrId,
             participants: partIds,

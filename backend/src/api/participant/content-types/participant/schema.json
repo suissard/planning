@@ -24,6 +24,16 @@
       "required": true,
       "unique": true
     },
+    "transport": {
+      "type": "boolean",
+      "default": false
+    },
+    "address": {
+      "type": "text"
+    },
+    "other": {
+      "type": "text"
+    },
     "weeklyAvailabilities": {
       "type": "json"
     },
