@@ -114,6 +114,24 @@ const routes = [
     redirect: '/timeslots'
   },
   {
+    path: '/espace-animatrice',
+    name: 'espace-animatrice',
+    component: MainApp,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/animatrice',
+    redirect: '/espace-animatrice'
+  },
+  {
+    path: '/ateliers',
+    redirect: '/espace-animatrice'
+  },
+  {
+    path: '/facilitator-workspace',
+    redirect: '/espace-animatrice'
+  },
+  {
     path: '/extractions',
     name: 'extractions',
     component: MainApp,

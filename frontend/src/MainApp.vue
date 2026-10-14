@@ -173,6 +173,27 @@
         
         <!-- Connection Status & Stats -->
         <div class="header-right">
+          <!-- PROMINENT SHORTCUT: ESPACE ANIMATRICE -->
+          <button 
+            type="button" 
+            class="header-facilitator-shortcut-btn" 
+            :class="{ active: currentPage === 'espace-animatrice' }"
+            @click="navigateTo('espace-animatrice')"
+            title="Accéder directement à l'Espace Animatrice (Salles ouvertes & Ateliers)"
+          >
+            <div class="shortcut-icon-wrapper">
+              <span class="shortcut-icon">🎨</span>
+              <span class="shortcut-pulse"></span>
+            </div>
+            <div class="shortcut-details">
+              <div class="shortcut-title-row">
+                <span class="shortcut-title">Espace Animatrice</span>
+                <span class="shortcut-badge">✨ NOUVEAU</span>
+              </div>
+              <span class="shortcut-desc">Salles ouvertes & Ateliers</span>
+            </div>
+          </button>
+
           <!-- Admin-only: Stats pills -->
           <div class="stats-pills" v-if="!loading && !error && appSettingsStore.isAdminMode">
             <span class="stat-pill">📍 {{ locations.length }} Lieux</span>
@@ -277,6 +298,17 @@
               <span class="nav-icon">📅</span>
               <span class="nav-label">Mon Planning</span>
             </button>
+
+            <button 
+              class="nav-item dedicated-nav-item" 
+              :class="{ active: currentPage === 'espace-animatrice' }"
+              @click="navigateTo('espace-animatrice')"
+              title="Consulter les salles ouvertes, les cohortes et placer des animations"
+            >
+              <span class="nav-icon">🎨</span>
+              <span class="nav-label">Espace Animatrice</span>
+              <span class="nav-badge-pill checkin-nav-pill">✨ Ateliers</span>
+            </button>
           </template>
 
           <!-- ADMIN MODE DEDICATED NAVIGATION -->
@@ -304,6 +336,17 @@
             >
               <span class="nav-icon">🚪</span>
               <span class="nav-label">Ouverture Salles</span>
+            </button>
+
+            <button 
+              class="nav-item dedicated-nav-item" 
+              :class="{ active: currentPage === 'espace-animatrice' }"
+              @click="navigateTo('espace-animatrice')"
+              title="Parcours Animatrice : Salles ouvertes, cohortes et placement d'animations"
+            >
+              <span class="nav-icon">🎨</span>
+              <span class="nav-label">Espace Animatrice</span>
+              <span class="nav-badge-pill checkin-nav-pill">✨ Ateliers</span>
             </button>
 
             <button 
@@ -407,7 +450,7 @@
         <!-- Main Content Area -->
         <main class="app-content">
           <!-- Search & Info Bar (Admin Mode only) -->
-          <div class="content-header" v-if="appSettingsStore.isAdminMode && !error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots' && currentPage !== 'check-in'">
+          <div class="content-header" v-if="appSettingsStore.isAdminMode && !error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots' && currentPage !== 'check-in' && currentPage !== 'espace-animatrice'">
             <div class="search-wrapper">
               <span class="search-icon">🔍</span>
               <input 
@@ -464,13 +507,13 @@
           </div>
 
           <!-- Loading State (Admin Mode) -->
-          <div class="loading-state" v-if="loading && appSettingsStore.isAdminMode && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots' && currentPage !== 'check-in'">
+          <div class="loading-state" v-if="loading && appSettingsStore.isAdminMode && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots' && currentPage !== 'check-in' && currentPage !== 'espace-animatrice'">
             <div class="spinner"></div>
             <p>Chargement des données depuis Strapi...</p>
           </div>
 
           <!-- Error State -->
-          <div class="error-state" v-else-if="error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots' && currentPage !== 'check-in'">
+          <div class="error-state" v-else-if="error && currentPage !== 'profile' && currentPage !== 'individual-schedules' && currentPage !== 'room-sessions' && currentPage !== 'week-template' && currentPage !== 'extractions' && currentPage !== 'timeslots' && currentPage !== 'check-in' && currentPage !== 'espace-animatrice'">
             <span class="error-icon">⚠️</span>
             <h3>Impossible de contacter l'API Strapi</h3>
             <p>{{ error }}</p>
@@ -510,6 +553,18 @@
               :activities="activities"
               :timeslots="timeslots"
               @refresh-data="fetchData"
+            />
+
+            <!-- TAB: ESPACE ANIMATRICE -->
+            <FacilitatorWorkspaceView 
+              v-if="currentPage === 'espace-animatrice'" 
+              :locations="locations" 
+              :activities="activities" 
+              :facilitators="facilitators" 
+              :participants="participants" 
+              :timeslots="timeslots"
+              :current-user-persona="currentUserPersona"
+              @navigate="navigateTo"
             />
 
             <!-- TAB: CHECK-IN / POINTAGE -->
@@ -1953,6 +2008,7 @@ const AnimationsPlanningView = defineAsyncComponent(() => import('./components/A
 const CheckInView = defineAsyncComponent(() => import('./components/CheckInView.vue'));
 const CalendarView = defineAsyncComponent(() => import('./components/CalendarView.vue'));
 const ClientPlanningView = defineAsyncComponent(() => import('./views/ClientPlanningView.vue'));
+const FacilitatorWorkspaceView = defineAsyncComponent(() => import('./views/facilitator/FacilitatorWorkspaceView.vue'));
 
 
 const DAYS_FR = {
@@ -1977,6 +2033,7 @@ export default {
     CheckInView,
     CalendarView,
     ClientPlanningView,
+    FacilitatorWorkspaceView,
     SearchableSelect
   },
   setup() {
@@ -2671,7 +2728,7 @@ export default {
   },
   watch: {
     'appSettingsStore.isAdminMode'(isAdmin) {
-      if (!isAdmin && !['timeslots', 'profile'].includes(this.currentPage)) {
+      if (!isAdmin && !['timeslots', 'espace-animatrice', 'profile'].includes(this.currentPage)) {
         this.navigateTo('timeslots');
       }
     },
@@ -2809,6 +2866,8 @@ export default {
         this.currentPage = 'room-sessions';
       } else if (path.startsWith('/extractions')) {
         this.currentPage = 'extractions';
+      } else if (path.startsWith('/espace-animatrice') || path.startsWith('/animatrice') || path.startsWith('/ateliers') || path.startsWith('/facilitator-workspace')) {
+        this.currentPage = 'espace-animatrice';
       } else if (path.startsWith('/check-in') || path.startsWith('/checkin') || path.startsWith('/presences')) {
         this.currentPage = 'check-in';
       } else if (path.startsWith('/profile')) {
@@ -4694,6 +4753,147 @@ export default {
   display: flex;
   align-items: center;
   gap: 1.1rem;
+}
+
+/* PROMINENT HEADER SHORTCUT: ESPACE ANIMATRICE */
+.header-facilitator-shortcut-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.28) 0%, rgba(2, 132, 199, 0.22) 100%);
+  border: 1px solid rgba(45, 212, 191, 0.55);
+  border-radius: var(--radius-md, 0.85rem);
+  padding: 0.38rem 0.95rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 12px rgba(13, 148, 136, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+.header-facilitator-shortcut-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: 0.5s;
+  pointer-events: none;
+}
+
+.header-facilitator-shortcut-btn:hover::before {
+  left: 120%;
+}
+
+.header-facilitator-shortcut-btn:hover {
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.42) 0%, rgba(2, 132, 199, 0.38) 100%);
+  border-color: rgba(94, 234, 212, 0.9);
+  box-shadow: 0 4px 20px rgba(13, 148, 136, 0.45), 0 0 0 1px rgba(94, 234, 212, 0.5);
+  transform: translateY(-1px);
+}
+
+.header-facilitator-shortcut-btn.active {
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.55) 0%, rgba(2, 132, 199, 0.5) 100%);
+  border-color: #5eead4;
+  box-shadow: 0 0 22px rgba(45, 212, 191, 0.55), inset 0 0 12px rgba(13, 148, 136, 0.35);
+}
+
+.shortcut-icon-wrapper {
+  position: relative;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.55rem;
+  background: rgba(13, 148, 136, 0.35);
+  border: 1px solid rgba(94, 234, 212, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.shortcut-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.shortcut-pulse {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  background: #2dd4bf;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #2dd4bf;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}
+
+.shortcut-details {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.shortcut-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.shortcut-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.header-facilitator-shortcut-btn.active .shortcut-title {
+  color: #5eead4;
+}
+
+.shortcut-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+  background: rgba(234, 179, 8, 0.28);
+  color: #fef08a;
+  border: 1px solid rgba(234, 179, 8, 0.5);
+  letter-spacing: 0.02em;
+}
+
+.shortcut-desc {
+  font-size: 0.69rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.header-facilitator-shortcut-btn:hover .shortcut-desc {
+  color: #cbd5e1;
+}
+
+@media (max-width: 900px) {
+  .shortcut-desc {
+    display: none;
+  }
+  .header-facilitator-shortcut-btn {
+    padding: 0.35rem 0.65rem;
+  }
 }
 
 .stats-pills {
